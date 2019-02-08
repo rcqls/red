@@ -1653,6 +1653,8 @@ OS-make-view: func [
 			_widget: gtk_scrolled_window_new null null
 			gtk_container_add _widget widget
 			gobj_signal_connect(buffer "changed" :area-changed widget)
+			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
+			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
 		sym = group-box [
 			widget: gtk_frame_new caption
@@ -1911,6 +1913,7 @@ OS-destroy-view: func [
 	;;g_main_context_release GTKApp-Ctx
 	;; DEBUG: 
 
+	;; TODO: This can be useless now! 
 	remove-all-timers handle
 	
 	;; DEBUG: print ["BYE! win: " win-cnt " (" handle ")" lf]
