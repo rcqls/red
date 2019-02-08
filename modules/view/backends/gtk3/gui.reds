@@ -1915,8 +1915,6 @@ OS-destroy-view: func [
 	
 	;; DEBUG: print ["BYE! win: " win-cnt " (" handle ")" lf]
 
-	gtk_window_close main-window
-
 	free-handles as-integer handle no
 
 ]
