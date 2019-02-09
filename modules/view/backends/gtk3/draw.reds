@@ -94,7 +94,7 @@ OS-draw-anti-alias: func [
 	dc	[draw-ctx!]
 	on? [logic!]
 ][
-0
+	cairo_set_antialias dc/raw either on? [CAIRO_ANTIALIAS_GOOD][CAIRO_ANTIALIAS_NONE]
 ]
 
 OS-draw-line: func [

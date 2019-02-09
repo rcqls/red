@@ -268,6 +268,9 @@ GtkTextIter!: alias struct! [
     CAIRO_ANTIALIAS_NONE
     CAIRO_ANTIALIAS_GRAY
     CAIRO_ANTIALIAS_SUBPIXEL
+	CAIRO_ANTIALIAS_FAST
+	CAIRO_ANTIALIAS_GOOD
+	CAIRO_ANTIALIAS_BEST
 ]
 
 ; @@ cairo structures to remove if pango_cairo is enough to draw text on cairo

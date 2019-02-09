@@ -586,7 +586,7 @@ make-pango-cairo-font: func [
 			TYPE_WORD [
 					style: as red-word! value
 					either ClearType = symbol/resolve style/symbol [
-							quality: CAIRO_ANTIALIAS_SUBPIXEL
+							quality: CAIRO_ANTIALIAS_BEST
 							;-- CLEARTYPE_QUALITY
 					][
 							quality: CAIRO_ANTIALIAS_NONE
