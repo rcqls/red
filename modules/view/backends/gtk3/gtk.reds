@@ -263,6 +263,13 @@ GtkTextIter!: alias struct! [
  	CAIRO_FONT_WEIGHT_BOLD
 ]
 
+#enum cairo_antialias_t! [
+    CAIRO_ANTIALIAS_DEFAULT
+    CAIRO_ANTIALIAS_NONE
+    CAIRO_ANTIALIAS_GRAY
+    CAIRO_ANTIALIAS_SUBPIXEL
+]
+
 ; @@ cairo structures to remove if pango_cairo is enough to draw text on cairo
 ; cairo_text_extents_t!: alias struct! [ 
 ;  	x_bearing	[float!]
@@ -1032,6 +1039,22 @@ cairo_font_extents_t!: alias struct! [
 			width		[int-ptr!]
 			height		[int-ptr!]
 		]
+		pango_layout_set_spacing: "pango_layout_set_spacing" [
+			layout		[handle!]
+			spacing		[integer!]
+		]
+		pango_layout_set_attributes: "pango_layout_set_attributes" [
+			layout		[handle!]
+			attrs		[handle!]
+		]
+		pango_layout_get_iter: "pango_layout_get_iter" [
+			layout		[handle!]
+			return: 	[handle!]
+		]
+		pango_layout_iter_get_baseline: "pango_layout_iter_get_baseline" [
+			iter		[handle!]
+			return:		[integer!]
+		]
 		pango_font_description_new: "pango_font_description_new" [
 			return: 	[handle!]
 		]
@@ -1095,6 +1118,11 @@ cairo_font_extents_t!: alias struct! [
 			return:		[integer!]
 		]
 		gdk_pango_context_get: "gdk_pango_context_get" [
+			return:		[handle!]
+		]
+
+		gdk_pango_context_get_for_screen: "gdk_pango_context_get_for_screen" [
+			screen		[handle!]
 			return:		[handle!]
 		]
 
@@ -1369,6 +1397,12 @@ cairo_font_extents_t!: alias struct! [
 			interp_type	[integer!]
 			return: 	[handle!]
 		]
+
+		;; Useless since already called inside pango_cairo_create_context
+		; pango_cairo_font_map_get_default: "pango_cairo_font_map_get_default" [
+		; 	return: 	[handle!]
+		; ]
+
 		pango_cairo_create_context: "pango_cairo_create_context" [
 			cr 			[handle!]
 			return: 	[handle!]
@@ -1384,6 +1418,31 @@ cairo_font_extents_t!: alias struct! [
 		pango_cairo_show_layout: "pango_cairo_show_layout" [
 			cr 			[handle!]
 			layout 		[handle!]
+		]
+		pango_font_map_create_context: "pango_font_map_create_context" [
+			fontmap		[handle!]
+			return:		[handle!]
+		]
+		pango_parse_markup: "pango_parse_markup" [
+			markup_text		[c-string!]
+            length 			[integer!]
+            accel_marker	[integer!] 	;gunichar=guint32
+            attr_list		[handle!] 	;[pointer! [handle!]]
+            text			[handle!] 	;[pointer! [c-string!]]
+            accel_char		[integer!] 	;gunichar=gunit32
+            error			[handle!]
+			return: 		[logic!]
+		]
+
+		cairo_font_options_create: "cairo_font_options_create" [
+			return: 	[handle!]
+		]
+		cairo_font_options_destroy: "cairo_font_options_destroy" [
+			return: 	[handle!]
+		]
+		cairo_font_options_set_antialias: "cairo_font_options_set_antialias" [
+			cfo			[handle!]
+            antialias	[cairo_antialias_t!]
 		]
 	]
 ]
