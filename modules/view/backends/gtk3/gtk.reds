@@ -1039,6 +1039,21 @@ cairo_font_extents_t!: alias struct! [
 			width		[int-ptr!]
 			height		[int-ptr!]
 		]
+		pango_layout_get_line: "pango_layout_get_line" [
+			layout		[handle!]
+			line		[integer!]
+			return:		[handle!]
+		]
+		pango_layout_get_line_readonly: "pango_layout_get_line_readonly" [
+			layout		[handle!]
+			line		[integer!]
+			return:		[handle!]
+		]
+      	pango_layout_get_size: "pango_layout_get_size" [
+			 layout		[handle!]
+			 width		[int-ptr!]
+			 height		[int-ptr!]
+		]
 		pango_layout_set_spacing: "pango_layout_set_spacing" [
 			layout		[handle!]
 			spacing		[integer!]
@@ -1418,6 +1433,10 @@ cairo_font_extents_t!: alias struct! [
 		pango_cairo_show_layout: "pango_cairo_show_layout" [
 			cr 			[handle!]
 			layout 		[handle!]
+		]
+		pango_cairo_show_layout_line: "pango_cairo_show_layout_line" [
+			cr 			[handle!]
+			layout_line [handle!]
 		]
 		pango_font_map_create_context: "pango_font_map_create_context" [
 			fontmap		[handle!]

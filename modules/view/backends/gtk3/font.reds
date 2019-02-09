@@ -206,7 +206,6 @@ font-description: func [
 		name     [c-string!]
 		size     [red-integer!]
 		fsize	 [integer!]
-		css      [c-string!]
 		color    [red-tuple!]
 		bgcolor  [red-tuple!]
 		rgba     [c-string!]
@@ -226,18 +225,14 @@ font-description: func [
 	color:	as red-tuple!	values + FONT_OBJ_COLOR
 	;anti-alias?:
 
-	fd: pango_font_description_new
-
 	name: "Arial" ; @@ to change to default font name  
 	if TYPE_OF(str) = TYPE_STRING [
 		len: -1
 		name: unicode/to-utf8 str :len
 	]
-	pango_font_description_set_family fd name
 
 	fsize: either TYPE_OF(size) = TYPE_INTEGER [size/value][16]
 	;; DEBUG: print ["font-description: fsize -> " fsize lf]
-	pango_font_description_set_size fd fsize * PANGO_SCALE
 
 	len: switch TYPE_OF(style) [
 		TYPE_BLOCK [
@@ -264,6 +259,26 @@ font-description: func [
 			style: style + 1
 		]
 	]
+
+	fd: font-description-create name fsize fweight fstyle
+
+	fd
+]
+
+font-description-create: func [
+	fname 	[c-string!]
+	fsize	[integer!]
+	fweight	[integer!]
+	fstyle	[integer!]
+	return:	[handle!]
+	/local
+		fd		[handle!]
+		;css      [c-string!]
+][
+	fd: pango_font_description_new
+
+	pango_font_description_set_family fd fname
+	pango_font_description_set_size fd fsize * PANGO_SCALE
 
 	pango_font_description_set_weight fd fweight
 	pango_font_description_set_style fd fstyle
@@ -387,6 +402,10 @@ css-styles: func [
 	css
 ]
 
+
+; move this to draw-ctx!? (used in draw-text-at)
+cairo-font-size: 10.0						;-- used to find top line
+
 ;; Move honix stuff from draw.reds (OS-draw-font) to switch to pango-cairo
 make-cairo-draw-font: func [
 	dc		[draw-ctx!]
@@ -401,7 +420,6 @@ make-cairo-draw-font: func [
 		str      [red-string!]
 		name     [c-string!]
 		size     [red-integer!]
-		css      [c-string!]
 		color    [red-tuple!]
 		bgcolor  [red-tuple!]
 		rgba     [c-string!]
@@ -461,13 +479,97 @@ make-cairo-draw-font: func [
 		extents: declare cairo_font_extents_t!
 		cairo_font_extents cr extents
 
-		font-size: as-float size/value
-		cairo_set_font_size cr font-size * ((extents/ascent + extents/descent) / extents/ascent)
+		cairo-font-size: as-float size/value
+		cairo_set_font_size cr cairo-font-size * ((extents/ascent + extents/descent) / extents/ascent)
 
 		;	This technique is little more correct for me. 
 		;	This Red example will show the difference:
 		;
 		;		f: make font! [name: "Arial" size: 120]	
 		;		view [base 140x140 draw [font f text 10x10 "A" pen white box 0x10 140x130]]
+	]
+]
+
+make-pango-cairo-font: func [
+	dc		[draw-ctx!]
+	font	[red-object!]
+	/local
+		cr       [handle!]
+		values   [red-value!]
+		style    [red-word!]
+		blk      [red-block!]
+		len      [integer!]
+		sym      [integer!]
+		str      [red-string!]
+		size     [red-integer!]
+		color    [red-tuple!]
+		bgcolor  [red-tuple!]
+		rgba     [c-string!]
+		slant    [integer!]
+		weight   [integer!]
+		fname     [c-string!]
+		fsize	 [integer!]
+		fweight  [integer!]
+		fstyle   [integer!]
+][
+	cr: dc/raw
+
+	values: object/get-values font
+	;name:
+	str: 	as red-string!	values + FONT_OBJ_NAME
+	size:	as red-integer!	values + FONT_OBJ_SIZE
+	style:	as red-word!	values + FONT_OBJ_STYLE
+	;angle:
+	color:	as red-tuple!	values + FONT_OBJ_COLOR
+	;anti-alias?:
+
+	;;;;----- color
+	dc/font-color: color/array1
+
+	;;;------- font description
+	fname: "Arial" ; @@ to change to default font name  
+	if TYPE_OF(str) = TYPE_STRING [
+		len: -1
+		fname: unicode/to-utf8 str :len
+	]
+	fsize: either TYPE_OF(size) = TYPE_INTEGER [size/value][16]
+	len: switch TYPE_OF(style) [
+		TYPE_BLOCK [
+			blk: as red-block! style
+			style: as red-word! block/rs-head blk
+			block/rs-length? blk
+		]
+		TYPE_WORD	[1]
+		default		[0]
+	]
+	fstyle: PANGO_STYLE_NORMAL
+	fweight: PANGO_WEIGHT_NORMAL
+	unless zero? len [
+		loop len [
+			sym: symbol/resolve style/symbol
+			case [ 
+				sym = _bold      [fweight: PANGO_WEIGHT_BOLD]
+				sym = _italic    [fstyle: PANGO_STYLE_ITALIC]
+				sym = _underline []
+				sym = _strike    []
+				true             []
+			]
+			style: style + 1
+		]
+	]
+	dc/font-desc: font-description-create fname fsize fweight fstyle
+	;;---- layout 
+	dc/layout: pango_cairo_create_layout dc/raw 
+	pango_layout_set_font_description dc/layout dc/font-desc
+]
+
+free-pango-cairo-font: func [
+	dc		[draw-ctx!]
+][
+	unless null? dc/layout [
+		g_object_unref dc/layout
+		pango_font_description_free dc/font-desc
+		dc/layout: as handle! 0 
+		dc/font-desc: as handle! 0
 	]
 ]

@@ -90,6 +90,10 @@ Red/System [
 		pattern			[int-ptr!]
 		on-image?		[logic!]
 		shape-curve?	[logic!]					;-- drawing on image?
+		; pango-cairo
+		font-desc		[handle!]
+		layout			[handle!]
+
 	]
 ]
 

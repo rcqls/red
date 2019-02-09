@@ -381,14 +381,18 @@ OS-draw-ellipse: func [
 	do-paint dc
 ]
 
-; move this to draw-ctx?
-font-size: 10.0						;-- used to find top line
+pango-font?: yes ; switch to yes to switch to pango-cairo instead of toy cairo
 
 OS-draw-font: func [
 	dc		[draw-ctx!]
 	font	[red-object!]
-][
-	make-cairo-draw-font dc font
+][ 
+	either pango-font? [
+		;dc/font-desc: font-description font
+		make-pango-cairo-font dc font
+	][
+		make-cairo-draw-font dc font
+	]
 ]
 
 draw-text-at: func [
@@ -401,35 +405,39 @@ draw-text-at: func [
 		len     [integer!]
 		str		[c-string!]
 		ctx 	[handle!]
-		;attr	[integer!]
-		;line	[integer!]
+		pl		[handle!]
+		width	[integer!]
+		height	[integer!]
+		size	[integer!]
 ][
-	; m: make-CGMatrix 1 0 0 -1 x y
-	; str: to-CFString text
-	; attr: CFAttributedStringCreate 0 str attrs
-	; line: CTLineCreateWithAttributedString attr
-
-	; delta: objc_msgSend_f32 [
-	; 	objc_msgSend [attrs sel_getUid "objectForKey:" NSFontAttributeName]
-	; 	sel_getUid "ascender"
-	; ]
-	; m/ty: m/ty + delta
-	; CGContextSetTextMatrix ctx m/a m/b m/c m/d m/tx m/ty
-	; CTLineDraw line ctx
-
-	; CFRelease str
-	; CFRelease attr
-	; CFRelease line
-
 	ctx: dc/raw
 
 	len: -1
 	str: unicode/to-utf8 text :len
-	cairo_move_to ctx as-float x
-					  (as-float y) + font-size
+	either pango-font? [
+		pango_layout_set_text dc/layout str -1
+		set-source-color ctx color
 
-	set-source-color ctx color
-	cairo_show_text ctx str
+		pango_cairo_update_layout ctx dc/layout
+
+		width: 0 height: 0
+      	pango_layout_get_pixel_size dc/layout :width :height
+		size: 0
+		size: pango_font_description_get_size dc/font-desc
+		cairo_move_to ctx as-float x
+						(as-float y) + ((as-float size) / PANGO_SCALE)
+		 pl: pango_layout_get_line_readonly dc/layout 0
+		 pango_cairo_show_layout_line ctx pl
+		;pango_cairo_show_layout ctx dc/layout
+
+		free-pango-cairo-font dc
+	][
+		cairo_move_to ctx as-float x
+						(as-float y) + cairo-font-size
+
+		set-source-color ctx color 
+		cairo_show_text ctx str
+	]
 
 	do-paint dc
 
@@ -490,34 +498,6 @@ draw-text-box: func [
 	; objc_msgSend [layout sel_getUid "drawGlyphsForGlyphRange:atPoint:" idx len pt/x pt/y]
 ]
 
-
-; OLD TO REMOVE: OS-draw-text: func [
-; 	dc		[draw-ctx!]
-; 	pos		[red-pair!]
-; 	text	[red-string!]
-; 	catch?	[logic!]
-; 	return: [logic!]
-; 	/local
-; 		ctx		[handle!]
-; 		len     [integer!]
-; 		str		[c-string!]
-; ][
-; 	ctx: dc/raw
-
-; 	len: -1
-; 	str: unicode/to-utf8 text :len
-; 	cairo_move_to ctx as-float pos/x
-; 					  (as-float pos/y) + font-size
-
-; 	set-source-color dc/raw dc/font-color
-; 	cairo_show_text ctx str
-
-; 	do-paint dc
-
-; 	set-source-color dc/raw dc/pen-color	;-- backup pen color
-; 	yes
-; ]
-
 OS-draw-text: func [
 	dc		[draw-ctx!]
 	pos		[red-pair!]
@@ -526,7 +506,7 @@ OS-draw-text: func [
 	return: [logic!]
 ][
 	either TYPE_OF(text) = TYPE_STRING [
-		draw-text-at dc text dc/font-color pos/x pos/y
+		draw-text-at dc text dc/font-color pos/x pos/y no
 	][
 		draw-text-box dc pos as red-object! text catch?
 	]
