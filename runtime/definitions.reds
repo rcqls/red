@@ -91,9 +91,12 @@ Red/System [
 		on-image?		[logic!]
 		shape-curve?	[logic!]					;-- drawing on image?
 		; pango-cairo
-		font-desc		[handle!]
 		layout			[handle!]
-
+		layout-ctx		[handle!]
+		font-desc		[handle!]
+		font-opts		[handle!]	
+		font-underline?	[logic!]
+		font-strike?	[logic!]
 	]
 ]
 

@@ -13,6 +13,8 @@ Red/System [
 ;; First style development provided by Thiago Dourado de Andrade
 #define GTK_STYLE_PROVIDER_PRIORITY_APPLICATION 600
 
+
+
 add-to-string: func [
 	string  [c-string!]
 	format  [c-string!]
@@ -223,17 +225,19 @@ font-description: func [
 	style:	as red-word!	values + FONT_OBJ_STYLE
 	;angle:
 	color:	as red-tuple!	values + FONT_OBJ_COLOR
-	;anti-alias?:
 
+	; font name
 	name: "Arial" ; @@ to change to default font name  
 	if TYPE_OF(str) = TYPE_STRING [
 		len: -1
 		name: unicode/to-utf8 str :len
 	]
 
+	; font size
 	fsize: either TYPE_OF(size) = TYPE_INTEGER [size/value][16]
 	;; DEBUG: print ["font-description: fsize -> " fsize lf]
 
+	; font style and weight
 	len: switch TYPE_OF(style) [
 		TYPE_BLOCK [
 			blk: as red-block! style
@@ -507,10 +511,13 @@ make-pango-cairo-font: func [
 		rgba     [c-string!]
 		slant    [integer!]
 		weight   [integer!]
-		fname     [c-string!]
+		fname    [c-string!]
 		fsize	 [integer!]
 		fweight  [integer!]
 		fstyle   [integer!]
+		value    [red-value!]
+        bool     [red-logic!]
+		quality  [integer!]
 ][
 	cr: dc/raw
 
@@ -544,14 +551,16 @@ make-pango-cairo-font: func [
 	]
 	fstyle: PANGO_STYLE_NORMAL
 	fweight: PANGO_WEIGHT_NORMAL
+	dc/font-underline?: no
+	dc/font-strike?: no
 	unless zero? len [
 		loop len [
 			sym: symbol/resolve style/symbol
 			case [ 
 				sym = _bold      [fweight: PANGO_WEIGHT_BOLD]
 				sym = _italic    [fstyle: PANGO_STYLE_ITALIC]
-				sym = _underline []
-				sym = _strike    []
+				sym = _underline [dc/font-underline?: yes]
+				sym = _strike    [dc/font-strike?: yes]
 				true             []
 			]
 			style: style + 1
@@ -560,7 +569,83 @@ make-pango-cairo-font: func [
 	dc/font-desc: font-description-create fname fsize fweight fstyle
 	;;---- layout 
 	dc/layout: pango_cairo_create_layout dc/raw 
+	dc/layout-ctx: pango_layout_get_context dc/layout
+	dc/font-opts: cairo_font_options_create
 	pango_layout_set_font_description dc/layout dc/font-desc
+
+	
+	;anti-alias?:
+	value: values + FONT_OBJ_ANTI-ALIAS?
+
+	switch TYPE_OF(value) [
+			TYPE_LOGIC [
+					bool: as red-logic! value
+					quality: either bool/value [CAIRO_ANTIALIAS_SUBPIXEL][CAIRO_ANTIALIAS_NONE]
+	;-- ANTIALIASED_QUALITY
+			]
+			TYPE_WORD [
+					style: as red-word! value
+					either ClearType = symbol/resolve style/symbol [
+							quality: CAIRO_ANTIALIAS_SUBPIXEL
+							;-- CLEARTYPE_QUALITY
+					][
+							quality: CAIRO_ANTIALIAS_NONE
+					]
+			]
+			default [quality: CAIRO_ANTIALIAS_DEFAULT]
+			;-- DEFAULT_QUALITY
+	]
+	cairo_font_options_set_antialias dc/font-opts quality
+
+]
+
+styled-text?: func [
+	text		[c-string!]
+	underline?	[logic!]
+	strike?		[logic!]
+	return: [c-string!]
+	/local
+		mtext		[c-string!]
+		tmp			[c-string!]
+][
+	mtext: g_strdup_printf ["%s" text]
+	if underline? [
+		tmp: g_strdup_printf ["<u>%s</u>" mtext]
+		g_free as handle! mtext
+		mtext: tmp
+	]
+	if strike? [
+		tmp: g_strdup_printf ["<s>%s</s>" mtext]
+		g_free as handle! mtext
+		mtext: tmp
+	]
+	mtext
+]
+
+pango-cairo-set-text: func [
+	dc		[draw-ctx!]
+	text	[c-string!]
+	/local
+		status		[logic!]
+		length 		[integer!]
+		attrs-ptr	[int-ptr!]
+		ptext-ptr	[int-ptr!]
+		mtext		[c-string!]
+		ptext		[c-string!]
+		accel		[integer!]  
+		error		[handle!]
+][
+	attrs-ptr: declare int-ptr!
+	ptext-ptr: declare int-ptr!
+	mtext: styled-text? text dc/font-underline? dc/font-strike?
+	status: pango_parse_markup mtext -1 0 attrs-ptr ptext-ptr null null
+	ptext: as c-string! ptext-ptr/value
+	either status [
+		pango_layout_set_text dc/layout ptext  -1
+		pango_layout_set_attributes dc/layout as handle! attrs-ptr/value
+	][
+		pango_layout_set_text dc/layout text -1
+	]
 ]
 
 free-pango-cairo-font: func [

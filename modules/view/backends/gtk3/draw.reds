@@ -388,7 +388,6 @@ OS-draw-font: func [
 	font	[red-object!]
 ][ 
 	either pango-font? [
-		;dc/font-desc: font-description font
 		make-pango-cairo-font dc font
 	][
 		make-cairo-draw-font dc font
@@ -415,7 +414,8 @@ draw-text-at: func [
 	len: -1
 	str: unicode/to-utf8 text :len
 	either pango-font? [
-		pango_layout_set_text dc/layout str -1
+		;pango_layout_set_text dc/layout str -1
+		pango-cairo-set-text dc str
 		set-source-color ctx color
 
 		pango_cairo_update_layout ctx dc/layout
@@ -426,8 +426,8 @@ draw-text-at: func [
 		size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float x
 						(as-float y) + ((as-float size) / PANGO_SCALE)
-		 pl: pango_layout_get_line_readonly dc/layout 0
-		 pango_cairo_show_layout_line ctx pl
+		pl: pango_layout_get_line_readonly dc/layout 0
+		pango_cairo_show_layout_line ctx pl
 		;pango_cairo_show_layout ctx dc/layout
 
 		free-pango-cairo-font dc

@@ -424,7 +424,7 @@ cairo_font_extents_t!: alias struct! [
 			return:		[c-string!]
 		]
 		g_free: "g_free" [
-			pointer		[handle!]
+			ptr		[handle!]
 		]
 		g_string_new: "g_string_new" [
 			return:		[handle!]
@@ -1025,6 +1025,10 @@ cairo_font_extents_t!: alias struct! [
 			context		[handle!]
 			return:		[handle!]
 		]
+		pango_layout_get_context: "pango_layout_get_context" [
+			layout		[handle!]
+			return: 	[handle!]
+		]
    		pango_layout_set_text: "pango_layout_set_text" [
 			layout		[handle!]
 			text		[c-string!]
@@ -1437,6 +1441,9 @@ cairo_font_extents_t!: alias struct! [
 		pango_cairo_show_layout_line: "pango_cairo_show_layout_line" [
 			cr 			[handle!]
 			layout_line [handle!]
+		]
+		pango_cairo_context_set_font_options: "pango_cairo_context_set_font_options" [
+
 		]
 		pango_font_map_create_context: "pango_font_map_create_context" [
 			fontmap		[handle!]
