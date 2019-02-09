@@ -783,7 +783,7 @@ change-font: func [
 
 	;; DEBUG: print ["change-font ccs: " css lf]
 
-	gtk_css_provider_load_from_data provider css -1 null
+	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
 
 	;; Update the pango_font_description hFont (directly used by get-text-size)
 	make-font face font

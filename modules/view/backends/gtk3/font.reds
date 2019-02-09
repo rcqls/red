@@ -599,7 +599,7 @@ make-pango-cairo-font: func [
 
 ]
 
-styled-text?: func [
+pango-styled-text?: func [
 	text		[c-string!]
 	underline?	[logic!]
 	strike?		[logic!]
@@ -629,22 +629,29 @@ pango-cairo-set-text: func [
 		status		[logic!]
 		length 		[integer!]
 		attrs-ptr	[int-ptr!]
+		attrs		[handle!]
 		ptext-ptr	[int-ptr!]
 		mtext		[c-string!]
 		ptext		[c-string!]
 		accel		[integer!]  
 		error		[handle!]
 ][
-	attrs-ptr: declare int-ptr!
-	ptext-ptr: declare int-ptr!
-	mtext: styled-text? text dc/font-underline? dc/font-strike?
-	status: pango_parse_markup mtext -1 0 attrs-ptr ptext-ptr null null
-	ptext: as c-string! ptext-ptr/value
-	either status [
-		pango_layout_set_text dc/layout ptext  -1
-		pango_layout_set_attributes dc/layout as handle! attrs-ptr/value
-	][
-		pango_layout_set_text dc/layout text -1
+	unless null? dc/layout [
+		attrs-ptr: declare int-ptr!
+		ptext-ptr: declare int-ptr!
+		mtext: pango-styled-text? text dc/font-underline? dc/font-strike?
+		status: pango_parse_markup mtext -1 0 attrs-ptr ptext-ptr null null
+		attrs: as handle! attrs-ptr/value
+		ptext: as c-string! ptext-ptr/value
+		either status [
+			pango_layout_set_text dc/layout ptext  -1
+			unless null? attrs [pango_layout_set_attributes dc/layout attrs]
+			g_free as handle! mtext
+			g_free as handle! ptext
+			pango_attr_list_unref attrs
+		][
+			pango_layout_set_text dc/layout text -1
+		]
 	]
 ]
 

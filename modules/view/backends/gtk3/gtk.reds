@@ -1462,6 +1462,9 @@ cairo_font_extents_t!: alias struct! [
             error			[handle!]
 			return: 		[logic!]
 		]
+		pango_attr_list_unref: "pango_attr_list_unref" [
+			attrs			[handle!]
+		]
 
 		cairo_font_options_create: "cairo_font_options_create" [
 			return: 	[handle!]

@@ -615,8 +615,7 @@ mouse-button-press-event: func [
 	ctx 	[node!]
 	return: [logic!]
 ][
-	;; DEBUG: 
-	print [ "mouse -> BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
 	motion/x_root: event/x_root
