@@ -185,6 +185,7 @@ base-draw: func [
 		type	[red-word!]
 		sym		[integer!]
 		pos		[red-pair! value]
+		DC		[draw-ctx! value]
 ][
 	;; DEBUG: print ["base-draw " widget lf]
 
@@ -210,7 +211,8 @@ base-draw: func [
 		sym = base [render-text cr vals]
 		sym = rich-text [
 			pos/x: 0 pos/y: 0
-			;; TODO: draw-text-box null :pos get-face-obj self yes
+			init-draw-ctx :DC cr
+			draw-text-box :DC :pos get-face-obj widget yes
 		]
 		true []
 	]

@@ -75,7 +75,7 @@ log-pixels-y:	0
 screen-size-x:	0
 screen-size-y:	0
 
-get-face-object: func [
+get-face-obj: func [
 	handle	[handle!]
 	return: [red-object!]
 	/local

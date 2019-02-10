@@ -194,6 +194,11 @@ GtkTextIter!: alias struct! [
   GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER
 ]
 
+PangoAttribute!: alias struct! [
+	klass		[handle!]
+	start		[integer!]
+  	end 		[integer!]
+]
 
 #enum pango-style! [
   PANGO_STYLE_NORMAL
@@ -204,6 +209,14 @@ GtkTextIter!: alias struct! [
 #enum pango-variant! [
   PANGO_VARIANT_NORMAL
   PANGO_VARIANT_SMALL_CAPS
+]
+
+#enum pango-underline! [
+	PANGO_UNDERLINE_NONE
+	PANGO_UNDERLINE_SINGLE
+	PANGO_UNDERLINE_DOUBLE
+	PANGO_UNDERLINE_LOW
+	PANGO_UNDERLINE_ERROR
 ]
 
 #enum pango-weight! [
@@ -1462,9 +1475,149 @@ cairo_font_extents_t!: alias struct! [
             error			[handle!]
 			return: 		[logic!]
 		]
-		pango_attr_list_unref: "pango_attr_list_unref" [
-			attrs			[handle!]
+		pango_attr_list_new: "pango_attr_list_new" [
+			return: 	[handle!]
 		]
+ 		pango_attr_list_ref: "pango_attr_list_ref" [
+			 attrs 		[handle!]
+			 return: 	[handle!]
+		 ]
+ 		pango_attr_list_unref: "pango_attr_list_unref" [
+			 attrs 		[handle!]
+		 ]
+		pango_attr_list_copy: "pango_attr_list_copy" [
+			attrs 		[handle!]
+			return: 	[handle!]
+		 ]
+		pango_attr_list_insert: "pango_attr_list_insert" [
+			attrs 		[handle!]
+			attr 		[PangoAttribute!]
+		]
+		pango_attr_list_insert_before: "pango_attr_list_insert_before" [
+			attrs 		[handle!]
+			attr 		[PangoAttribute!]
+		] 
+		pango_attr_list_splice: "pango_attr_list_splice" [
+			attrs 		[handle!]
+			attrs2 		[handle!]
+			pos			[integer!]
+			len			[integer!]
+		]
+
+		pango_attribute_equal: "pango_attribute_equal" [
+			attr 		[handle!]
+			attr2 		[handle!]
+			return:		[logic!]
+		]
+		pango_attribute_destroy: "pango_attribute_destroy" [
+			attr		[PangoAttribute!]
+		]
+		;; font description attributes
+		pango_attr_family_new: "pango_attr_family_new" [
+			name		[c-string!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_style_new: "pango_attr_style_new" [
+			style		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_variant_new: "pango_attr_variant_new" [
+			variant		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_stretch_new: "pango_attr_stretch_new" [
+			stretch		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_weight_new: "pango_attr_weight_new" [
+			weight		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_size_new: "pango_attr_size_new" [
+			size		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_size_new_absolute: "pango_attr_size_new_absolute" [
+			size		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_font_desc_new: "pango_attr_font_desc_new" [
+			font-desc	[handle!]
+			return: 	[PangoAttribute!]
+		]
+		;; Color attributes
+		pango_attr_foreground_new: "pango_attr_foreground_new" [
+			r			[integer!]
+			g			[integer!]
+			b			[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_background_new: "pango_attr_background_new" [
+			r			[integer!]
+			g			[integer!]
+			b			[integer!]
+			return: 	[PangoAttribute!]
+		]
+		;; styles attributes
+		pango_attr_strikethrough_new: "pango_attr_strikethrough_new" [
+			ok			[logic!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_strikethrough_color_new: "pango_attr_strikethrough_color_new" [
+			r			[integer!]
+			g			[integer!]
+			b			[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_underline_new: "pango_attr_underline_new" [
+			ok			[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_underline_color_new: "pango_attr_underline_color_new" [
+			r			[integer!]
+			g			[integer!]
+			b			[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_shape_new: "pango_attr_shape_new" [
+			ink-rect	 [handle!]
+			logical-rect [handle!]
+			return: 	 [PangoAttribute!]
+		]
+		;; size attributes
+		pango_attr_scale_new: "pango_attr_scale_new" [
+			scale		[float!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_rise_new: "pango_attr_rise_new" [
+			rise		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_letter_spacing_new: "pango_attr_letter_spacing_new" [
+			spacing		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_gravity_new: "pango_attr_gravity_new" [
+			gravity		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_gravity_hint_new: "pango_attr_gravity_hint_new" [
+			hint		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_font_features_new: "pango_attr_font_features_new" [
+			features	[c-string!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_foreground_alpha_new: "pango_attr_foreground_alpha_new" [
+			alpha		[integer!]
+			return: 	[PangoAttribute!]
+		]
+		pango_attr_background_alpha_new: "pango_attr_background_alpha_new" [
+			alpha		[integer!]
+			return: 	[PangoAttribute!]
+		]
+
 
 		cairo_font_options_create: "cairo_font_options_create" [
 			return: 	[handle!]

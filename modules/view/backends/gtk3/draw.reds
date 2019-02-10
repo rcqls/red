@@ -14,6 +14,17 @@ Red/System [
 
 draw-state!: alias struct! [unused [integer!]]
 
+rgb-to-color: func [
+	r			[integer!]
+	b			[integer!]
+	g			[integer!]
+	color		[integer!]
+][
+	;; TODO:
+	r: (r >> 24 and FFh) or ((g >> 16 and FFh) << 8) or ((b >> 8 and FFh) << 16)
+	r
+]
+
 set-source-color: func [
 	cr			[handle!]
 	color		[integer!]
@@ -32,6 +43,25 @@ set-source-color: func [
 	a: as-float color >> 24 and FFh
 	a: 1.0 - (a / 255.0)
 	cairo_set_source_rgba cr r g b a
+]
+
+;; TODO: only used for rich-text that I think need much less than that
+;; certainly create
+init-draw-ctx: func [
+	ctx		[draw-ctx!]
+	cr		[handle!]
+][
+	ctx/raw:			cr
+	ctx/pen-width:		1.0
+	ctx/pen-style:		0
+	ctx/pen-color:		0						;-- default: black
+	;ctx/pen-join:		miter
+	;ctx/pen-cap:		flat
+	ctx/brush-color:	0
+	ctx/font-color:		0
+	ctx/pen?:			yes
+	ctx/brush?:			no
+	ctx/pattern:		null
 ]
 
 draw-begin: func [
@@ -455,49 +485,69 @@ draw-text-box: func [
 		int		[red-integer!]
 		values	[red-value!]
 		state	[red-block!]
-		str		[red-string!]
+		text	[red-string!]
 		bool	[red-logic!]
 		layout? [logic!]
-		layout	[integer!]
-		tc		[integer!]
-		idx		[integer!]
+		attrs	[handle!]
 		len		[integer!]
-		y		[integer!]
-		x		[integer!]
-		;pt		[CGPoint!]
+		str		[c-string!]
 		clr		[integer!]
+		ctx		[handle!]
+		pl		[handle!]
+		width	[integer!]
+		height	[integer!]
+		size	[integer!]
 ][
 	values: object/get-values tbox
-	str: as red-string! values + FACE_OBJ_TEXT
-	if TYPE_OF(str) <> TYPE_STRING [exit]
+	text: as red-string! values + FACE_OBJ_TEXT
+	if TYPE_OF(text) <> TYPE_STRING [exit]
 
 	state: as red-block! values + FACE_OBJ_EXT3
 	layout?: yes
-	if TYPE_OF(state) = TYPE_BLOCK [
-		bool: as red-logic! (block/rs-tail state) - 1
-		layout?: bool/value
-	]
-	if layout? [
+	; if TYPE_OF(state) = TYPE_BLOCK [
+	; 	bool: as red-logic! (block/rs-tail state) - 1
+	; 	layout?: bool/value
+	; ]
+	;if layout? [
 		clr: either null? dc [0][
 			;;TODO: objc_msgSend [dc/font-attrs sel_getUid "objectForKey:" NSForegroundColorAttributeName]
-			0
+			dc/font-color
 		]
-		OS-text-box-layout tbox null clr catch?
+		;; This is for reading parse_style
+	;	OS-text-box-layout tbox null clr catch?
+	;]
+
+	attrs: either TYPE_OF(tbox) = TYPE_OBJECT [				;-- text-box!
+		OS-text-box-layout tbox null clr yes
+	][
+		null
 	]
 
-	int: as red-integer! block/rs-head state
-	layout: int/value
-	int: int + 1
-	tc: int/value
+	ctx: dc/raw
 
-	; idx: objc_msgSend [layout sel_getUid "glyphRangeForTextContainer:" tc]
-	; len: system/cpu/edx
-	; x: 0
-	; pt: as CGPoint! :x
-	; pt/x: as float32! pos/x
-	; pt/y: as float32! pos/y
-	; objc_msgSend [layout sel_getUid "drawBackgroundForGlyphRange:atPoint:" idx len pt/x pt/y]
-	; objc_msgSend [layout sel_getUid "drawGlyphsForGlyphRange:atPoint:" idx len pt/x pt/y]
+	len: -1
+	str: unicode/to-utf8 text :len
+
+	unless null? dc/layout [
+		pango_layout_set_text dc/layout str  -1
+		pango_layout_set_attributes dc/layout attrs
+		set-source-color ctx clr
+
+		pango_cairo_update_layout ctx dc/layout
+
+		; width: 0 height: 0
+		; pango_layout_get_pixel_size dc/layout :width :height
+		size: 0
+		size: pango_font_description_get_size dc/font-desc
+		cairo_move_to ctx as-float pos/x
+						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
+		pl: pango_layout_get_line_readonly dc/layout 0
+		pango_cairo_show_layout_line ctx pl
+		;pango_cairo_show_layout ctx dc/layout
+
+		free-pango-cairo-font dc
+		do-paint dc
+	]
 ]
 
 OS-draw-text: func [
