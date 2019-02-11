@@ -501,7 +501,6 @@ draw-text-box: func [
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
-
 	state: as red-block! values + FACE_OBJ_EXT3
 	layout?: yes
 	; if TYPE_OF(state) = TYPE_BLOCK [
@@ -516,7 +515,7 @@ draw-text-box: func [
 		;; This is for reading parse_style
 	;	OS-text-box-layout tbox null clr catch?
 	;]
-
+	
 	attrs: either TYPE_OF(tbox) = TYPE_OBJECT [				;-- text-box!
 		OS-text-box-layout tbox null clr yes
 	][
@@ -527,7 +526,9 @@ draw-text-box: func [
 
 	len: -1
 	str: unicode/to-utf8 text :len
-
+	;; DEBUG: 
+	print ["draw-text-box text: " str "attrs: " attrs lf]
+	make-pango-cairo-layout dc
 	unless null? dc/layout [
 		pango_layout_set_text dc/layout str  -1
 		pango_layout_set_attributes dc/layout attrs
