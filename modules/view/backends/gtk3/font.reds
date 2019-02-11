@@ -568,7 +568,7 @@ make-pango-cairo-font: func [
 	]
 	
 	dc/font-desc: font-description-create fname fsize fweight fstyle
-	make-pango-cairo-layout dc
+	make-pango-cairo-layout dc dc/font-desc
 
 	
 	;anti-alias?:
@@ -664,11 +664,13 @@ free-pango-cairo-font: func [
 
 make-pango-cairo-layout: func [
 	dc		[draw-ctx!]
+	fd 		[handle!]
 ][
+	print ["make-pango-cairo-layout" lf]
 	dc/layout: pango_cairo_create_layout dc/raw 
 	dc/layout-ctx: pango_layout_get_context dc/layout
-	dc/font-opts: cairo_font_options_create
-	pango_layout_set_font_description dc/layout dc/font-desc
+	unless null? fd [pango_layout_set_font_description dc/layout fd]
+	print ["make-pango-cairo-layout: " dc/layout " " dc/layout-ctx  lf]
 ]
 
 free-pango-cairo-layout: func [

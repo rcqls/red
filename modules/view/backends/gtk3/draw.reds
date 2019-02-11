@@ -528,25 +528,30 @@ draw-text-box: func [
 	str: unicode/to-utf8 text :len
 	;; DEBUG: 
 	print ["draw-text-box text: " str "attrs: " attrs lf]
-	make-pango-cairo-layout dc
+	make-pango-cairo-layout dc null
 	unless null? dc/layout [
 		pango_layout_set_text dc/layout str  -1
+		print ["pango_layout_set_text: " dc/layout " " str lf]
 		pango_layout_set_attributes dc/layout attrs
+		print ["pango_layout_set_attributes: " dc/layout " " attrs lf]
 		set-source-color ctx clr
+		print ["set-source-color: " ctx " " clr lf]
 
 		pango_cairo_update_layout ctx dc/layout
+		print ["pango_cairo_update_layout"  lf]
 
 		; width: 0 height: 0
 		; pango_layout_get_pixel_size dc/layout :width :height
-		size: 0
-		size: pango_font_description_get_size dc/font-desc
+		size: 10 * PANGO_SCALE
+		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
 		pl: pango_layout_get_line_readonly dc/layout 0
 		pango_cairo_show_layout_line ctx pl
 		;pango_cairo_show_layout ctx dc/layout
 
-		free-pango-cairo-font dc
+		free-pango-cairo-layout dc
+		print ["free pango"  lf]
 		do-paint dc
 	]
 ]
