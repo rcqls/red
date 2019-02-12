@@ -14,17 +14,6 @@ Red/System [
 
 draw-state!: alias struct! [unused [integer!]]
 
-rgb-to-color: func [
-	r			[integer!]
-	b			[integer!]
-	g			[integer!]
-	color		[integer!]
-][
-	;; TODO:
-	r: (r >> 24 and FFh) or ((g >> 16 and FFh) << 8) or ((b >> 8 and FFh) << 16)
-	r
-]
-
 set-source-color: func [
 	cr			[handle!]
 	color		[integer!]
@@ -542,7 +531,7 @@ draw-text-box: func [
 
 		; width: 0 height: 0
 		; pango_layout_get_pixel_size dc/layout :width :height
-		size: 10 * PANGO_SCALE
+		size: 32 * PANGO_SCALE
 		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)

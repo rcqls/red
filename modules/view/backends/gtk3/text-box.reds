@@ -18,6 +18,21 @@ Red/System [
 
 max-line-cnt:  0
 
+int-to-color: func [
+	color		[integer!]
+	r			[int-ptr!]
+	b			[int-ptr!]
+	g			[int-ptr!]
+	a			[int-ptr!]
+][
+	;; TODO:
+	r/value: (color >> 24 and FFh) << 8
+	g/value: (color >> 16 and FFh) << 8
+	b/value: (color >> 8 and FFh) << 8
+	a/value: (color  and FFh) << 8
+	print ["color: " color " " r/value "." g/value "." b/value "." a/value lf ]
+]
+
 OS-text-box-color: func [
 	dc		[handle!]
 	attrs	[handle!]
@@ -26,9 +41,16 @@ OS-text-box-color: func [
 	color	[integer!]
 	/local
 		attr 	[PangoAttribute!]
+		r 		[integer!]
+		g 		[integer!]
+		b 		[integer!]
+		a 		[integer!]
 ][
-	;attr: pango_attr_foreground_new
-	;pango_attr_list_insert attrs attr
+	r: 0 g: 0 b: 0 a: 0
+	int-to-color color :r :g :b :a
+	attr: pango_attr_foreground_new r g b
+	attr/start: pos attr/end: pos + len
+	pango_attr_list_insert attrs attr
 ]
 
 OS-text-box-background: func [
@@ -38,12 +60,17 @@ OS-text-box-background: func [
 	len		[integer!]
 	color	[integer!]
 	/local
-		cache	[red-vector!]
-		brush	[integer!]
+		attr 	[PangoAttribute!]
+		r 		[integer!]
+		g 		[integer!]
+		b 		[integer!]		
+		a 		[integer!]
 ][
-
-	;attr: pango_attr_background_new
-	;pango_attr_list_insert attrs attr
+	r: 0 g: 0 b: 0 a: 0
+	int-to-color color :r :g :b :a
+	attr: pango_attr_background_new r g b
+	attr/start: pos attr/end: pos + len
+	pango_attr_list_insert attrs attr
 
 	;cache: as red-vector! dc + 3
 	;if TYPE_OF(cache) <> TYPE_VECTOR [
@@ -151,6 +178,7 @@ OS-text-box-font-size: func [
 	/local
 		attr 	[PangoAttribute!]
 ][
+	print ["OS-text-box-font-size: " size " " as integer! size  lf]
 	attr: pango_attr_size_new as integer! size
 	attr/start: pos attr/end: pos + len
 	pango_attr_list_insert attrs attr 
