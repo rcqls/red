@@ -443,10 +443,14 @@ draw-text-at: func [
 			set-source-color ctx color
 			print ["set-source-color: " ctx " " color lf]
 
-			;;pango_cairo_update_layout ctx dc/layout
-
+			pango_cairo_update_layout ctx dc/layout
+			
+			width: 0 height: 0
+			pango_layout_get_pixel_size dc/layout :width :height
+			
 			size: 0
 			size: pango_font_description_get_size dc/font-desc
+			print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
 			cairo_move_to ctx as-float x
 			 				(as-float y) + ((as-float size) / PANGO_SCALE)
 			pl: pango_layout_get_line_readonly dc/layout 0

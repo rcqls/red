@@ -670,6 +670,7 @@ make-pango-cairo-layout: func [
 	print ["make-pango-cairo-layout" lf]
 	dc/layout: pango_cairo_create_layout dc/raw 
 	dc/layout-ctx: pango_layout_get_context dc/layout
+	dc/font-opts: cairo_font_options_create
 	unless null? fd [pango_layout_set_font_description dc/layout dc/font-desc: fd]
 	print ["make-pango-cairo-layout: " dc/layout " " dc/layout-ctx  lf]
 ]
