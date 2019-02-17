@@ -434,23 +434,23 @@ draw-text-at: func [
 
 	len: -1
 	str: unicode/to-utf8 text :len
-	print ["draw-text-at: " str " at " x "x" y   lf]
+	;; print ["draw-text-at: " str " at " x "x" y   lf]
 	either pango-font? [
-		print ["draw-text-at: dc/layout: " dc/layout lf]
+		;; print ["draw-text-at: dc/layout: " dc/layout lf]
 		unless null? dc/layout [
 			pango-cairo-set-text dc str
-			print ["pango-cairo-set-text: " dc " " str lf]
+			;; print ["pango-cairo-set-text: " dc " " str lf]
 			set-source-color ctx color
-			print ["set-source-color: " ctx " " color lf]
+			;; print ["set-source-color: " ctx " " color lf]
 
 			pango_cairo_update_layout ctx dc/layout
 			
-			width: 0 height: 0
-			pango_layout_get_pixel_size dc/layout :width :height
+			; width: 0 height: 0
+			; pango_layout_get_pixel_size dc/layout :width :height
 			
 			size: 0
 			size: pango_font_description_get_size dc/font-desc
-			print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
+			;; DEBUG: print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
 			cairo_move_to ctx as-float x
 			 				(as-float y) + ((as-float size) / PANGO_SCALE)
 			pl: pango_layout_get_line_readonly dc/layout 0
@@ -459,9 +459,7 @@ draw-text-at: func [
 			;pango_cairo_show_layout ctx dc/layout
 
 			free-pango-cairo-font dc
-			print ["do-paint " dc lf]
 			do-paint dc
-			print ["do-paint " dc " -> done" lf]
 		]
 	][
 		cairo_move_to ctx as-float x
@@ -496,7 +494,6 @@ draw-text-box: func [
 		width	[integer!]
 		height	[integer!]
 		size	[integer!]
-		fd 		[handle!]
 ][
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
@@ -519,21 +516,17 @@ draw-text-box: func [
 	len: -1
 	str: unicode/to-utf8 text :len
 
-	fd: pango_font_description_from_string gtk-font
-	make-pango-cairo-layout dc fd
+	dc/font-desc: pango_font_description_from_string gtk-font
+	make-pango-cairo-layout dc dc/font-desc
 
-		;; DEBUG: 
-	print ["draw-text-box text: " str  " fd: " fd  lf]
+		;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
 
 	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
-	 	print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
+	 	;; DEBUG: print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
 	 	as layout-ctx! OS-text-box-layout tbox as int-ptr! dc clr yes
 	 ][
 	 	null
 	 ]
-
-	;; DEBUG: 
-	;print ["draw-text-box text (after attrs): " str "attrs: " attrs " fd " fd lf]
 
 	ctx: dc/raw
 
@@ -552,16 +545,16 @@ draw-text-box: func [
 
 
 		pango_layout_set_text dc/layout str  -1
-		print ["pango_layout_set_text: " dc/layout " " str lf]
-		print ["lc: " lc " lc/attrs: " lc/attrs lf]
+		;; DEBUG: print ["pango_layout_set_text: " dc/layout " " str lf]
+		;; DEBUG: print ["lc: " lc " lc/attrs: " lc/attrs lf]
 		pango_layout_set_attributes dc/layout lc/attrs
-		print ["pango_layout_set_attributes: " dc/layout " " lc/attrs lf]
+		;; DEBUG: print ["pango_layout_set_attributes: " dc/layout " " lc/attrs lf]
 		
 		set-source-color ctx clr
-		print ["set-source-color: " ctx " " clr lf]
+		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
 
 		pango_cairo_update_layout ctx dc/layout
-		print ["pango_cairo_update_layout"  lf]
+		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
 		; width: 0 height: 0
 		; pango_layout_get_pixel_size dc/layout :width :height
@@ -569,16 +562,15 @@ draw-text-box: func [
 		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
-		print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
-		print ["pango_layout_get_line_readonly: " dc/layout  lf]
+		;; DEBUG: print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
+		;; DEBUG: print ["pango_layout_get_line_readonly: " dc/layout  lf]
 		pl: pango_layout_get_line_readonly dc/layout 0
-		print ["pango_layout_get_line_readonly" lf]
+		;; DEBUG: print ["pango_layout_get_line_readonly" lf]
 		pango_cairo_show_layout_line ctx pl
-		print ["pango_cairo_show_layout"  lf]
-		;pango_cairo_show_layout ctx dc/layout
+		;; DEBUG: print ["pango_cairo_show_layout"  lf]
 
 		free-pango-cairo-font dc
-		print ["free pango"  lf]
+		;; DEBUG: print ["free pango"  lf]
 		do-paint dc
 	]
 ]
@@ -598,7 +590,7 @@ OS-draw-text: func [
 
 	;set-source-color dc/raw dc/pen-color	;-- backup pen color
 	; brush
-	print ["OS-draw-text end" lf]
+	;; DEBUG: print ["OS-draw-text end" lf]
 	true
 ]
 

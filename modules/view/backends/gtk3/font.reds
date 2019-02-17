@@ -637,6 +637,7 @@ pango-cairo-set-text: func [
 		attrs-ptr: declare int-ptr!
 		ptext-ptr: declare int-ptr!
 		mtext: pango-styled-text? text dc/font-underline? dc/font-strike?
+		;; DEBUG: print ["pango-cairo-set-text mtext: " mtext lf]
 		status: pango_parse_markup mtext -1 0 attrs-ptr ptext-ptr null null
 		attrs: as handle! attrs-ptr/value
 		ptext: as c-string! ptext-ptr/value
@@ -667,12 +668,12 @@ make-pango-cairo-layout: func [
 	dc		[draw-ctx!]
 	fd 		[handle!]
 ][
-	print ["make-pango-cairo-layout" lf]
+	;; DEBUG: print ["make-pango-cairo-layout" lf]
 	dc/layout: pango_cairo_create_layout dc/raw 
 	dc/layout-ctx: pango_layout_get_context dc/layout
 	dc/font-opts: cairo_font_options_create
-	unless null? fd [pango_layout_set_font_description dc/layout dc/font-desc: fd]
-	print ["make-pango-cairo-layout: " dc/layout " " dc/layout-ctx  lf]
+	unless null? fd [pango_layout_set_font_description dc/layout fd]
+	;; DEBUG: print ["make-pango-cairo-layout: " dc/layout " " dc/layout-ctx  lf]
 ]
 
 free-pango-cairo-layout: func [
