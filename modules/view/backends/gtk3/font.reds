@@ -566,7 +566,8 @@ make-pango-cairo-font: func [
 			style: style + 1
 		]
 	]
-	
+
+	free-pango-cairo-font dc
 	dc/font-desc: font-description-create fname fsize fweight fstyle
 	make-pango-cairo-layout dc dc/font-desc
 
@@ -656,7 +657,6 @@ pango-cairo-set-text: func [
 free-pango-cairo-font: func [
 	dc		[draw-ctx!]
 ][
-	
 	unless null? dc/font-desc [
 		pango_font_description_free dc/font-desc 
 		dc/font-desc: as handle! 0

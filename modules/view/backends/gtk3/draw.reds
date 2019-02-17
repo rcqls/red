@@ -51,6 +51,8 @@ init-draw-ctx: func [
 	ctx/pen?:			yes
 	ctx/brush?:			no
 	ctx/pattern:		null
+	ctx/font-desc:		null
+	ctx/layout:	null
 ]
 
 draw-begin: func [
@@ -61,17 +63,7 @@ draw-begin: func [
 	paint?		[logic!]
 	return:		[draw-ctx!]
 ][
-	ctx/raw:			cr
-	ctx/pen-width:		1.0
-	ctx/pen-style:		0
-	ctx/pen-color:		0						;-- default: black
-	ctx/pen-join:		miter
-	ctx/pen-cap:		flat
-	ctx/brush-color:	0
-	ctx/font-color:		0
-	ctx/pen?:			yes
-	ctx/brush?:			no
-	ctx/pattern:		null
+	init-draw-ctx ctx cr
 
 	cairo_set_line_width cr 1.0
 	set-source-color cr 0
@@ -85,7 +77,7 @@ draw-end: func [
 	cache?		[logic!]
 	paint?		[logic!]
 ][
-	0
+	free-pango-cairo-font dc
 ]
 
 do-paint: func [dc [draw-ctx!] /local cr [handle!]][
@@ -457,7 +449,7 @@ draw-text-at: func [
 			
 			;pango_cairo_show_layout ctx dc/layout
 
-			free-pango-cairo-font dc
+			;free-pango-cairo-font dc
 			do-paint dc
 		]
 	][
