@@ -655,11 +655,12 @@ pango-cairo-set-text: func [
 free-pango-cairo-font: func [
 	dc		[draw-ctx!]
 ][
-	free-pango-cairo-layout dc
+	
 	unless null? dc/font-desc [
 		pango_font_description_free dc/font-desc 
 		dc/font-desc: as handle! 0
 	]
+	free-pango-cairo-layout dc
 ]
 
 make-pango-cairo-layout: func [
@@ -669,7 +670,7 @@ make-pango-cairo-layout: func [
 	print ["make-pango-cairo-layout" lf]
 	dc/layout: pango_cairo_create_layout dc/raw 
 	dc/layout-ctx: pango_layout_get_context dc/layout
-	unless null? fd [pango_layout_set_font_description dc/layout fd]
+	unless null? fd [pango_layout_set_font_description dc/layout dc/font-desc: fd]
 	print ["make-pango-cairo-layout: " dc/layout " " dc/layout-ctx  lf]
 ]
 

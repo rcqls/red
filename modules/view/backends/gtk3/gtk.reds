@@ -304,6 +304,12 @@ cairo_font_extents_t!: alias struct! [
 	max_y_advance	[float!]
 ]
 
+GString!: alias struct! [
+	str 			[c-string!]
+	len				[integer!]
+	allocated_len 	[integer!]
+]
+
 #either OS = 'Windows [
 	;#define LIBGOBJECT-file "libgobject-2.0-0.dll"
 	;#define LIBGLIB-file	"libglib-2.0-0.dll"
@@ -425,9 +431,32 @@ cairo_font_extents_t!: alias struct! [
 			return:		[integer!]
 		]
 		g_list_nth_data: "g_list_nth_data" [
-			list		[int-ptr!]
+			list		[handle!]
 			nth 		[integer!]
 			return:		[handle!]
+		]
+		g_list_append: "g_list_append" [
+			list		[handle!]
+			data		[handle!]
+			return: 	[handle!]
+		]
+		g_list_prepend: "g_list_prepend" [
+			list		[handle!]
+			data		[handle!]
+			return: 	[handle!]
+		]
+		g_list_first: "g_list_first" [
+			list		[handle!]
+			return: 	[handle!]
+		]
+		g_list_last: "g_list_last" [
+			list		[handle!]
+			return: 	[handle!]
+		]
+		g_list_delete_link: "g_list_delete_link" [
+			list		[handle!]
+			link		[handle!]
+			return: 	[handle!]
 		]
 		g_ascii_dtostr: "g_ascii_dtostr" [
 			buffer		[c-string!]
@@ -439,18 +468,42 @@ cairo_font_extents_t!: alias struct! [
 			[variadic]
 			return:		[c-string!]
 		]
+		g_strdup: "g_strdup" [
+			str		[c-string!]
+			return:	[c-string!]
+		]
+		g_strndup: "g_strndup"[
+			str		[c-string!]
+			n		[integer!]
+			return:	[c-string!]
+		]
+		g_strconcat: "g_strconcat" [
+			[variadic]
+			return:	[c-string!]
+		]
 		g_free: "g_free" [
 			ptr		[handle!]
 		]
 		g_string_new: "g_string_new" [
-			return:		[handle!]
+			return:		[GString!]
+		]
+		g_string_sized_new: "g_string_sized_new" [
+			dfl_size 	[integer!]
+			return:		[GString!]
 		]
 		g_string_append: "g_string_append" [
-			str		[handle!]
+			str		[GString!]
 			text	[c-string!]
+			return: [GString!]
+		]
+		g_string_append_len: "g_string_append_len" [
+			str		[GString!]
+			text	[c-string!]
+			len 	[integer!]
+			return: [GString!]
 		]
 		g_string_free: "g_string_free" [
-			str		[handle!]
+			str		[GString!]
 			free	[logic!]
 			return:	[c-string!]
 		]
@@ -1490,6 +1543,10 @@ cairo_font_extents_t!: alias struct! [
 			return: 	[handle!]
 		 ]
 		pango_attr_list_insert: "pango_attr_list_insert" [
+			attrs 		[handle!]
+			attr 		[PangoAttribute!]
+		]
+		pango_attr_list_change: "pango_attr_list_change" [
 			attrs 		[handle!]
 			attr 		[PangoAttribute!]
 		]

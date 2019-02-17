@@ -408,6 +408,7 @@ OS-draw-font: func [
 	font	[red-object!]
 ][ 
 	either pango-font? [
+		print ["OS-draw-font (pango): " dc " " font lf]
 		make-pango-cairo-font dc font
 	][
 		make-cairo-draw-font dc font
@@ -433,24 +434,30 @@ draw-text-at: func [
 
 	len: -1
 	str: unicode/to-utf8 text :len
+	print ["draw-text-at: " str " at " x "x" y   lf]
 	either pango-font? [
+		print ["draw-text-at: dc/layout: " dc/layout lf]
 		unless null? dc/layout [
 			pango-cairo-set-text dc str
+			print ["pango-cairo-set-text: " dc " " str lf]
 			set-source-color ctx color
+			print ["set-source-color: " ctx " " color lf]
 
-			pango_cairo_update_layout ctx dc/layout
+			;;pango_cairo_update_layout ctx dc/layout
 
-			width: 0 height: 0
-			pango_layout_get_pixel_size dc/layout :width :height
 			size: 0
 			size: pango_font_description_get_size dc/font-desc
 			cairo_move_to ctx as-float x
-							(as-float y) + ((as-float size) / PANGO_SCALE)
+			 				(as-float y) + ((as-float size) / PANGO_SCALE)
 			pl: pango_layout_get_line_readonly dc/layout 0
 			pango_cairo_show_layout_line ctx pl
+			
 			;pango_cairo_show_layout ctx dc/layout
 
 			free-pango-cairo-font dc
+			print ["do-paint " dc lf]
+			do-paint dc
+			print ["do-paint " dc " -> done" lf]
 		]
 	][
 		cairo_move_to ctx as-float x
@@ -458,9 +465,8 @@ draw-text-at: func [
 
 		set-source-color ctx color 
 		cairo_show_text ctx str
+		do-paint dc
 	]
-
-	do-paint dc
 
 ]
 
@@ -477,7 +483,7 @@ draw-text-box: func [
 		text	[red-string!]
 		bool	[red-logic!]
 		layout? [logic!]
-		attrs	[handle!]
+		lc		[layout-ctx!]
 		len		[integer!]
 		str		[c-string!]
 		clr		[integer!]
@@ -486,6 +492,7 @@ draw-text-box: func [
 		width	[integer!]
 		height	[integer!]
 		size	[integer!]
+		fd 		[handle!]
 ][
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
@@ -505,24 +512,47 @@ draw-text-box: func [
 	;	OS-text-box-layout tbox null clr catch?
 	;]
 	
-	attrs: either TYPE_OF(tbox) = TYPE_OBJECT [				;-- text-box!
-		OS-text-box-layout tbox null clr yes
-	][
-		null
-	]
+	len: -1
+	str: unicode/to-utf8 text :len
+
+	fd: pango_font_description_from_string gtk-font
+	make-pango-cairo-layout dc fd
+
+		;; DEBUG: 
+	print ["draw-text-box text: " str  " fd: " fd  lf]
+
+	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
+	 	print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
+	 	as layout-ctx! OS-text-box-layout tbox as int-ptr! dc clr yes
+	 ][
+	 	null
+	 ]
+
+	;; DEBUG: 
+	;print ["draw-text-box text (after attrs): " str "attrs: " attrs " fd " fd lf]
 
 	ctx: dc/raw
 
-	len: -1
-	str: unicode/to-utf8 text :len
-	;; DEBUG: 
-	print ["draw-text-box text: " str "attrs: " attrs lf]
-	make-pango-cairo-layout dc null
 	unless null? dc/layout [
+		; dc/text: "un<u>de</u>r<span font='32' color='#00FF007F'>large</span>line"
+		; dc/text-markup: ""
+		; pango-append-enclosed-text dc 0 -1 "<b>" "</b>"
+		; pango-append-enclosed-text dc 2 2 "<u>" "</u>"
+		; pango-append-enclosed-text dc 0 -1 "<markup>" "</markup>"
+		; print ["test pango-append-enclosed-text: " dc/text-markup lf]
+		
+		dc/font-underline?: no dc/font-strike?: no
+		; str: dc/text-markup
+		;str: "<span weight='bold'>un<span underline='single'>de</span>r<span font='8'><span face='Arial'><span color='#00FF007F'>large</span></span></span>line</span>" 
+		;pango-cairo-set-text dc str -1
+
+
 		pango_layout_set_text dc/layout str  -1
 		print ["pango_layout_set_text: " dc/layout " " str lf]
-		pango_layout_set_attributes dc/layout attrs
-		print ["pango_layout_set_attributes: " dc/layout " " attrs lf]
+		print ["lc: " lc " lc/attrs: " lc/attrs lf]
+		pango_layout_set_attributes dc/layout lc/attrs
+		print ["pango_layout_set_attributes: " dc/layout " " lc/attrs lf]
+		
 		set-source-color ctx clr
 		print ["set-source-color: " ctx " " clr lf]
 
@@ -535,11 +565,15 @@ draw-text-box: func [
 		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
+		print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
+		print ["pango_layout_get_line_readonly: " dc/layout  lf]
 		pl: pango_layout_get_line_readonly dc/layout 0
+		print ["pango_layout_get_line_readonly" lf]
 		pango_cairo_show_layout_line ctx pl
+		print ["pango_cairo_show_layout"  lf]
 		;pango_cairo_show_layout ctx dc/layout
 
-		free-pango-cairo-layout dc
+		free-pango-cairo-font dc
 		print ["free pango"  lf]
 		do-paint dc
 	]
@@ -553,13 +587,14 @@ OS-draw-text: func [
 	return: [logic!]
 ][
 	either TYPE_OF(text) = TYPE_STRING [
-		draw-text-at dc text dc/font-color pos/x pos/y no
+		draw-text-at dc text dc/font-color pos/x pos/y
 	][
 		draw-text-box dc pos as red-object! text catch?
 	]
 
-	set-source-color dc/raw dc/pen-color	;-- backup pen color
+	;set-source-color dc/raw dc/pen-color	;-- backup pen color
 	; brush
+	print ["OS-draw-text end" lf]
 	true
 ]
 

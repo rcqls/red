@@ -89,7 +89,7 @@ Red/System [
 		brush?			[logic!]
 		pattern			[int-ptr!]
 		on-image?		[logic!]
-		shape-curve?	[logic!]					;-- drawing on image?
+		shape-curve?	[logic!]
 		; pango-cairo
 		layout			[handle!]
 		layout-ctx		[handle!]
@@ -97,6 +97,14 @@ Red/System [
 		font-opts		[handle!]	
 		font-underline?	[logic!]
 		font-strike?	[logic!]
+	]
+
+	layout-ctx!: alias struct! [
+		text			[c-string!]
+		text-len		[integer!]
+		text-markup		[handle!]
+		closed-tags		[handle!]
+		attrs 			[handle!]
 	]
 ]
 

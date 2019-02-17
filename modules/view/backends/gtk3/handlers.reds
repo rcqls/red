@@ -94,7 +94,6 @@ button-toggled: func [
 render-text: func [
 	cr		[handle!]
 	values	[red-value!]
-	;sz		[NSSize!]
 	/local
 		text	[red-string!]
 		font	[red-object!]
@@ -115,6 +114,7 @@ render-text: func [
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
 
+	print ["render-text: " cr lf]
 	para: as red-object! values + FACE_OBJ_PARA
 	flags: either TYPE_OF(para) = TYPE_OBJECT [		;@@ TBD set alignment attribute
 		get-para-flags base para

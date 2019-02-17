@@ -1,6 +1,6 @@
 Red/System [
 	Title:	"Text Box Windows DirectWrite Backend"
-	Author: "Xie Qingtian, RCqls"
+	Author: "Xie Qingtian"
 	File: 	%text-box.reds
 	Tabs: 	4
 	Dependency: %draw-d2d.reds
@@ -16,138 +16,7 @@ Red/System [
 #define TBOX_METRICS_LINE_HEIGHT	2
 #define TBOX_METRICS_METRICS		3
 
-#define PANGO_TEXT_MARKUP_SIZED		500
-
 max-line-cnt:  0
-
-layout-ctx-init: func [
-	lc 			[layout-ctx!]
-	text 		[c-string!]
-	text-len	[integer!]
-][
-	lc/closed-tags: null
-	lc/text: text
-	lc/text-len: text-len
-	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
-]
-
-layout-ctx-set-attrs: func [
-	lc 			[layout-ctx!]
-	attrs 		[handle!]
-][
-	lc/attrs: attrs
-]
-
-pango-open-tag-text: func [
-	attr-type	[integer!]
-	attr-key	[c-string!]
-	attr-val	[int-ptr!]
-	text 		[c-string!]
-	return: 	[c-string!]
-	/local
-		format 	[c-string!]
-		str		[c-string!]
-
-][
-	format: "" str: ""
-	str: case [
-		attr-type = 1 [ ; c-string!
-			format: "<span %s='%s'>%s"
-			g_strdup_printf [format attr-key as c-string! attr-val/value  text]
-		]	
-		attr-type = 2 [ ; integer!
-			format: "<span %s='%d'>%s"
-			g_strdup_printf [format attr-key attr-val/value  text]
-		]
-		attr-type = 3 [ ; float!
-			format: "<span %s='%f'>%s"
-			g_strdup_printf [format attr-key as float! attr-val/value  text]
-		]	
-	]
-	str
-]
-
-pango-prepend-closed-tag: func [
-	closed-tags [handle!]
-	level 		[integer!]
-][
-	g_list_prepend closed-tags as handle! level
-]
-
-pango-last-closed-tag?: func [
-	closed-tags [handle!]
-	return: 	[integer!]
-	/local
-		current 	[handle!]
-][
-	current: g_list_nth_data closed-tags 0
-	either null? current [-1][as integer! current]
-]
-
-pango-next-closed-tag: func [
-	closed-tags [handle!]
-	/local
-		first 	[handle!]
-][
-	first: g_list_first closed-tags
-	g_list_delete_link closed-tags first
-]
-
-pango-add-tag: func [
-	lc 			[layout-ctx!]
-	attr-type	[integer!]
-	attr-key	[c-string!]
-	attr-val	[int-ptr!]
-	pos 		[integer!]
-	len 		[integer!]
-	/local
-		text 			[c-string!]
-		tmp 			[c-string!]
-		pos-current-closed-tag 	[integer!]
-		pos-last-closed-tag 	[integer!]
-][	
-	pos-last-closed-tag: pango-last-closed-tag? lc/closed-tags
-	pos-current-closed-tag: pos + len
-	if any[
-		pos-last-closed-tag = -1 
-		pos-current-closed-tag >= pos-last-closed-tag
-	][
-		0
-	]
-
-	text: lc/text
-	tmp: pango-open-tag-text attr-type attr-key attr-val text
-	lc/text-markup
-
-]
-
-pango-close-tag: func [
-	lc 			[layout-ctx!]
-][
-	0
-]
-
-; pango-append-enclosed-text: func [
-; 	dc		[draw-ctx!]
-; 	pos		[integer!]
-; 	len		[integer!]
-; 	pre 	[c-string!]
-; 	post 	[c-string!]
-; 	/local
-; 		mtext		[c-string!]
-; 		tmp			[c-string!]
-; ][
-; 	tmp: dc/text + pos
-; 	tmp: either len = -1 [g_strdup tmp][g_strndup tmp len]
-; 	mtext: g_strconcat [dc/text-markup pre tmp post null]
-; 	print ["mtext:" mtext lf]
-; 	unless null? tmp [g_free as handle! tmp]
-; 	print ["mtext:" mtext lf]
-; 	;unless pos = 0 [g_free as handle! dc/text-markup]
-; 	dc/text-markup: mtext
-; 	print ["mtext:" mtext lf]
-
-; ]
 
 int-to-rgba: func [
 	color		[integer!]
@@ -166,50 +35,42 @@ int-to-rgba: func [
 
 OS-text-box-color: func [
 	dc		[handle!]
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	color	[integer!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 		r 		[integer!]
 		g 		[integer!]
 		b 		[integer!]
 		a 		[integer!]
 ][
-	lc: as layout-ctx! layout
-	print ["OS-text-box-color lc: " lc " lc/attrs: " lc/attrs lf]
 	r: 0 g: 0 b: 0 a: 0
 	int-to-rgba color :r :g :b :a
 	attr: pango_attr_foreground_new r g b
 	attr/start: pos attr/end: pos + len
-	print ["col[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-
+	pango_attr_list_insert attrs attr
 ]
 
 OS-text-box-background: func [
 	dc		[handle!]
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	color	[integer!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 		r 		[integer!]
 		g 		[integer!]
 		b 		[integer!]		
 		a 		[integer!]
 ][
-	lc: as layout-ctx! layout
 	r: 0 g: 0 b: 0 a: 0
 	int-to-rgba color :r :g :b :a
 	attr: pango_attr_background_new r g b
 	attr/start: pos attr/end: pos + len
-	print ["bgcol[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
+	pango_attr_list_insert attrs attr
 
 	;cache: as red-vector! dc + 3
 	;if TYPE_OF(cache) <> TYPE_VECTOR [
@@ -227,129 +88,106 @@ OS-text-box-background: func [
 	;vector/rs-append-int cache brush
 ]
 
-
-
 OS-text-box-weight: func [
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	weight	[integer!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 ][
-	lc: as layout-ctx! layout
 	attr: pango_attr_weight_new weight
 	attr/start: pos attr/end: pos + len
-	print ["weight[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-
-	;pango-add-tag dc "weight"  
+	pango_attr_list_insert attrs attr
 ]
 
 OS-text-box-italic: func [
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 ][
-	lc: as layout-ctx! layout
 	attr: pango_attr_style_new PANGO_STYLE_ITALIC
 	attr/start: pos attr/end: pos + len
-	print ["italic[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
+	pango_attr_list_insert attrs attr
 ]
 
 OS-text-box-underline: func [
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	opts	[red-value!]					;-- options
 	tail	[red-value!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 ][
-	lc: as layout-ctx! layout
 	;; TODO: I guess opts would offers the PANGO_UNDERLINE options
 	attr: pango_attr_underline_new PANGO_UNDERLINE_SINGLE
 	attr/start: pos attr/end: pos + len
-	print ["underline[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr 
+	pango_attr_list_insert attrs attr 
 ]
 
 OS-text-box-strikeout: func [
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	opts	[red-value!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]					;-- options
 ][
-	lc: as layout-ctx! layout
 	attr: pango_attr_strikethrough_new yes
 	attr/start: pos attr/end: pos + len
-	print ["strike[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr 
+	pango_attr_list_insert attrs attr 
 ]
 
 OS-text-box-border: func [
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	opts	[red-value!]					;-- options
 	tail	[red-value!]
-	/local
-		lc		[layout-ctx!]
 ][
-	lc: as layout-ctx! layout
+	0
 ]
 
 OS-text-box-font-name: func [
-	dc		[handle!]
-	layout	[handle!]
+	dc	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	name	[red-string!]
-	/local
-		lc		[layout-ctx!]
+	/local 
 		attr	[PangoAttribute!]
 		strlen	[integer!]
 		str		[c-string!]
-		;dctx 	[draw-ctx!]
-		fd 		[handle!]
+		dctx 	[draw-ctx!]
 ][
-	lc: as layout-ctx! layout
 	strlen: -1
 	str: unicode/to-utf8 name :strlen
-	print ["OS-text-box-font-name: " str lf]
-	fd: pango_font_description_from_string str
-	attr:  pango_attr_font_desc_new fd
-	pango_font_description_free fd
+	dctx: as draw-ctx! dc
+	print ["OS-text-box-font-name: " str " " dc " " dctx " " dctx/font-desc lf]
+	dctx: as draw-ctx! dc
+	;fd: pango_font_description_from_string gtk-font
+	pango_font_description_set_family dctx/font-desc str
+	attr:  pango_attr_font_desc_new dctx/font-desc
 	attr/start: pos attr/end: pos + len
-	print ["name[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr 
+	pango_attr_list_insert attrs attr 
 ]
 
 OS-text-box-font-size: func [
 	nsfont	[handle!]
-	layout	[handle!]
+	attrs	[handle!]
 	pos		[integer!]
 	len		[integer!]
 	size	[float!]
 	/local
-		lc		[layout-ctx!]
 		attr 	[PangoAttribute!]
 ][
-	lc: as layout-ctx! layout
 	print ["OS-text-box-font-size: " size " " as integer! size  lf]
 	attr: pango_attr_size_new_absolute as integer! size
 	attr/start: pos attr/end: pos + len
-	print ["color[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr 
+	pango_attr_list_insert attrs attr 
 ]
 
 OS-text-box-metrics: func [
@@ -423,9 +261,7 @@ OS-text-box-layout: func [
 		obj		[red-object!]
 		w		[integer!]
 		h		[integer!]
-		dc 		[draw-ctx!]
-		lc 		[layout-ctx!]
-		attrs 	[handle!]
+		attrs	[handle!]
 
 		font	[handle!]
 		clr		[integer!]
@@ -433,13 +269,11 @@ OS-text-box-layout: func [
 		len     [integer!]
 		str		[c-string!]
 ][
-	lc: declare layout-ctx!
 	values: object/get-values box
 
 	text: as red-string! values + FACE_OBJ_TEXT
 	len: -1
 	str: unicode/to-utf8 text :len
-	layout-ctx-init lc str len
 
 	state: as red-block! values + FACE_OBJ_EXT3
 	; fmt: as this! create-text-format as red-object! values + FACE_OBJ_FONT
@@ -500,11 +334,8 @@ OS-text-box-layout: func [
 	either null? target [
 		null
 	][
-		dc: as draw-ctx! target
 		; copy-cell as red-value! str pval + 3			;-- save text
-		attrs: pango_attr_list_new
-		layout-ctx-set-attrs lc attrs 
-		print ["layout-ctx-set-attrs: " lc " " attrs lf]
+		attrs: pango_attr_list_new ; str fmt w h
 		; handle/make-at pval as-integer layout
 
 		styles: as red-block! values + FACE_OBJ_DATA
@@ -512,8 +343,8 @@ OS-text-box-layout: func [
 			TYPE_OF(styles) = TYPE_BLOCK
 			1 < block/rs-length? styles
 		][
-			parse-text-styles target as handle! lc styles 7FFFFFFFh catch?
+			parse-text-styles target attrs styles 7FFFFFFFh catch?
 		]
-		as handle! lc
+		attrs
 	]
 ]
