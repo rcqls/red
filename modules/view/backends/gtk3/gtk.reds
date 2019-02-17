@@ -496,6 +496,11 @@ GString!: alias struct! [
 			text	[c-string!]
 			return: [GString!]
 		]
+		g_string_assign: "g_string_assign" [
+			str		[GString!]
+			text	[c-string!]
+			return: [GString!]
+		]
 		g_string_append_len: "g_string_append_len" [
 			str		[GString!]
 			text	[c-string!]

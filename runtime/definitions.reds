@@ -102,6 +102,7 @@ Red/System [
 	layout-ctx!: alias struct! [
 		text			[c-string!]
 		text-len		[integer!]
+		text-pos		[integer!]
 		text-markup		[handle!]
 		closed-tags		[handle!]
 		attrs 			[handle!]

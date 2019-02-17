@@ -20,7 +20,7 @@ Red/System [
 
 max-line-cnt:  0
 
-layout-ctx-init: func [
+layout-ctx-begin: func [
 	lc 			[layout-ctx!]
 	text 		[c-string!]
 	text-len	[integer!]
@@ -28,7 +28,9 @@ layout-ctx-init: func [
 	lc/closed-tags: null
 	lc/text: text
 	lc/text-len: text-len
+	lc/text-pos: 0
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
+	g_string_assign as GString! lc/text-markup "<markup>"
 ]
 
 layout-ctx-set-attrs: func [
@@ -38,12 +40,11 @@ layout-ctx-set-attrs: func [
 	lc/attrs: attrs
 ]
 
-pango-open-tag-text: func [
+pango-open-tag: func [
+	lc 			[layout-ctx!]
 	attr-type	[integer!]
 	attr-key	[c-string!]
 	attr-val	[int-ptr!]
-	text 		[c-string!]
-	return: 	[c-string!]
 	/local
 		format 	[c-string!]
 		str		[c-string!]
@@ -52,45 +53,47 @@ pango-open-tag-text: func [
 	format: "" str: ""
 	str: case [
 		attr-type = 1 [ ; c-string!
-			format: "<span %s='%s'>%s"
-			g_strdup_printf [format attr-key as c-string! attr-val/value  text]
+			format: "<span %s='%s'>"
+			g_strdup_printf [format attr-key as c-string! attr-val]
 		]	
 		attr-type = 2 [ ; integer!
-			format: "<span %s='%d'>%s"
-			g_strdup_printf [format attr-key attr-val/value  text]
+			format: "<span %s='%d'>"
+			g_strdup_printf [format attr-key attr-val/value]
 		]
 		attr-type = 3 [ ; float!
-			format: "<span %s='%f'>%s"
-			g_strdup_printf [format attr-key as float! attr-val/value  text]
+			format: "<span %s='%f'>"
+			g_strdup_printf [format attr-key as float! attr-val/value]
 		]	
 	]
-	str
+	g_string_append as GString! lc/text-markup str
+	g_free as handle! str
+
 ]
 
-pango-prepend-closed-tag: func [
-	closed-tags [handle!]
+pango-add-closed-tag: func [
+	lc 			[layout-ctx!]
 	level 		[integer!]
 ][
-	g_list_prepend closed-tags as handle! level
+	g_list_prepend lc/closed-tags as handle! level
 ]
 
-pango-last-closed-tag?: func [
-	closed-tags [handle!]
+pango-last-closed-tag?: func [ ; last in time not in the GList
+	lc 			[layout-ctx!]
 	return: 	[integer!]
 	/local
 		current 	[handle!]
 ][
-	current: g_list_nth_data closed-tags 0
+	current: g_list_nth_data lc/closed-tags 0
 	either null? current [-1][as integer! current]
 ]
 
 pango-next-closed-tag: func [
-	closed-tags [handle!]
+	lc 		[layout-ctx!]
 	/local
 		first 	[handle!]
 ][
-	first: g_list_first closed-tags
-	g_list_delete_link closed-tags first
+	first: g_list_first lc/closed-tags
+	g_list_delete_link lc/closed-tags first
 ]
 
 pango-add-tag: func [
@@ -101,29 +104,51 @@ pango-add-tag: func [
 	pos 		[integer!]
 	len 		[integer!]
 	/local
-		text 			[c-string!]
-		tmp 			[c-string!]
+		text 					[c-string!]
+		tmp 					[c-string!]
 		pos-current-closed-tag 	[integer!]
 		pos-last-closed-tag 	[integer!]
 ][	
-	pos-last-closed-tag: pango-last-closed-tag? lc/closed-tags
+	pos-last-closed-tag: pango-last-closed-tag? lc
 	pos-current-closed-tag: pos + len
+	; Close tags with text first if any
 	if any[
 		pos-last-closed-tag = -1 
 		pos-current-closed-tag >= pos-last-closed-tag
 	][
-		0
+		pango-close-tag lc pos-last-closed-tag
 	]
-
-	text: lc/text
-	tmp: pango-open-tag-text attr-type attr-key attr-val text
-	lc/text-markup
+	; Add open tag and add close tag
+	pango-open-tag lc attr-type attr-key attr-val
+	pango-add-closed-tag lc pos-current-closed-tag
 ]
 
 pango-close-tag: func [
 	lc 			[layout-ctx!]
+	closed-pos 	[integer!]
+	/local
+		len 		[integer!]
 ][
-	0
+	if closed-pos = -1 [closed-pos: length? lc/text]
+	len: closed-pos - lc/text-pos - 1
+	g_string_append_len as GString! lc/text-markup lc/text + lc/text-pos len
+	lc/text-pos: lc/text-pos + len
+	; Add closed tags
+	while [ closed-pos = pango-last-closed-tag? lc ][
+		g_string_append as GString! lc/text-markup "</span>"
+		pango-next-closed-tag lc
+	]
+]
+
+layout-ctx-end: func [
+	lc 			[layout-ctx!]
+	/local
+		text		[GString!]
+][
+	pango-close-tag lc -1
+	text: as GString! lc/text-markup
+	g_string_append  text "</markup>"
+	print ["tex-markup: " text/str lf]
 ]
 
 ; pango-append-enclosed-text: func [
@@ -163,6 +188,24 @@ int-to-rgba: func [
 	print ["color: " color " " r/value "." g/value "." b/value "." a/value lf ]
 ]
 
+int-to-rgba-hex: func [
+	color		[integer!]
+	return: 	[c-string!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	r: (color >> 24 and FFh) 
+	g: (color >> 16 and FFh) 
+	b: (color >> 8 and FFh) 
+	a: (color  and FFh)
+	print ["color rgba: " color " " r "." g "." b "." a lf ]
+	print ["col(#" string/to-hex r yes string/to-hex g yes string/to-hex b yes  string/to-hex a yes ")" lf]
+	g_strdup_printf ["'#%s%s%s%s'" string/to-hex r yes string/to-hex g yes string/to-hex b yes  string/to-hex a yes]
+]
+
 OS-text-box-color: func [
 	dc		[handle!]
 	layout	[handle!]
@@ -176,6 +219,7 @@ OS-text-box-color: func [
 		g 		[integer!]
 		b 		[integer!]
 		a 		[integer!]
+		rgba	[c-string!]
 ][
 	lc: as layout-ctx! layout
 	print ["OS-text-box-color lc: " lc " lc/attrs: " lc/attrs lf]
@@ -183,9 +227,11 @@ OS-text-box-color: func [
 	int-to-rgba color :r :g :b :a
 	attr: pango_attr_foreground_new r g b
 	attr/start: pos attr/end: pos + len
-	print ["col[" pos "," pos + len - 1 "]" lf]
 	pango_attr_list_insert lc/attrs attr
 
+	rgba: int-to-rgba-hex color
+	print ["col(" rgba ")[" pos "," pos + len - 1 "]" lf]
+	pango-add-tag lc 1 "color" as int-ptr! rgba pos len
 ]
 
 OS-text-box-background: func [
@@ -440,7 +486,7 @@ OS-text-box-layout: func [
 	text: as red-string! values + FACE_OBJ_TEXT
 	len: -1
 	str: unicode/to-utf8 text :len
-	layout-ctx-init lc str len
+	layout-ctx-begin lc str len
 
 	state: as red-block! values + FACE_OBJ_EXT3
 	; fmt: as this! create-text-format as red-object! values + FACE_OBJ_FONT
@@ -515,6 +561,7 @@ OS-text-box-layout: func [
 		][
 			parse-text-styles target as handle! lc styles 7FFFFFFFh catch?
 		]
+		layout-ctx-end lc
 		as handle! lc
 	]
 ]
