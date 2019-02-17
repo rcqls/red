@@ -51,8 +51,11 @@ init-draw-ctx: func [
 	ctx/pen?:			yes
 	ctx/brush?:			no
 	ctx/pattern:		null
+	ctx/layout:			null
 	ctx/font-desc:		null
-	ctx/layout:	null
+	ctx/font-opts:		null
+	
+
 ]
 
 draw-begin: func [

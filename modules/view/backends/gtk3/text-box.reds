@@ -118,7 +118,6 @@ pango-add-tag: func [
 	text: lc/text
 	tmp: pango-open-tag-text attr-type attr-key attr-val text
 	lc/text-markup
-
 ]
 
 pango-close-tag: func [
@@ -211,6 +210,8 @@ OS-text-box-background: func [
 	print ["bgcol[" pos "," pos + len - 1 "]" lf]
 	pango_attr_list_insert lc/attrs attr
 
+	;pango-add-tag lc "weight"
+
 	;cache: as red-vector! dc + 3
 	;if TYPE_OF(cache) <> TYPE_VECTOR [
 	;	vector/make-at as red-value! cache 128 TYPE_INTEGER 4
@@ -244,7 +245,7 @@ OS-text-box-weight: func [
 	print ["weight[" pos "," pos + len - 1 "]" lf]
 	pango_attr_list_insert lc/attrs attr
 
-	;pango-add-tag dc "weight"  
+	;pango-add-tag lc "weight"   
 ]
 
 OS-text-box-italic: func [

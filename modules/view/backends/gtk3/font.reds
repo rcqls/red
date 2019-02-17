@@ -659,7 +659,11 @@ free-pango-cairo-font: func [
 ][
 	unless null? dc/font-desc [
 		pango_font_description_free dc/font-desc 
-		dc/font-desc: as handle! 0
+		dc/font-desc: null
+	]
+	unless null? dc/font-opts [
+		cairo_font_options_destroy dc/font-opts
+		dc/font-desc: null
 	]
 	free-pango-cairo-layout dc
 ]
@@ -681,6 +685,6 @@ free-pango-cairo-layout: func [
 ][
 	unless null? dc/layout [
 		g_object_unref dc/layout
-		dc/layout: as handle! 0 
+		dc/layout: null 
 	]
 ]
