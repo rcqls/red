@@ -408,7 +408,6 @@ OS-draw-font: func [
 	font	[red-object!]
 ][ 
 	either pango-font? [
-		print ["OS-draw-font (pango): " dc " " font lf]
 		make-pango-cairo-font dc font
 	][
 		make-cairo-draw-font dc font
@@ -558,8 +557,8 @@ draw-text-box: func [
 
 		; width: 0 height: 0
 		; pango_layout_get_pixel_size dc/layout :width :height
-		size: 32 * PANGO_SCALE
-		;size: pango_font_description_get_size dc/font-desc
+		size: 0; 32 * PANGO_SCALE
+		size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
 		;; DEBUG: print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
