@@ -310,6 +310,12 @@ GString!: alias struct! [
 	allocated_len 	[integer!]
 ]
 
+GList!: alias struct! [
+  data 		[int-ptr!]
+  next 		[GList!]
+  prev 		[GList!]
+]
+
 #either OS = 'Windows [
 	;#define LIBGOBJECT-file "libgobject-2.0-0.dll"
 	;#define LIBGLIB-file	"libglib-2.0-0.dll"
@@ -427,7 +433,7 @@ GString!: alias struct! [
 			return:		[logic!]
 		]
 		g_list_length: "g_list_length" [
-			list		[int-ptr!]
+			list			[int-ptr!]
 			return:		[integer!]
 		]
 		g_list_nth_data: "g_list_nth_data" [

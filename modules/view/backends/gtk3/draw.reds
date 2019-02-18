@@ -488,6 +488,7 @@ draw-text-box: func [
 		width	[integer!]
 		height	[integer!]
 		size	[integer!]
+		gstr	[GString!]
 ][
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
@@ -533,15 +534,18 @@ draw-text-box: func [
 		; print ["test pango-append-enclosed-text: " dc/text-markup lf]
 		
 		dc/font-underline?: no dc/font-strike?: no
-		; str: dc/text-markup
+		
+		gstr: as GString! lc/text-markup
+		str: gstr/str
 		;str: "<span weight='bold'>un<span underline='single'>de</span>r<span font='8'><span face='Arial'><span color='#00FF007F'>large</span></span></span>line</span>" 
-		;pango-cairo-set-text dc str -1
+		
+		pango-cairo-set-text dc str -1
 
 
-		pango_layout_set_text dc/layout str  -1
+		;; pango_layout_set_text dc/layout str  -1
 		;; DEBUG: print ["pango_layout_set_text: " dc/layout " " str lf]
 		;; DEBUG: print ["lc: " lc " lc/attrs: " lc/attrs lf]
-		pango_layout_set_attributes dc/layout lc/attrs
+		;; pango_layout_set_attributes dc/layout lc/attrs
 		;; DEBUG: print ["pango_layout_set_attributes: " dc/layout " " lc/attrs lf]
 		
 		set-source-color ctx clr
@@ -552,8 +556,8 @@ draw-text-box: func [
 
 		; width: 0 height: 0
 		; pango_layout_get_pixel_size dc/layout :width :height
-		size: 0; 32 * PANGO_SCALE
-		size: pango_font_description_get_size dc/font-desc
+		size:  32 * PANGO_SCALE
+		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
 		;; DEBUG: print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
