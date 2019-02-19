@@ -54,6 +54,8 @@ init-draw-ctx: func [
 	ctx/layout:			null
 	ctx/font-desc:		null
 	ctx/font-opts:		null
+	ctx/font-underline?: no 
+	ctx/font-strike?: 	no
 	
 
 ]
@@ -438,10 +440,7 @@ draw-text-at: func [
 			;; print ["set-source-color: " ctx " " color lf]
 
 			pango_cairo_update_layout ctx dc/layout
-			
-			; width: 0 height: 0
-			; pango_layout_get_pixel_size dc/layout :width :height
-			
+						
 			size: 0
 			size: pango_font_description_get_size dc/font-desc
 			;; DEBUG: print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
@@ -494,19 +493,12 @@ draw-text-box: func [
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
 	state: as red-block! values + FACE_OBJ_EXT3
-	layout?: yes
-	; if TYPE_OF(state) = TYPE_BLOCK [
-	; 	bool: as red-logic! (block/rs-tail state) - 1
-	; 	layout?: bool/value
-	; ]
-	;if layout? [
-		clr: either null? dc [0][
-			;;TODO: objc_msgSend [dc/font-attrs sel_getUid "objectForKey:" NSForegroundColorAttributeName]
-			dc/font-color
-		]
-		;; This is for reading parse_style
-	;	OS-text-box-layout tbox null clr catch?
-	;]
+	;layout?: yes
+	
+	clr: either null? dc [0][
+		;;TODO: objc_msgSend [dc/font-attrs sel_getUid "objectForKey:" NSForegroundColorAttributeName]
+		dc/font-color
+	]
 	
 	len: -1
 	str: unicode/to-utf8 text :len
@@ -514,7 +506,7 @@ draw-text-box: func [
 	dc/font-desc: pango_font_description_from_string gtk-font
 	make-pango-cairo-layout dc dc/font-desc
 
-		;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
+	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
 
 	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
 	 	;; DEBUG: print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
@@ -526,47 +518,23 @@ draw-text-box: func [
 	ctx: dc/raw
 
 	unless null? dc/layout [
-		; dc/text: "un<u>de</u>r<span font='32' color='#00FF007F'>large</span>line"
-		; dc/text-markup: ""
-		; pango-append-enclosed-text dc 0 -1 "<b>" "</b>"
-		; pango-append-enclosed-text dc 2 2 "<u>" "</u>"
-		; pango-append-enclosed-text dc 0 -1 "<markup>" "</markup>"
-		; print ["test pango-append-enclosed-text: " dc/text-markup lf]
-		
-		dc/font-underline?: no dc/font-strike?: no
-		
 		gstr: as GString! lc/text-markup
 		str: gstr/str
-		;str: "<span weight='bold'>un<span underline='single'>de</span>r<span font='8'><span face='Arial'><span color='#00FF007F'>large</span></span></span>line</span>" 
 		
 		pango-cairo-set-text dc str -1
 
-
-		;; pango_layout_set_text dc/layout str  -1
-		;; DEBUG: print ["pango_layout_set_text: " dc/layout " " str lf]
-		;; DEBUG: print ["lc: " lc " lc/attrs: " lc/attrs lf]
-		;; pango_layout_set_attributes dc/layout lc/attrs
-		;; DEBUG: print ["pango_layout_set_attributes: " dc/layout " " lc/attrs lf]
-		
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
 
 		pango_cairo_update_layout ctx dc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
-		; width: 0 height: 0
-		; pango_layout_get_pixel_size dc/layout :width :height
 		size:  32 * PANGO_SCALE
 		;size: pango_font_description_get_size dc/font-desc
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
-		;; DEBUG: print ["cairo_move_to: " ctx " (" as-float pos/x "," (as-float pos/y) + ((as-float size) / PANGO_SCALE) ")" lf]
-		;; DEBUG: print ["pango_layout_get_line_readonly: " dc/layout  lf]
 		pl: pango_layout_get_line_readonly dc/layout 0
-		;; DEBUG: print ["pango_layout_get_line_readonly" lf]
 		pango_cairo_show_layout_line ctx pl
-		;; DEBUG: print ["pango_cairo_show_layout"  lf]
-
 		free-pango-cairo-font dc
 		;; DEBUG: print ["free pango"  lf]
 		do-paint dc
@@ -586,8 +554,6 @@ OS-draw-text: func [
 		draw-text-box dc pos as red-object! text catch?
 	]
 
-	;set-source-color dc/raw dc/pen-color	;-- backup pen color
-	; brush
 	;; DEBUG: print ["OS-draw-text end" lf]
 	true
 ]

@@ -97,10 +97,15 @@ layout-ctx-set-attrs: func [
 pango-add-open-tag: func [
 	lc 			[layout-ctx!]
 	open-tag	[c-string!]
+	pos			[integer!]
 	/local
 		gstr		[GString!]
 ][
 	gstr: as GString! lc/text-markup
+	if lc/text-pos < pos [ ; add text until pos
+		g_string_append_len gstr lc/text + lc/text-pos pos - lc/text-pos
+		lc/text-pos: pos
+	]
 	g_string_append gstr "<span "
 	g_string_append gstr open-tag
 	g_string_append gstr ">"
@@ -221,7 +226,7 @@ pango-process-tag: func [
 	len 		[integer!]
 ][
 	pango-process-closed-tags lc pos len
-	pango-add-open-tag lc open-tag
+	pango-add-open-tag lc open-tag pos
 	pango-add-closed-tag lc pos + len
 ]
 
@@ -238,25 +243,14 @@ pango-markup-text: func [
 ][
 	
 	last: as GList! g_list_last lc/tag-list
-
-	gl: as GList! g_list_first lc/tag-list
-	until [
-		tag: as pango-opt-tag! gl/data
-		print ["<span "  tag/opt "> at (" tag/pos "," tag/pos + tag/len - 1 ")" lf]
-		gl: gl/next
-		null? gl
-	]
-
 	gl: as GList! g_list_first lc/tag-list
 
 	lc/text-pos: 0 lc/closed-tags: null
 	g_string_assign as GString! lc/text-markup "<markup>"
 	until [
 		tag: as pango-opt-tag! gl/data
-		;;print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
-		pango-process-closed-tags lc tag/pos tag/len
-		pango-add-open-tag lc tag/opt
-		pango-add-closed-tag lc tag/pos + tag/len
+		;; DEBUG: print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+		pango-process-tag lc tag/opt tag/pos tag/len
 		
 		gl: gl/next
 		null? gl
@@ -324,28 +318,14 @@ OS-text-box-color: func [
 	color	[integer!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
-		r 		[integer!]
-		g 		[integer!]
-		b 		[integer!]
-		a 		[integer!]
 		rgba	[c-string!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	print ["OS-text-box-color lc: " lc " lc/attrs: " lc/attrs lf]
-	r: 0 g: 0 b: 0 a: 0
-	int-to-rgba color :r :g :b :a
-	attr: pango_attr_foreground_new r g b
-	attr/start: pos attr/end: pos + len
-	pango_attr_list_insert lc/attrs attr
 
 	rgba: int-to-rgba-hex color
-	print ["col(" rgba ")[" pos "," pos + len - 1 "]" lf]
+	;; DEBUG: print ["col(" rgba ")[" pos "," pos + len - 1 "]" lf]
 	
-	ot: pango-open-tag-string? lc "color" rgba
-	pango-process-tag lc ot pos len
-
 	ot: pango-open-tag-string? lc "color" rgba
 	pango-insert-tag lc ot pos len
 ]
@@ -358,47 +338,17 @@ OS-text-box-background: func [
 	color	[integer!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
-		r 		[integer!]
-		g 		[integer!]
-		b 		[integer!]		
-		a 		[integer!]
 		rgba	[c-string!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	r: 0 g: 0 b: 0 a: 0
-	int-to-rgba color :r :g :b :a
-	attr: pango_attr_background_new r g b
-	attr/start: pos attr/end: pos + len
-	print ["bgcol[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-
+	
 	rgba: int-to-rgba-hex color
 	print ["bgcol(" rgba ")[" pos "," pos + len - 1 "]" lf]
 	
 	ot: pango-open-tag-string? lc "bgcolor" rgba
-	pango-process-tag lc ot pos len
-
-	ot: pango-open-tag-string? lc "bgcolor" rgba
 	pango-insert-tag lc ot pos len
 
-	;pango-add-tag lc "weight"
-
-	;cache: as red-vector! dc + 3
-	;if TYPE_OF(cache) <> TYPE_VECTOR [
-	;	vector/make-at as red-value! cache 128 TYPE_INTEGER 4
-	;]
-	;brush: select-brush dc + 1 color
-	;if zero? brush [
-	;	this: as this! dc/value
-	;	rt: as ID2D1HwndRenderTarget this/vtbl
-	;	rt/CreateSolidColorBrush this to-dx-color color null null :brush
-	;	put-brush dc + 1 color brush
-	;]
-	;vector/rs-append-int cache pos
-	;vector/rs-append-int cache len
-	;vector/rs-append-int cache brush
 ]
 
 
@@ -410,18 +360,9 @@ OS-text-box-weight: func [
 	weight	[integer!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	attr: pango_attr_weight_new weight
-	attr/start: pos attr/end: pos + len
-	print ["weight[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-
-	
-	ot: pango-open-tag-int? lc "weight" weight pos len
-	pango-process-tag lc ot pos len
 
 	ot: pango-open-tag-int? lc "weight" weight pos len
 	pango-insert-tag lc ot pos len
@@ -434,17 +375,9 @@ OS-text-box-italic: func [
 	len		[integer!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	attr: pango_attr_style_new PANGO_STYLE_ITALIC
-	attr/start: pos attr/end: pos + len
-	print ["italic[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-	
-	ot: pango-open-tag-string? lc "style" "italic"
-	pango-process-tag lc ot pos len
 
 	ot: pango-open-tag-string? lc "style" "italic"
 	pango-insert-tag lc ot pos len
@@ -458,18 +391,9 @@ OS-text-box-underline: func [
 	tail	[red-value!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	;; TODO: I guess opts would offers the PANGO_UNDERLINE options
-	attr: pango_attr_underline_new PANGO_UNDERLINE_SINGLE
-	attr/start: pos attr/end: pos + len
-	print ["underline[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr 
-
-	ot: pango-open-tag-string? lc "underline" "single"
-	pango-process-tag lc ot pos len
 
 	ot: pango-open-tag-string? lc "underline" "single"
 	pango-insert-tag lc ot pos len
@@ -482,18 +406,10 @@ OS-text-box-strikeout: func [
 	opts	[red-value!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]					;-- options
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	attr: pango_attr_strikethrough_new yes
-	attr/start: pos attr/end: pos + len
-	print ["strike[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
 	
-	ot: pango-open-tag-string? lc "strikethrough" "true"
-	pango-process-tag lc ot pos len
-
 	ot: pango-open-tag-string? lc "strikethrough" "true"
 	pango-insert-tag lc ot pos len
 ]
@@ -518,26 +434,13 @@ OS-text-box-font-name: func [
 	name	[red-string!]
 	/local
 		lc		[layout-ctx!]
-		attr	[PangoAttribute!]
 		strlen	[integer!]
 		str		[c-string!]
-		;dctx 	[draw-ctx!]
-		fd 		[handle!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
 	strlen: -1
 	str: unicode/to-utf8 name :strlen
-	print ["OS-text-box-font-name: " str lf]
-	fd: pango_font_description_from_string str
-	attr:  pango_attr_font_desc_new fd
-	pango_font_description_free fd
-	attr/start: pos attr/end: pos + len
-	print ["name[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-	
-	ot: pango-open-tag-string? lc "face" str
-	pango-process-tag lc ot pos len
 
 	ot: pango-open-tag-string? lc "face" str
 	pango-insert-tag lc ot pos len
@@ -551,18 +454,9 @@ OS-text-box-font-size: func [
 	size	[float!]
 	/local
 		lc		[layout-ctx!]
-		attr 	[PangoAttribute!]
 		ot		[c-string!]
 ][
 	lc: as layout-ctx! layout
-	print ["OS-text-box-font-size: " size " " as integer! size  lf]
-	attr: pango_attr_size_new_absolute as integer! size
-	attr/start: pos attr/end: pos + len
-	print ["size[" pos "," pos + len - 1 "]" lf]
-	pango_attr_list_insert lc/attrs attr
-	
-	ot: pango-open-tag-int? lc "font" as integer! size
-	pango-process-tag lc ot pos len
 
 	ot: pango-open-tag-int? lc "font" as integer! size
 	pango-insert-tag lc ot pos len
@@ -658,60 +552,8 @@ OS-text-box-layout: func [
 	layout-ctx-begin lc str len
 
 	state: as red-block! values + FACE_OBJ_EXT3
-	; fmt: as this! create-text-format as red-object! values + FACE_OBJ_FONT
-
-	; ; if null? target [
-	; 	hWnd: face-handle? box
-	; 	if null? hWnd [
-	; 		if null? hidden-hwnd [
-	; 			hidden-hwnd: CreateWindowEx WS_EX_TOOLWINDOW #u16 "RedBaseInternal" null WS_POPUP 0 0 2 2 null null hInstance null
-	; 			store-face-to-hWnd hidden-hwnd box
-	; 		]
-	; 		hWnd: hidden-hwnd
-	; 	]
-	; 	target: get-hwnd-render-target hWnd
-	; ]
-
-	; either TYPE_OF(state) = TYPE_BLOCK [
-	; 	pval: block/rs-head state
-	; 	int: as red-integer! pval
-	; 	layout: as this! int/value
-	; 	COM_SAFE_RELEASE(IUnk layout)		;-- release previous text layout
-	; 	int: int + 1
-	; 	old-fmt: as this! int/value
-	; 	if old-fmt <> fmt [
-	; 		COM_SAFE_RELEASE(IUnk old-fmt)
-	; 		int/value: as-integer fmt
-	; 	]
-	; 	bool: as red-logic! int + 3
-	; 	bool/value: false
-	; ][
-	; 	block/make-at state 5
-	; 	none/make-in state							;-- 1: text layout
-	; 	handle/make-in state as-integer fmt			;-- 2: text format
-	; 	handle/make-in state 0						;-- 3: target
-	; 	none/make-in state							;-- 4: text
-	; 	logic/make-in state false					;-- 5: layout?
-	; 	pval: block/rs-head state
-	; ]
-
-	; handle/make-at pval + 2 as-integer target
-	; vec: as red-vector! target/4
-	; if vec <> null [vector/rs-clear vec]
-
-	; set-text-format fmt as red-object! values + FACE_OBJ_PARA
-	; set-tab-size fmt as red-integer! values + FACE_OBJ_EXT1
-	; set-line-spacing fmt as red-integer! values + FACE_OBJ_EXT2
-
-	; str: as red-string! values + FACE_OBJ_TEXT
-	; size: as red-pair! values + FACE_OBJ_SIZE
-	; either TYPE_OF(size) = TYPE_PAIR [
-	; 	w: size/x h: size/y
-	; ][
-	; 	w: 0 h: 0
-	; ]
-
-	print ["OS-text-box-layout: " target lf]
+	 
+	;; DEBUG: print ["OS-text-box-layout: " target lf]
 
 	either null? target [
 		null
