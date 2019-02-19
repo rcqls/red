@@ -20,6 +20,58 @@ Red/System [
 
 max-line-cnt:  0
 
+pango-opt-tag!: alias struct! [
+	opt 	[c-string!]
+	pos 	[integer!]
+	len		[integer!]
+]
+
+pango-compare-tag: func [
+	[cdecl] 
+	tag1 	[pango-opt-tag!] 
+	tag2 	[pango-opt-tag!] 
+	return:	[integer!]
+	/local
+		comp 	[integer!]
+][
+	;; DEBUG: print ["pango-compare-tag: (" tag1/pos "," tag1/len "," tag1/opt ") and ("  tag2/pos "," tag2/len "," tag2/opt  ") -> " ]
+	either tag1/pos = tag2/pos [
+		either tag1/len = tag2/len [comp: 0][
+			comp: either tag1/len > tag2/len [-1][1]
+		]
+	][
+		comp: either tag1/pos > tag2/pos [1][-1]
+	]
+	comp
+]
+
+make-pango-opt-tag: func [
+	opt 	[c-string!]
+	pos		[integer!]
+	len		[integer!]
+	return:	[handle!]
+	/local
+		tag 	[pango-opt-tag!]
+][
+	tag: as pango-opt-tag! allocate size? pango-opt-tag!
+	tag/opt: opt tag/pos: pos tag/len: len
+	as handle! tag
+]
+
+pango-insert-tag: func [
+	lc 		[layout-ctx!]
+	opt 	[c-string!]
+	pos		[integer!]
+	len		[integer!]
+	/local
+		tag 	[handle!]
+		tag2 	[handle!]
+][
+	tag: make-pango-opt-tag opt pos len
+	;; DEBUG: print ["insert tag: " tag  lf ]; "<span " tag/opt "> at (" tag/pos "," tag/len ")" lf ]
+	lc/tag-list: g_list_insert_sorted lc/tag-list tag as-integer :pango-compare-tag
+]
+
 layout-ctx-begin: func [
 	lc 			[layout-ctx!]
 	text 		[c-string!]
@@ -31,7 +83,9 @@ layout-ctx-begin: func [
 	lc/text-pos: 0
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
 	g_string_assign as GString! lc/text-markup "<markup>"
+	lc/tag-list: null
 ]
+
 
 layout-ctx-set-attrs: func [
 	lc 			[layout-ctx!]
@@ -43,8 +97,13 @@ layout-ctx-set-attrs: func [
 pango-add-open-tag: func [
 	lc 			[layout-ctx!]
 	open-tag	[c-string!]
+	/local
+		gstr		[GString!]
 ][
-	g_string_append as GString! lc/text-markup open-tag
+	gstr: as GString! lc/text-markup
+	g_string_append gstr "<span "
+	g_string_append gstr open-tag
+	g_string_append gstr ">"
 	g_free as handle! open-tag
 ]
 
@@ -57,7 +116,7 @@ pango-open-tag-string?: func [
 		str		[c-string!]
 ][
 	str: ""
-	str: g_strdup_printf ["<span %s='%s'>" attr-key attr-val]
+	str: g_strdup_printf ["%s='%s'" attr-key attr-val]
 	str
 ]
 
@@ -70,7 +129,7 @@ pango-open-tag-int?: func [
 		str		[c-string!]
 ][
 	str: ""
-	str: g_strdup_printf ["<span %s='%d'>" attr-key attr-val]
+	str: g_strdup_printf ["%s='%d'" attr-key attr-val]
 	str
 ]
 
@@ -83,7 +142,7 @@ pango-open-tag-float?: func [
 		str		[c-string!]
 ][
 	str: ""
-	str: g_strdup_printf ["<span %s='%f'>" attr-key attr-val]
+	str: g_strdup_printf ["%s='%f'" attr-key attr-val]
  	str
 ]
 
@@ -121,11 +180,13 @@ pango-close-tags: func [
 ][
 	if pos-last-closed-tag = -1 [pos-last-closed-tag: length? lc/text]
 	text-len: pos-last-closed-tag - lc/text-pos
+	print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
 	g_string_append_len as GString! lc/text-markup lc/text + lc/text-pos text-len
 	lc/text-pos: lc/text-pos + text-len
 	; Add closed tags
 	print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc lf]
 	while [ pos-last-closed-tag = pango-last-closed-tag? lc ][
+		print ["close-tags: </span>" lf]
 		g_string_append as GString! lc/text-markup "</span>"
 		pango-next-closed-tag lc
 	]
@@ -164,6 +225,49 @@ pango-process-tag: func [
 	pango-add-closed-tag lc pos + len
 ]
 
+pango-markup-text: func [
+	lc 			[layout-ctx!]
+	/local
+		gl		[GList!]
+		last	[GList!]
+		tag		[pango-opt-tag!]
+		len		[integer!]
+		pos		[integer!]
+		opt		[c-string!]
+		text		[GString!]
+][
+	
+	last: as GList! g_list_last lc/tag-list
+
+	gl: as GList! g_list_first lc/tag-list
+	until [
+		tag: as pango-opt-tag! gl/data
+		print ["<span "  tag/opt "> at (" tag/pos "," tag/pos + tag/len - 1 ")" lf]
+		gl: gl/next
+		null? gl
+	]
+
+	gl: as GList! g_list_first lc/tag-list
+
+	lc/text-pos: 0 lc/closed-tags: null
+	g_string_assign as GString! lc/text-markup "<markup>"
+	until [
+		tag: as pango-opt-tag! gl/data
+		;;print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+		pango-process-closed-tags lc tag/pos tag/len
+		pango-add-open-tag lc tag/opt
+		pango-add-closed-tag lc tag/pos + tag/len
+		
+		gl: gl/next
+		null? gl
+	]
+	pango-close-tags lc -1
+	text: as GString! lc/text-markup
+	g_string_append  text "</markup>"
+	print ["tex-markup: " text/str lf]
+
+]
+
 layout-ctx-end: func [
 	lc 			[layout-ctx!]
 	/local
@@ -173,29 +277,9 @@ layout-ctx-end: func [
 	text: as GString! lc/text-markup
 	g_string_append  text "</markup>"
 	print ["tex-markup: " text/str lf]
+	; TODO: free everything not anymore used
+	pango-markup-text lc
 ]
-
-; pango-append-enclosed-text: func [
-; 	dc		[draw-ctx!]
-; 	pos		[integer!]
-; 	len		[integer!]
-; 	pre 	[c-string!]
-; 	post 	[c-string!]
-; 	/local
-; 		mtext		[c-string!]
-; 		tmp			[c-string!]
-; ][
-; 	tmp: dc/text + pos
-; 	tmp: either len = -1 [g_strdup tmp][g_strndup tmp len]
-; 	mtext: g_strconcat [dc/text-markup pre tmp post null]
-; 	print ["mtext:" mtext lf]
-; 	unless null? tmp [g_free as handle! tmp]
-; 	print ["mtext:" mtext lf]
-; 	;unless pos = 0 [g_free as handle! dc/text-markup]
-; 	dc/text-markup: mtext
-; 	print ["mtext:" mtext lf]
-
-; ]
 
 int-to-rgba: func [
 	color		[integer!]
@@ -261,6 +345,9 @@ OS-text-box-color: func [
 	
 	ot: pango-open-tag-string? lc "color" rgba
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "color" rgba
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-background: func [
@@ -292,6 +379,9 @@ OS-text-box-background: func [
 	
 	ot: pango-open-tag-string? lc "bgcolor" rgba
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "bgcolor" rgba
+	pango-insert-tag lc ot pos len
 
 	;pango-add-tag lc "weight"
 
@@ -333,6 +423,9 @@ OS-text-box-weight: func [
 	ot: pango-open-tag-int? lc "weight" weight pos len
 	pango-process-tag lc ot pos len
 
+	ot: pango-open-tag-int? lc "weight" weight pos len
+	pango-insert-tag lc ot pos len
+
 ]
 
 OS-text-box-italic: func [
@@ -352,6 +445,9 @@ OS-text-box-italic: func [
 	
 	ot: pango-open-tag-string? lc "style" "italic"
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "style" "italic"
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-underline: func [
@@ -374,6 +470,9 @@ OS-text-box-underline: func [
 
 	ot: pango-open-tag-string? lc "underline" "single"
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "underline" "single"
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-strikeout: func [
@@ -394,6 +493,9 @@ OS-text-box-strikeout: func [
 	
 	ot: pango-open-tag-string? lc "strikethrough" "true"
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "strikethrough" "true"
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-border: func [
@@ -436,6 +538,9 @@ OS-text-box-font-name: func [
 	
 	ot: pango-open-tag-string? lc "face" str
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-string? lc "face" str
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-font-size: func [
@@ -453,11 +558,14 @@ OS-text-box-font-size: func [
 	print ["OS-text-box-font-size: " size " " as integer! size  lf]
 	attr: pango_attr_size_new_absolute as integer! size
 	attr/start: pos attr/end: pos + len
-	print ["color[" pos "," pos + len - 1 "]" lf]
+	print ["size[" pos "," pos + len - 1 "]" lf]
 	pango_attr_list_insert lc/attrs attr
 	
 	ot: pango-open-tag-int? lc "font" as integer! size
 	pango-process-tag lc ot pos len
+
+	ot: pango-open-tag-int? lc "font" as integer! size
+	pango-insert-tag lc ot pos len
 ]
 
 OS-text-box-metrics: func [

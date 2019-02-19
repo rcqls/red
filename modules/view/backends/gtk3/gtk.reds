@@ -464,6 +464,12 @@ GList!: alias struct! [
 			link		[handle!]
 			return: 	[handle!]
 		]
+		g_list_insert_sorted: "g_list_insert_sorted" [
+			list			[handle!]
+			data			[handle!]
+			comp-func	[integer!]
+			return: 	[handle!]
+		]
 		g_ascii_dtostr: "g_ascii_dtostr" [
 			buffer		[c-string!]
 			buf_len		[integer!]
