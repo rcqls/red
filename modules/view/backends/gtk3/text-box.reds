@@ -84,14 +84,7 @@ layout-ctx-begin: func [
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
 	g_string_assign as GString! lc/text-markup "<markup>"
 	lc/tag-list: null
-]
-
-
-layout-ctx-set-attrs: func [
-	lc 			[layout-ctx!]
-	attrs 		[handle!]
-][
-	lc/attrs: attrs
+	lc/font-size: 0.0
 ]
 
 pango-add-open-tag: func [
@@ -267,10 +260,6 @@ layout-ctx-end: func [
 	/local
 		text		[GString!]
 ][
-	pango-close-tags lc -1
-	text: as GString! lc/text-markup
-	g_string_append  text "</markup>"
-	print ["tex-markup: " text/str lf]
 	; TODO: free everything not anymore used
 	pango-markup-text lc
 ]
@@ -458,6 +447,10 @@ OS-text-box-font-size: func [
 ][
 	lc: as layout-ctx! layout
 
+	if lc/font-size  < (size * PANGO_SCALE) [
+		lc/font-size: size * PANGO_SCALE
+		print ["font-size changed: " lc/font-size lf]
+	]
 	ot: pango-open-tag-int? lc "font" as integer! size
 	pango-insert-tag lc ot pos len
 ]
@@ -535,7 +528,6 @@ OS-text-box-layout: func [
 		h		[integer!]
 		dc 		[draw-ctx!]
 		lc 		[layout-ctx!]
-		attrs 	[handle!]
 
 		font	[handle!]
 		clr		[integer!]
@@ -560,10 +552,6 @@ OS-text-box-layout: func [
 	][
 		dc: as draw-ctx! target
 		; copy-cell as red-value! str pval + 3			;-- save text
-		attrs: pango_attr_list_new
-		layout-ctx-set-attrs lc attrs 
-		print ["layout-ctx-set-attrs: " lc " " attrs lf]
-		; handle/make-at pval as-integer layout
 
 		styles: as red-block! values + FACE_OBJ_DATA
 		if all [

@@ -504,6 +504,7 @@ draw-text-box: func [
 	str: unicode/to-utf8 text :len
 
 	dc/font-desc: pango_font_description_from_string gtk-font
+	size: pango_font_description_get_size dc/font-desc
 	make-pango-cairo-layout dc dc/font-desc
 
 	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
@@ -518,6 +519,8 @@ draw-text-box: func [
 	ctx: dc/raw
 
 	unless null? dc/layout [
+		if (as float! size) > lc/font-size [lc/font-size: as float! size]
+		print ["font-size prelim: " lc/font-size lf]
 		gstr: as GString! lc/text-markup
 		str: gstr/str
 		
@@ -529,10 +532,11 @@ draw-text-box: func [
 		pango_cairo_update_layout ctx dc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
-		size:  32 * PANGO_SCALE
+		;size:  32 * PANGO_SCALE
 		;size: pango_font_description_get_size dc/font-desc
+		print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
 		cairo_move_to ctx as-float pos/x
-						(as-float pos/y) + ((as-float size) / PANGO_SCALE)
+						(as-float pos/y) + (lc/font-size / PANGO_SCALE)
 		pl: pango_layout_get_line_readonly dc/layout 0
 		pango_cairo_show_layout_line ctx pl
 		free-pango-cairo-font dc
