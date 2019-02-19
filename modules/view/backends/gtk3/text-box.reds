@@ -175,19 +175,35 @@ pango-close-tags: func [
 	pos-last-closed-tag	[integer!]
 	/local
 		text-len		[integer!]
+		gstr 			[GString!]
+		last? 			[logic!]
 ][
-	if pos-last-closed-tag = -1 [pos-last-closed-tag: length? lc/text]
-	text-len: pos-last-closed-tag - lc/text-pos
-	;; DEBUG: print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
-	g_string_append_len as GString! lc/text-markup lc/text + lc/text-pos text-len
+	;; DEBUG: print ["pango-close-tags: " lc " text-markup: "  lc/text-markup lf]
+	last?: no
+	gstr: as GString! lc/text-markup
+	if pos-last-closed-tag = -1 [
+		last?: yes
+		print ["pos-last-closed-tag = -1" lf]
+		pos-last-closed-tag: pango-last-closed-tag? lc
+	]
+	text-len: either pos-last-closed-tag > lc/text-len [lc/text-len][pos-last-closed-tag]
+	text-len: text-len - lc/text-pos
+	;; DEBUG: 
+	print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
+	g_string_append_len gstr lc/text + lc/text-pos text-len
 	lc/text-pos: lc/text-pos + text-len
 	; Add closed tags
-	;; DEBUG: print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc lf]
+	;; DEBUG: 
+	print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc  lf]
 	while [ pos-last-closed-tag = pango-last-closed-tag? lc ][
-		;; DEBUG: print ["close-tags: </span>" lf]
-		g_string_append as GString! lc/text-markup "</span>"
+		;; DEBUG: 
+		print ["close-tags: </span>" lf]
+		g_string_append  gstr "</span>"
+		print ["text-markup after close-tag: " gstr/str lf]
 		pango-next-closed-tag lc
 	]
+	print ["size? lc/closed-tags: " g_list_length lc/closed-tags lf]
+	if all[ last? 0 < g_list_length lc/closed-tags] [pango-close-tags lc -1]
 ]
 
 pango-process-closed-tags: func [
@@ -242,13 +258,15 @@ pango-markup-text: func [
 	g_string_assign as GString! lc/text-markup "<markup>"
 	until [
 		tag: as pango-opt-tag! gl/data
-		;; DEBUG: print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+		;; DEBUG: 
+		print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
 		pango-process-tag lc tag/opt tag/pos tag/len
 		
 		gl: gl/next
 		null? gl
 	]
 	pango-close-tags lc -1
+	print ["Add </markup>" lf]
 	text: as GString! lc/text-markup
 	g_string_append  text "</markup>"
 	print ["tex-markup: " text/str lf]
