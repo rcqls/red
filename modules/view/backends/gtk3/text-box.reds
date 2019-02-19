@@ -178,13 +178,13 @@ pango-close-tags: func [
 ][
 	if pos-last-closed-tag = -1 [pos-last-closed-tag: length? lc/text]
 	text-len: pos-last-closed-tag - lc/text-pos
-	print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
+	;; DEBUG: print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
 	g_string_append_len as GString! lc/text-markup lc/text + lc/text-pos text-len
 	lc/text-pos: lc/text-pos + text-len
 	; Add closed tags
-	print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc lf]
+	;; DEBUG: print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc lf]
 	while [ pos-last-closed-tag = pango-last-closed-tag? lc ][
-		print ["close-tags: </span>" lf]
+		;; DEBUG: print ["close-tags: </span>" lf]
 		g_string_append as GString! lc/text-markup "</span>"
 		pango-next-closed-tag lc
 	]
@@ -202,7 +202,7 @@ pango-process-closed-tags: func [
 ][	
 	pos-last-closed-tag: pango-last-closed-tag? lc
 	pos-current-closed-tag: pos + len
-	print ["process closed tags: current=" pos-current-closed-tag " last=" pos-last-closed-tag lf]
+	;; DEBUG: print ["process closed tags: current=" pos-current-closed-tag " last=" pos-last-closed-tag lf]
 	; Close tags with text first if any
 	if all[
 		pos-last-closed-tag <> -1 
@@ -276,7 +276,7 @@ int-to-rgba: func [
 	g/value: (color >> 16 and FFh) << 8
 	b/value: (color >> 8 and FFh) << 8
 	a/value: (color  and FFh) << 8
-	print ["color: " color " " r/value "." g/value "." b/value "." a/value lf ]
+	;; DEBUG: print ["color: " color " " r/value "." g/value "." b/value "." a/value lf ]
 ]
 
 int-to-rgba-hex: func [
@@ -293,9 +293,7 @@ int-to-rgba-hex: func [
 	g: (color >> 8 and FFh) 
 	b: (color  and FFh)
 	color: (b << 24 and FF000000h) or (g << 16  and 00FF0000h) or ( r << 8 and FF00h) or ( a and FFh)
-	; print ["color rgba: " color " " r "." g "." b "." a lf ]
-	; print ["col(#" string/to-hex r yes string/to-hex g yes string/to-hex b yes  string/to-hex a yes ")" lf]
-	print ["col(#" string/to-hex color no ")" lf]
+	;; DEBUG: print ["col(#" string/to-hex color no ")" lf]
 	g_strdup_printf ["#%s" string/to-hex  color no]
 ]
 
@@ -333,7 +331,7 @@ OS-text-box-background: func [
 	lc: as layout-ctx! layout
 	
 	rgba: int-to-rgba-hex color
-	print ["bgcol(" rgba ")[" pos "," pos + len - 1 "]" lf]
+	;; DEBUG: print ["bgcol(" rgba ")[" pos "," pos + len - 1 "]" lf]
 	
 	ot: pango-open-tag-string? lc "bgcolor" rgba
 	pango-insert-tag lc ot pos len
@@ -449,7 +447,7 @@ OS-text-box-font-size: func [
 
 	if lc/font-size  < (size * PANGO_SCALE) [
 		lc/font-size: size * PANGO_SCALE
-		print ["font-size changed: " lc/font-size lf]
+		;; DEBUG: print ["font-size changed: " lc/font-size lf]
 	]
 	ot: pango-open-tag-int? lc "font" as integer! size
 	pango-insert-tag lc ot pos len

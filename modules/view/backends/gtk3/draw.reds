@@ -520,7 +520,7 @@ draw-text-box: func [
 
 	unless null? dc/layout [
 		if (as float! size) > lc/font-size [lc/font-size: as float! size]
-		print ["font-size prelim: " lc/font-size lf]
+		;; DEBUG: print ["font-size prelim: " lc/font-size lf]
 		gstr: as GString! lc/text-markup
 		str: gstr/str
 		
@@ -532,9 +532,7 @@ draw-text-box: func [
 		pango_cairo_update_layout ctx dc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
-		;size:  32 * PANGO_SCALE
-		;size: pango_font_description_get_size dc/font-desc
-		print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
+		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
 		cairo_move_to ctx as-float pos/x
 						(as-float pos/y) + (lc/font-size / PANGO_SCALE)
 		pl: pango_layout_get_line_readonly dc/layout 0
