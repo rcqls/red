@@ -436,7 +436,7 @@ draw-text-at: func [
 	either pango-font? [
 		;; print ["draw-text-at: dc/layout: " dc/layout lf]
 		unless null? dc/layout [
-			pango-cairo-set-text dc str
+			pango-cairo-set-text dc str no
 			;; print ["pango-cairo-set-text: " dc " " str lf]
 			set-source-color ctx color
 			;; print ["set-source-color: " ctx " " color lf]
@@ -494,6 +494,7 @@ draw-text-box: func [
 		irect	[tagRECT value]
 		lrect	[tagRECT value]
 ][
+	;; DEBUG: print ["draw-text-box: " tbox lf]
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
@@ -523,11 +524,10 @@ draw-text-box: func [
 	ctx: dc/raw
 
 	unless null? dc/layout [
-		;; DEBUG: print ["font-size prelim: " lc/font-size lf]
 		gstr: as GString! lc/text-markup
 		str: gstr/str
-		
-		pango-cairo-set-text dc str -1
+	
+		lc/attrs: pango-cairo-set-text dc str no ; yes to save attrs
 
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]

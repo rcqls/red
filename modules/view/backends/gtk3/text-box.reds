@@ -82,8 +82,9 @@ layout-ctx-begin: func [
 	lc/text-len: text-len
 	lc/text-pos: 0
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
-	g_string_assign as GString! lc/text-markup "<markup>"
+	g_string_assign as GString! lc/text-markup ""
 	lc/tag-list: null
+	lc/attrs: null
 ]
 
 pango-add-open-tag: func [
@@ -147,7 +148,9 @@ pango-add-closed-tag: func [
 	lc 			[layout-ctx!]
 	level 		[integer!]
 ][
-	lc/closed-tags: g_list_prepend lc/closed-tags as int-ptr! level
+	;; DEBUG: 
+	print ["add-closed-tag: " level lf]
+	lc/closed-tags: g_list_prepend lc/closed-tags as int-ptr! (level + 1)
 ]
 
 pango-last-closed-tag?: func [ ; last in time not in the GList
@@ -157,7 +160,7 @@ pango-last-closed-tag?: func [ ; last in time not in the GList
 		current 	[int-ptr!]
 ][
 	current: g_list_nth_data lc/closed-tags 0
-	either null? current [-1][as integer! current]
+	either null? current [-1][(as integer! current) - 1]
 ]
 
 pango-next-closed-tag: func [
@@ -189,17 +192,21 @@ pango-close-tags: func [
 	text-len: text-len - lc/text-pos
 	;; DEBUG: 
 	print ["pango-close-tags -> append: (" text-len ")" lc/text + lc/text-pos  lf]
-	g_string_append_len gstr lc/text + lc/text-pos text-len
-	lc/text-pos: lc/text-pos + text-len
-	; Add closed tags
-	;; DEBUG: 
-	print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc  lf]
-	while [ pos-last-closed-tag = pango-last-closed-tag? lc ][
+	if text-len > 0 [
+		g_string_append_len gstr lc/text + lc/text-pos text-len
+		lc/text-pos: lc/text-pos + text-len
+	]
+	if 0 < g_list_length lc/closed-tags [
+		; Add closed tags
 		;; DEBUG: 
-		print ["close-tags: </span>" lf]
-		g_string_append  gstr "</span>"
-		print ["text-markup after close-tag: " gstr/str lf]
-		pango-next-closed-tag lc
+		print ["close-tags: " pos-last-closed-tag " "  pango-last-closed-tag? lc  lf]
+		while [ pos-last-closed-tag = pango-last-closed-tag? lc ][
+			;; DEBUG: print ["close-tags: </span>" lf]
+			g_string_append  gstr "</span>"
+			;; DEBUG: print ["text-markup after close-tag: " gstr/str lf]
+			pango-next-closed-tag lc
+
+		]
 	]
 	print ["size? lc/closed-tags: " g_list_length lc/closed-tags lf]
 	if all[ last? 0 < g_list_length lc/closed-tags] [pango-close-tags lc -1]
@@ -247,29 +254,29 @@ pango-markup-text: func [
 		len		[integer!]
 		pos		[integer!]
 		opt		[c-string!]
-		text		[GString!]
+		text	[GString!]
 ][
-	
-	last: as GList! g_list_last lc/tag-list
-	gl: as GList! g_list_first lc/tag-list
+	unless null? lc/tag-list [
+		last: as GList! g_list_last lc/tag-list
+		gl: as GList! g_list_first lc/tag-list
 
-	lc/text-pos: 0 lc/closed-tags: null
-	g_string_assign as GString! lc/text-markup "<markup>"
-	until [
-		tag: as pango-opt-tag! gl/data
-		;; DEBUG: 
-		print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
-		pango-process-tag lc tag/opt tag/pos tag/len
-		
-		gl: gl/next
-		null? gl
+		lc/text-pos: 0 lc/closed-tags: null
+		g_string_assign as GString! lc/text-markup "<markup>"
+		until [
+			tag: as pango-opt-tag! gl/data
+			;; DEBUG: 
+			print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+			pango-process-tag lc tag/opt tag/pos tag/len
+			
+			gl: gl/next
+			null? gl
+		]
+		pango-close-tags lc -1
+		print ["Add </markup>" lf]
+		text: as GString! lc/text-markup
+		g_string_append  text "</markup>"
+		print ["tex-markup: " text/str lf]
 	]
-	pango-close-tags lc -1
-	print ["Add </markup>" lf]
-	text: as GString! lc/text-markup
-	g_string_append  text "</markup>"
-	print ["tex-markup: " text/str lf]
-
 ]
 
 layout-ctx-end: func [
@@ -563,13 +570,14 @@ OS-text-box-layout: func [
 	][
 		dc: as draw-ctx! target
 		; copy-cell as red-value! str pval + 3			;-- save text
-
 		styles: as red-block! values + FACE_OBJ_DATA
-		if all [
+		either all [
 			TYPE_OF(styles) = TYPE_BLOCK
 			1 < block/rs-length? styles
 		][
 			parse-text-styles target as handle! lc styles 7FFFFFFFh catch?
+		][
+			g_string_assign as GString! lc/text-markup lc/text
 		]
 		layout-ctx-end lc
 		as handle! lc

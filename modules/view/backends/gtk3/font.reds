@@ -623,6 +623,8 @@ pango-styled-text?: func [
 pango-cairo-set-text: func [
 	dc		[draw-ctx!]
 	text	[c-string!]
+	attrs?	[logic!]
+	return:	[handle!]
 	/local
 		status		[logic!]
 		length 		[integer!]
@@ -647,11 +649,12 @@ pango-cairo-set-text: func [
 			unless null? attrs [pango_layout_set_attributes dc/layout attrs]
 			g_free as handle! mtext
 			g_free as handle! ptext
-			pango_attr_list_unref attrs
+			unless attrs? [pango_attr_list_unref attrs]
 		][
 			pango_layout_set_text dc/layout text -1
 		]
 	]
+	either attrs? [attrs][null]
 ]
 
 free-pango-cairo-font: func [

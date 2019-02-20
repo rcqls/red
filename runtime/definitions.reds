@@ -106,6 +106,7 @@ Red/System [
 		text-markup		[handle!]
 		closed-tags		[handle!]
 		tag-list		[handle!]
+		attrs 			[handle!]
 	]
 ]
 
