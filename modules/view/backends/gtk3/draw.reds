@@ -972,11 +972,18 @@ OS-matrix-set: func [
 	pen		[integer!]
 	blk		[red-block!]
 	/local
-		m	[integer!]
+		m	[cairo_matrix_t! value]
 		val [red-integer!]
 ][
-	m: 0
+	m: null
 	val: as red-integer! block/rs-head blk
+    m/xx: get-float val
+    m/yx: get-float val + 1
+    m/xy: get-float val + 2
+    m/yy: get-float val + 3
+    m/x0: get-float val + 4
+    m/y0: get-float val + 5
+	cairo_transform dc/raw :m ; Weirdly it is not cairo_set_matrix because it is a global change!  
 ]
 
 OS-set-matrix-order: func [

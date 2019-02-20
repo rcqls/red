@@ -281,9 +281,18 @@ PangoAttribute!: alias struct! [
     CAIRO_ANTIALIAS_NONE
     CAIRO_ANTIALIAS_GRAY
     CAIRO_ANTIALIAS_SUBPIXEL
-	CAIRO_ANTIALIAS_FAST
-	CAIRO_ANTIALIAS_GOOD
-	CAIRO_ANTIALIAS_BEST
+		CAIRO_ANTIALIAS_FAST
+		CAIRO_ANTIALIAS_GOOD
+		CAIRO_ANTIALIAS_BEST
+]
+
+cairo_matrix_t!: alias struct! [
+    xx		[float!]
+		yx		[float!]
+    xy		[float!]
+		yy		[float!]
+    x0		[float!]
+		y0		[float!]
 ]
 
 ; @@ cairo structures to remove if pango_cairo is enough to draw text on cairo
@@ -1452,11 +1461,15 @@ GList!: alias struct! [
 		]
 		cairo_get_matrix: "cairo_get_matrix" [
 			cr			[handle!]
-			mat			[handle!]
+			mat			[cairo_matrix_t!]
 		]
 		cairo_set_matrix: "cairo_set_matrix" [
 			cr			[handle!]
-			mat			[handle!]
+			mat			[cairo_matrix_t!]
+		]
+		cairo_transform: "cairo_transform" [
+			cr			[handle!]
+			mat			[cairo_matrix_t!]
 		]
 		; Related to draw text with cairo (no succes for base widget) replaced by pango_cairo
 		cairo_select_font_face: "cairo_select_font_face" [
