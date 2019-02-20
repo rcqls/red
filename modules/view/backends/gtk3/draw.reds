@@ -400,17 +400,17 @@ OS-draw-ellipse: func [
 ]
 
 ;;; TODO: Remove this when pango-cairo is the only choice! SOON!
-pango-font?: yes ; switch to yes to switch to pango-cairo instead of toy cairo
+; pango-font?: yes ; switch to yes to switch to pango-cairo instead of toy cairo
 
 OS-draw-font: func [
 	dc		[draw-ctx!]
 	font	[red-object!]
 ][ 
-	either pango-font? [
+	; either pango-font? [
 		make-pango-cairo-font dc font
-	][
-		make-cairo-draw-font dc font
-	]
+	; ][
+		; make-cairo-draw-font dc font
+	; ]
 ]
 
 draw-text-at: func [
@@ -433,7 +433,7 @@ draw-text-at: func [
 	len: -1
 	str: unicode/to-utf8 text :len
 	;; print ["draw-text-at: " str " at " x "x" y   lf]
-	either pango-font? [
+	; either pango-font? [
 		;; print ["draw-text-at: dc/layout: " dc/layout lf]
 		unless null? dc/layout [
 			pango-cairo-set-text dc str no
@@ -456,35 +456,27 @@ draw-text-at: func [
 			;free-pango-cairo-font dc
 			do-paint dc
 		]
-	][
-		cairo_move_to ctx as-float x
-						(as-float y) + cairo-font-size
+	; ][
+	; 	cairo_move_to ctx as-float x
+	; 					(as-float y) + cairo-font-size
 
-		set-source-color ctx color 
-		cairo_show_text ctx str
-		do-paint dc
-	]
+	; 	set-source-color ctx color 
+	; 	cairo_show_text ctx str
+	; 	do-paint dc
+	; ]
 
 ]
 
-
-draw-text-box: func [
-	dc		[draw-ctx!]
+draw-text-box-line: func [
+	dc 		[draw-ctx!]
+	line	[c-string!]
 	pos		[red-pair!]
-	tbox	[red-object!]
-	catch?	[logic!]
+	tbox 	[red-object!]
+	return: [integer!]
 	/local
-		int		[red-integer!]
-		values	[red-value!]
-		state	[red-block!]
-		text	[red-string!]
-		bool	[red-logic!]
-		layout? [logic!]
-		lc		[layout-ctx!]
-		len		[integer!]
-		str		[c-string!]
-		clr		[integer!]
+		lc 		[layout-ctx!]
 		ctx		[handle!]
+		clr		[integer!]
 		pl		[handle!]
 		width	[integer!]
 		height	[integer!]
@@ -494,25 +486,12 @@ draw-text-box: func [
 		irect	[tagRECT value]
 		lrect	[tagRECT value]
 ][
-	;; DEBUG: print ["draw-text-box: " tbox lf]
-	values: object/get-values tbox
-	text: as red-string! values + FACE_OBJ_TEXT
-	if TYPE_OF(text) <> TYPE_STRING [exit]
-	state: as red-block! values + FACE_OBJ_EXT3
-	;layout?: yes
-	
+	ctx: dc/raw
+
 	clr: either null? dc [0][
 		;;TODO: objc_msgSend [dc/font-attrs sel_getUid "objectForKey:" NSForegroundColorAttributeName]
 		dc/font-color
 	]
-	
-	len: -1
-	str: unicode/to-utf8 text :len
-
-	dc/font-desc: pango_font_description_from_string gtk-font
-	make-pango-cairo-layout dc dc/font-desc
-
-	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
 
 	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
 	 	;; DEBUG: print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
@@ -521,13 +500,13 @@ draw-text-box: func [
 	 	null
 	 ]
 
-	ctx: dc/raw
-
-	unless null? dc/layout [
+	either null? dc/layout [
+		0.0
+	][
 		gstr: as GString! lc/text-markup
-		str: gstr/str
+		line: gstr/str
 	
-		lc/attrs: pango-cairo-set-text dc str no ; yes to save attrs
+		lc/attrs: pango-cairo-set-text dc line no ; yes to save attrs
 
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
@@ -553,7 +532,52 @@ draw-text-box: func [
 		free-pango-cairo-font dc
 		;; DEBUG: print ["free pango"  lf]
 		do-paint dc
+		irect/height
 	]
+]
+
+
+draw-text-box: func [
+	dc		[draw-ctx!]
+	pos		[red-pair!]
+	tbox	[red-object!]
+	catch?	[logic!]
+	/local
+		values	[red-value!]
+		text	[red-string!]
+		lc		[layout-ctx!]
+		len		[integer!]
+		str		[c-string!]
+		p		[c-string!]
+][
+	;; DEBUG: print ["draw-text-box: " tbox lf]
+	values: object/get-values tbox
+	text: as red-string! values + FACE_OBJ_TEXT
+	if TYPE_OF(text) <> TYPE_STRING [exit]
+	
+	;state: as red-block! values + FACE_OBJ_EXT3
+	;layout?: yes
+	
+	len: -1
+	str: unicode/to-utf8 text :len
+
+	dc/font-desc: pango_font_description_from_string gtk-font
+	make-pango-cairo-layout dc dc/font-desc
+	
+	; p: str
+	; while [len > 0][
+	; 	if p/1 = #"^/"[
+	; 		print ["lines?: (" len ") "  str (as-integer p - str) / 2 lf]
+	; 		str: p + 1
+	; 	]
+	; 	p: p + 1
+	; 	len: len - 1
+	; ]
+	; if p > str [print ["last lines?: (" len ") " str (as-integer p - str) / 2 lf]]
+
+
+	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
+	draw-text-box-line dc str pos tbox
 ]
 
 OS-draw-text: func [
