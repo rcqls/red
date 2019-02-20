@@ -290,7 +290,7 @@ PangoAttribute!: alias struct! [
 ; cairo_text_extents_t!: alias struct! [ 
 ;  	x_bearing	[float!]
 ;  	y_bearing	[float!]
-;  	width		[float!]
+;  	width			[float!]
 ;  	height		[float!]
 ;  	x_advance	[float!]
 ;  	y_advance	[float!]
@@ -1139,7 +1139,7 @@ GList!: alias struct! [
 			line		[integer!]
 			return:		[handle!]
 		]
-      	pango_layout_get_size: "pango_layout_get_size" [
+    pango_layout_get_size: "pango_layout_get_size" [
 			 layout		[handle!]
 			 width		[int-ptr!]
 			 height		[int-ptr!]
@@ -1157,8 +1157,18 @@ GList!: alias struct! [
 			return: 	[handle!]
 		]
 		pango_layout_iter_get_baseline: "pango_layout_iter_get_baseline" [
-			iter		[handle!]
+			iter			[handle!]
 			return:		[integer!]
+		]
+		pango_layout_get_extents: "pango_layout_get_extents" [
+			layout		[handle!]
+			irect			[tagRECT]
+			lrect			[tagRect]
+		]
+		pango_layout_get_pixel_extents: "pango_layout_get_pixel_extents" [
+			layout		[handle!]
+			irect			[tagRECT]
+			lrect			[tagRect]
 		]
 		pango_font_description_new: "pango_font_description_new" [
 			return: 	[handle!]
@@ -1440,6 +1450,14 @@ GList!: alias struct! [
 		cairo_stroke_preserve: "cairo_stroke_preserve" [
 			cr			[handle!]
 		]
+		cairo_get_matrix: "cairo_get_matrix" [
+			cr			[handle!]
+			mat			[handle!]
+		]
+		cairo_set_matrix: "cairo_set_matrix" [
+			cr			[handle!]
+			mat			[handle!]
+		]
 		; Related to draw text with cairo (no succes for base widget) replaced by pango_cairo
 		cairo_select_font_face: "cairo_select_font_face" [
 			cr			[handle!]
@@ -1451,11 +1469,7 @@ GList!: alias struct! [
 		; 	cr			[handle!]
 		; 	size		[integer!]
 		; ]
-		; cairo_text_extents: "cairo_text_extents" [
-		; 	cr			[handle!]
-		; 	text 		[c-string!]
-		; 	extents		[handle!]
-		; ]
+		;
 		cairo_font_extents: "cairo_font_extents" [
 			cr			[handle!]
 			extents		[cairo_font_extents_t!]

@@ -12,7 +12,7 @@ Red/System [
 
 #include %text-box.reds
 
-draw-state!: alias struct! [unused [integer!]]
+draw-state!: alias struct! [mat [handle!]]
 
 set-source-color: func [
 	cr			[handle!]
@@ -82,6 +82,7 @@ draw-end: func [
 	cache?		[logic!]
 	paint?		[logic!]
 ][
+	cairo_identity_matrix dc/raw
 	free-pango-cairo-font dc
 ]
 
@@ -104,6 +105,7 @@ do-paint: func [dc [draw-ctx!] /local cr [handle!]][
 	if dc/pen? [
 		cairo_stroke cr
 	]
+	
 ]
 
 OS-draw-anti-alias: func [
@@ -487,7 +489,10 @@ draw-text-box: func [
 		width	[integer!]
 		height	[integer!]
 		size	[integer!]
+		sizef 	[float!]
 		gstr	[GString!]
+		irect	[tagRECT value]
+		lrect	[tagRECT value]
 ][
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
@@ -504,7 +509,6 @@ draw-text-box: func [
 	str: unicode/to-utf8 text :len
 
 	dc/font-desc: pango_font_description_from_string gtk-font
-	size: pango_font_description_get_size dc/font-desc
 	make-pango-cairo-layout dc dc/font-desc
 
 	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
@@ -519,7 +523,6 @@ draw-text-box: func [
 	ctx: dc/raw
 
 	unless null? dc/layout [
-		if (as float! size) > lc/font-size [lc/font-size: as float! size]
 		;; DEBUG: print ["font-size prelim: " lc/font-size lf]
 		gstr: as GString! lc/text-markup
 		str: gstr/str
@@ -533,8 +536,18 @@ draw-text-box: func [
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
 		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
-		cairo_move_to ctx as-float pos/x
-						(as-float pos/y) + (lc/font-size / PANGO_SCALE)
+		
+		; sizef: (lc/font-size / PANGO_SCALE)
+		irect: null lrect: null
+		; pango_layout_get_extents dc/layout :irect :lrect
+		; print ["get_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
+		; print ["get_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
+		pango_layout_get_pixel_extents dc/layout irect lrect
+		; print ["get_pixel_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
+		; print ["get_pixel_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
+		; print ["sizef: " sizef lf]
+		sizef: as float! irect/height
+		cairo_move_to ctx as-float pos/x (as-float pos/y) + sizef
 		pl: pango_layout_get_line_readonly dc/layout 0
 		pango_cairo_show_layout_line ctx pl
 		free-pango-cairo-font dc
@@ -931,11 +944,13 @@ OS-matrix-transform: func [
 	OS-matrix-translate dc pen translate/x translate/y
 ]
 
-OS-matrix-push: func [dc [draw-ctx!] /local state [integer!]][
-	state: 0
+OS-matrix-push: func [dc [draw-ctx!]  state [draw-state!]][
+cairo_save dc/raw
 ]
 
-OS-matrix-pop: func [dc [draw-ctx!]][0]
+OS-matrix-pop: func [dc [draw-ctx!] state [draw-state!]][
+	cairo_restore dc/raw
+]
 
 OS-matrix-reset: func [
 	dc [draw-ctx!]

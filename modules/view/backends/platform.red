@@ -828,6 +828,7 @@ system/view/platform: context [
 					]
 				]
 				macOS [["Menlo" "Arial" "Times"]]
+				Linux [[ "Sans" "Arial" "Times"]]
 			]
 		
 		set [font-fixed font-sans-serif font-serif] reduce fonts

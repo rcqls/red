@@ -106,7 +106,6 @@ Red/System [
 		text-markup		[handle!]
 		closed-tags		[handle!]
 		tag-list		[handle!]
-		font-size		[float!]
 	]
 ]
 

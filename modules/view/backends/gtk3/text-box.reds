@@ -84,7 +84,6 @@ layout-ctx-begin: func [
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
 	g_string_assign as GString! lc/text-markup "<markup>"
 	lc/tag-list: null
-	lc/font-size: 0.0
 ]
 
 pango-add-open-tag: func [
@@ -463,10 +462,6 @@ OS-text-box-font-size: func [
 ][
 	lc: as layout-ctx! layout
 
-	if lc/font-size  < (size * PANGO_SCALE) [
-		lc/font-size: size * PANGO_SCALE
-		;; DEBUG: print ["font-size changed: " lc/font-size lf]
-	]
 	ot: pango-open-tag-int? lc "font" as integer! size
 	pango-insert-tag lc ot pos len
 ]
