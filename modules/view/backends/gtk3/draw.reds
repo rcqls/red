@@ -500,8 +500,8 @@ draw-text-box-line: func [
 	 	null
 	 ]
 
-	either null? dc/layout [
-		0.0
+	size: either null? dc/layout [
+		0
 	][
 		gstr: as GString! lc/text-markup
 		line: gstr/str
@@ -534,6 +534,7 @@ draw-text-box-line: func [
 		do-paint dc
 		irect/height
 	]
+	size
 ]
 
 

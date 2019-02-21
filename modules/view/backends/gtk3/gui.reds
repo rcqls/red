@@ -1669,6 +1669,11 @@ OS-make-view: func [
 				buffer: gtk_label_new caption
 				gtk_container_add widget buffer
 			]
+			gobj_signal_connect(widget "draw" :base-draw face/ctx)
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
+			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
+			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
+			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
 		]
 		sym = tab-panel [
 			widget: gtk_notebook_new
