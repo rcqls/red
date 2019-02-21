@@ -75,6 +75,7 @@ log-pixels-y:	0
 screen-size-x:	0
 screen-size-y:	0
 
+
 get-face-obj: func [
 	handle	[handle!]
 	return: [red-object!]
@@ -408,7 +409,12 @@ debug-show-children: func [
 ; 	collector/keep win-array/node
 ; ]
 
+show-gtk-version: func [][
+	print [ "GTK VERSION: " gtk_get_major_version "." gtk_get_minor_version "." gtk_get_micro_version lf]
+]
+
 init: func [][
+	show-gtk-version
 	GTKApp: gtk_application_new RED_GTK_APP_ID G_APPLICATION_NON_UNIQUE
 	gobj_signal_connect(GTKApp "window-removed" :window-removed-event :exit-loop)
 
@@ -662,7 +668,7 @@ change-image: func [
 		; ]
 		any [type = button type = check type = radio][
 			if TYPE_OF(image) = TYPE_IMAGE [
-				img: gtk_image_new_from_pixbuf as handle! OS-image/to-pixbuf image
+				img: gtk_image_new_from_pixbuf OS-image/to-pixbuf image
 				gtk_button_set_image hWnd img
 			]
 		]
@@ -1670,7 +1676,9 @@ OS-make-view: func [
 				gtk_container_add widget buffer
 			]
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
+			gtk_widget_set_focus_on_click widget yes
+			print ["panel had focus:" gtk_widget_get_focus_on_click widget  lf]
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
 			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
@@ -2020,6 +2028,8 @@ OS-do-draw: func [
 	img		[red-image!]
 	cmds	[red-block!]
 ][
+	;; DEBUG:
+	print ["OS-do-draw " img lf]
 	do-draw null img cmds no no no no
 ]
 

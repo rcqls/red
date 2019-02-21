@@ -551,6 +551,15 @@ GList!: alias struct! [
 		g_settings_sync: "g_settings_sync" []
 	;; ]
 	;; LIBGTK-file cdecl [
+		gtk_get_major_version: "gtk_get_major_version" [
+			return: 		[integer!]
+		]
+		gtk_get_minor_version: "gtk_get_minor_version" [
+			return: 		[integer!]
+		]
+		gtk_get_micro_version: "gtk_get_micro_version" [
+			return: 		[integer!]
+		]
 		gtk_application_new: "gtk_application_new" [
 			app-id		[c-string!]
 			flags		[integer!]
@@ -733,6 +742,10 @@ GList!: alias struct! [
 		gtk_widget_set_focus_on_click: "gtk_widget_set_focus_on_click" [
 			widget		[handle!]
 			focus		[logic!]
+		]
+		gtk_widget_get_focus_on_click: "gtk_widget_get_focus_on_click" [
+			widget		[handle!]
+			return:		[logic!]
 		]
 		gtk_widget_destroy: "gtk_widget_destroy" [
 			widget 	[handle!]

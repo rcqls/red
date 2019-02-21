@@ -204,7 +204,8 @@ base-draw: func [
 	]
 
 	if TYPE_OF(img) = TYPE_IMAGE [
-		GDK-draw-image cr as handle! OS-image/to-pixbuf img 0 0 size/x size/y
+		;; DEBUG: print ["base-draw, GDK-draw-image: " 0 "x" 0 "x" size/x "x" size/y lf]
+		GDK-draw-image cr OS-image/to-argb-pixbuf img 0 0 size/x size/y
 	]
 
 	case [
@@ -617,7 +618,8 @@ mouse-button-press-event: func [
 	ctx 	[node!]
 	return: [logic!]
 ][
-	;; DEBUG: print [ "mouse -> BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: 
+	print [ "mouse -> BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
 	motion/x_root: event/x_root
@@ -635,7 +637,8 @@ mouse-button-release-event: func [
 	ctx 	[node!]
 	return: [logic!]
 ][
-	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: 
+	print [ "mouse -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	motion/state: yes
 	motion/cpt: 0
 	motion/x_root: event/x_root
@@ -661,7 +664,8 @@ mouse-motion-notify-event: func [
 		; s 		[series!]
 
 ][
-	;; DEBUG: print [ "mouse -> MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: 
+	print [ "mouse -> MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
 	motion/x_root: event/x_root

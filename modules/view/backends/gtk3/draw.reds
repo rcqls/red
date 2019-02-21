@@ -723,7 +723,7 @@ GDK-draw-image: func [
 		img		[handle!]
 ][
 	img: either width = 0 [image][gdk_pixbuf_scale_simple image width height 2]
-	;; DEBUG: print ["GDK-draw-image: " x "x" y lf]
+	;; DEBUG: print ["GDK-draw-image: " x "x" y "x" width "x" height lf]
 	cairo_translate cr as-float x as-float y
 	gdk_cairo_set_source_pixbuf cr img 0 0
 	cairo_paint cr
@@ -740,8 +740,8 @@ OS-draw-image: func [
 	crop1		[red-pair!]
 	pattern		[red-word!]
 	/local
-		img		[integer!]
-		sub-img [integer!]
+		img		[int-ptr!]
+		sub-img [int-ptr!]
 		x		[integer!]
 		y		[integer!]
 		width	[integer!]
@@ -751,7 +751,7 @@ OS-draw-image: func [
 		ww		[float!]
 		crop2	[red-pair!]
 ][
-	;; print ["OS-draw-image" lf]
+	;; DEBUG: print ["OS-draw-image" lf]
 	either null? start [x: 0 y: 0][x: start/x y: start/y]
 	case [
 		start = end [
@@ -776,13 +776,13 @@ OS-draw-image: func [
 		ww: w / h * (as float! height)
 		width: as-integer ww
 		; create new pixbuf
-		sub-img: as-integer gdk_pixbuf_scale_simple as handle! img width height 0 ; to correct parameters!!!
+		sub-img: gdk_pixbuf_scale_simple as handle! img width height 0 ; to correct parameters!!!
 		;sub-img: as-integer gdk_pixbuf_new 0 yes 8 width height
 		;gdk_pixbuf_scale as handle! img as handle! sub-img 0 0 width height 0.0 0.0 1.0 1.0 0 ; to correct parameters!!!
 	]
 
-	GDK-draw-image dc/raw as handle! img x y width height
-	if crop1 <> null [g_object_unref as handle! sub-img]
+	GDK-draw-image dc/raw img x y width height
+	if crop1 <> null [g_object_unref sub-img]
 ]
 
 OS-draw-grad-pen-old: func [

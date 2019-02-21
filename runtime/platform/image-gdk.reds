@@ -14,6 +14,23 @@ Red/System [
 #define IMG_NODE_MODIFIED		2
 
 
+argb-to-abgr: func [
+	color		[integer!]
+	return: 	[integer!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	a: (color >> 24 and FFh) 
+	r: (color >> 16 and FFh) 
+	g: (color >> 8 and FFh) 
+	b: (color  and FFh)
+	color: (a << 24 and FF000000h) or (b << 16  and 00FF0000h) or ( g << 8 and FF00h) or ( r and FFh)
+	color
+]
+
 OS-image: context [
 
 	img-node!: alias struct! [
@@ -157,7 +174,7 @@ OS-image: context [
 		stride		[int-ptr!]
 		return:		[int-ptr!]
 		/local
-			node	[img-node!]
+			node			[img-node!]
 	][
 		;; DEBUG: print ["OS-image/get-data" lf]
 		node: as img-node! handle
@@ -263,6 +280,54 @@ OS-image: context [
 		gdk_pixbuf_get_has_alpha as handle! pixbuf
 	]
 
+	buffer-rgba-to-argb: func [
+		buf 	[int-ptr!]
+		width	[integer!]
+		height	[integer!]
+		return: [int-ptr!]	; not necessary since buf is already a pointer
+		/local
+			data-pixbuf 	[int-ptr!]
+			end-data-pixbuf	[int-ptr!]
+			pixel			[integer!]
+			i 				[integer!]
+	][
+		data-pixbuf:  buf
+		end-data-pixbuf: data-pixbuf + (width * height)
+		;; DEBUG: print ["buffer-rgba-to-argb -> size: " width "x" height lf]
+		while [data-pixbuf < end-data-pixbuf][
+			pixel: data-pixbuf/value
+			;; DEBUG: print ["pixel:" pixel lf]
+			pixel: (pixel >> 8) or (255 - (pixel << 24)) ; RGBA -> ARGB
+			data-pixbuf/value: pixel
+			data-pixbuf: data-pixbuf + 1
+		]
+		buf
+	]
+
+	buffer-argb-to-abgr: func [
+		buf 	[int-ptr!]
+		width	[integer!]
+		height	[integer!]
+		return: [int-ptr!]	; not necessary since buf is already a pointer
+		/local
+			data-pixbuf 	[int-ptr!]
+			end-data-pixbuf	[int-ptr!]
+			pixel			[integer!]
+			i 				[integer!]
+	][
+		data-pixbuf:  buf
+		end-data-pixbuf: data-pixbuf + (width * height)
+		;; DEBUG: print ["buffer-argb -> size: " width "x" height lf]
+		while [data-pixbuf < end-data-pixbuf][
+			pixel: data-pixbuf/value
+			;; DEBUG: print ["pixel:" pixel lf]
+			pixel: argb-to-abgr pixel
+			data-pixbuf/value: pixel
+			data-pixbuf: data-pixbuf + 1
+		]
+		buf
+	]
+
 	; In particular used to query buffer from handle in lock-bitmap
 	data-to-image: func [				;-- convert Pixbuf to OS handle or internal buffer
 		data		[int-ptr!]
@@ -283,9 +348,6 @@ OS-image: context [
 			info		[integer!]
 			alpha?		[logic!]
 			buf			[byte-ptr!]
-			data-pixbuf	[int-ptr!]
-			end			[int-ptr!]
-			pixel		[integer!]
 			loader 		[handle!]
 	][
 		either image? [
@@ -315,17 +377,7 @@ OS-image: context [
 
 		; maybe better use other copy
 		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! image
-		data-pixbuf: as int-ptr! buf
-		end: data-pixbuf + (width * height)
-		;; print ["wxh: " width "x" height lf]
-		while [data-pixbuf < end][
-			pixel: data-pixbuf/value
-			; @@debug: print ["pixel:" pixel lf]
-			pixel: (pixel >> 8) or (255 - (pixel << 24)) ; RGBA -> ARGB
-			data-pixbuf/value: pixel
-			data-pixbuf: data-pixbuf + 1
-		]
-		as int-ptr! buf
+		buffer-rgba-to-argb as int-ptr! buf width height
 	]
 
 	load-binary: func [
@@ -498,24 +550,24 @@ OS-image: context [
 		node: as img-node! (as series! image/node/value) + 1
 		w: IMAGE_WIDTH(image/size)
 		h: IMAGE_HEIGHT(image/size)
-		;data: CGDataProviderCreateWithData null node/buffer w * h * 4 0
-		;clr: CGColorSpaceCreateDeviceRGB
 		; need to change rgba en argb
 		img: gdk_pixbuf_new 0 yes 8 w h;CGImageCreate w h 8 32 w * 4 clr 2004h data null true 0 ;-- kCGRenderingIntentDefault
-		copy-memory  gdk_pixbuf_get_pixels img as byte-ptr! node/buffer w * h * 4
-		;CGDataProviderRelease data
-		;CGColorSpaceRelease clr
+		copy-memory gdk_pixbuf_get_pixels img as byte-ptr! node/buffer w * h * 4
+		;; DEBUG: print ["make-pixbuf " img lf]
 		img
 	]
 
 	to-pixbuf: func [
 		img		[red-image!]
-		return: [integer!]
+		return: [int-ptr!]
 		/local
 			inode	[img-node!]
 			pixbuf	[int-ptr!]
+			width 	[integer!]
+			height 	[integer!]
 	][
-		;; print ["to-pixbuf" lf]
+		;; DEBUG: 
+		print ["OS-image/to-pixbuf" lf]
 		inode: as img-node! (as series! img/node/value) + 1
 		if inode/flags and IMG_NODE_MODIFIED <> 0 [
 			pixbuf: make-pixbuf img
@@ -523,7 +575,32 @@ OS-image: context [
 			inode/handle: pixbuf
 			inode/flags: IMG_NODE_HAS_BUFFER
 		]
-		as-integer inode/handle
+		inode/handle
+	]
+
+	to-argb-pixbuf: func [
+		image	[red-image!]
+		return: [int-ptr!]
+		/local
+			w	 	[integer!]
+			h	 	[integer!]
+			bitmap	[integer!]
+			data	[int-ptr!]
+			stride	[integer!]
+			pixbuf	[int-ptr!]
+			buf		[byte-ptr!]
+	][
+		w: IMAGE_WIDTH(image/size)
+		h: IMAGE_HEIGHT(image/size)
+		stride: 0
+		bitmap: OS-image/lock-bitmap image yes
+		data: OS-image/get-data bitmap :stride
+		pixbuf: gdk_pixbuf_new 0 yes 8 w h;CGImageCreate w h 8 32 w * 4 clr 2004h data null true 0 ;-- kCGRenderingIntentDefault
+		copy-memory gdk_pixbuf_get_pixels pixbuf as byte-ptr! data w * h * 4
+		OS-image/unlock-bitmap image bitmap
+		buf: gdk_pixbuf_get_pixels pixbuf
+		buffer-argb-to-abgr as int-ptr! buf w h
+		pixbuf
 	]
 
 	; ; used in OS-image/do-draw -> to adapt to gdk
@@ -577,8 +654,9 @@ OS-image: context [
 			type		[integer!]
 			path		[integer!]
 			dst			[integer!]
-			img			[integer!]
+			img			[int-ptr!]
 	][
+		;; DEBUG: 
 		print ["encode" lf]
 		switch format [
 			IMAGE_BMP  [probe "type: kUTTypeBMP"]
