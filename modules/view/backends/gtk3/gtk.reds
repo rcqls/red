@@ -200,6 +200,19 @@ PangoAttribute!: alias struct! [
   	end 		[integer!]
 ]
 
+#enum PangoWrapMode! [
+	PANGO_WRAP_WORD
+	PANGO_WRAP_CHAR
+	PANGO_WRAP_WORD_CHAR
+]
+
+#enum PangoEllipsizeMode! [
+	PANGO_ELLIPSIZE_NONE
+	PANGO_ELLIPSIZE_START
+	PANGO_ELLIPSIZE_MIDDLE
+	PANGO_ELLIPSIZE_END
+]
+
 #enum pango-style! [
   PANGO_STYLE_NORMAL
   PANGO_STYLE_OBLIQUE
@@ -1137,16 +1150,16 @@ GList!: alias struct! [
 			layout		[handle!]
 			return: 	[handle!]
 		]
-   		pango_layout_set_text: "pango_layout_set_text" [
+   	pango_layout_set_text: "pango_layout_set_text" [
 			layout		[handle!]
 			text		[c-string!]
 			len			[integer!]
 		]
-   		pango_layout_set_font_description: "pango_layout_set_font_description" [
+   	pango_layout_set_font_description: "pango_layout_set_font_description" [
 			layout		[handle!]
 			fontdesc	[handle!]
 		]
-   		pango_layout_get_pixel_size: "pango_layout_get_pixel_size" [
+   	pango_layout_get_pixel_size: "pango_layout_get_pixel_size" [
 			layout		[handle!]
 			width		[int-ptr!]
 			height		[int-ptr!]
@@ -1160,6 +1173,46 @@ GList!: alias struct! [
 			layout		[handle!]
 			line		[integer!]
 			return:		[handle!]
+		]
+		pango_layout_is_wrapped: "pango_layout_is_wrapped" [
+			layout		[handle!]
+			return:		[logic!]
+		]
+		pango_layout_set_wrap: "pango_layout_set_wrap" [
+			layout		[handle!]
+			mode			[PangoWrapMode!]
+		]
+		pango_layout_get_wrap: "pango_layout_get_wrap" [
+			layout		[handle!]
+			return:		[PangoWrapMode!]
+		]
+		pango_layout_is_ellipsized: "pango_layout_is_ellipsized" [
+			layout		[handle!]
+			return:		[logic!]
+		]
+		pango_layout_set_ellipsize: "pango_layout_set_ellipsize" [
+			layout		[handle!]
+			mode			[PangoEllipsizeMode!]
+		]
+		pango_layout_get_ellipsize: "pango_layout_get_ellipsize" [
+			layout		[handle!]
+			return:		[PangoEllipsizeMode!]
+		]
+		pango_layout_set_width: "pango_layout_set_width" [
+			layout		[handle!]
+			width			[integer!]
+		]
+		pango_layout_get_width: "pango_layout_get_width" [
+			layout		[handle!]
+			return:		[integer!]
+		]
+		pango_layout_set_height: "pango_layout_set_height" [
+			layout		[handle!]
+			height			[integer!]
+		]
+		pango_layout_get_height: "pango_layout_get_height" [
+			layout		[handle!]
+			return:		[integer!]
 		]
     pango_layout_get_size: "pango_layout_get_size" [
 			 layout		[handle!]

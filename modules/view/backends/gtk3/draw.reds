@@ -467,12 +467,12 @@ draw-text-at: func [
 
 ]
 
-draw-text-box-line: func [
+draw-text-box-lines: func [
 	dc 		[draw-ctx!]
 	line	[c-string!]
 	pos		[red-pair!]
+	size 	[red-pair!]
 	tbox 	[red-object!]
-	return: [integer!]
 	/local
 		lc 		[layout-ctx!]
 		ctx		[handle!]
@@ -480,7 +480,6 @@ draw-text-box-line: func [
 		pl		[handle!]
 		width	[integer!]
 		height	[integer!]
-		size	[integer!]
 		sizef 	[float!]
 		gstr	[GString!]
 		irect	[tagRECT value]
@@ -500,9 +499,7 @@ draw-text-box-line: func [
 	 	null
 	 ]
 
-	size: either null? dc/layout [
-		0
-	][
+	unless null? dc/layout [
 		gstr: as GString! lc/text-markup
 		line: gstr/str
 	
@@ -510,6 +507,11 @@ draw-text-box-line: func [
 
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
+		
+		pango_layout_set_width dc/layout PANGO_SCALE * size/x
+		pango_layout_set_height dc/layout PANGO_SCALE * size/y
+
+		pango_layout_set_wrap dc/layout PANGO_WRAP_WORD_CHAR
 
 		pango_cairo_update_layout ctx dc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
@@ -526,15 +528,15 @@ draw-text-box-line: func [
 		; print ["get_pixel_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
 		; print ["sizef: " sizef lf]
 		sizef: as float! irect/height
-		cairo_move_to ctx as-float pos/x (as-float pos/y) + sizef
+		cairo_move_to ctx as-float pos/x (as-float pos/y); + sizef
 		pl: pango_layout_get_line_readonly dc/layout 0
-		pango_cairo_show_layout_line ctx pl
+		;pango_cairo_show_layout_line ctx pl
+		pango_cairo_show_layout ctx dc/layout
+
 		free-pango-cairo-font dc
 		;; DEBUG: print ["free pango"  lf]
 		do-paint dc
-		irect/height
 	]
-	size
 ]
 
 
@@ -549,15 +551,14 @@ draw-text-box: func [
 		lc		[layout-ctx!]
 		len		[integer!]
 		str		[c-string!]
-		p		[c-string!]
+		size 	[red-pair!]
 ][
 	;; DEBUG: print ["draw-text-box: " tbox lf]
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
-	
-	;state: as red-block! values + FACE_OBJ_EXT3
-	;layout?: yes
+
+	size: as red-pair! values + FACE_OBJ_SIZE
 	
 	len: -1
 	str: unicode/to-utf8 text :len
@@ -565,20 +566,8 @@ draw-text-box: func [
 	dc/font-desc: pango_font_description_from_string gtk-font
 	make-pango-cairo-layout dc dc/font-desc
 	
-	; p: str
-	; while [len > 0][
-	; 	if p/1 = #"^/"[
-	; 		print ["lines?: (" len ") "  str (as-integer p - str) / 2 lf]
-	; 		str: p + 1
-	; 	]
-	; 	p: p + 1
-	; 	len: len - 1
-	; ]
-	; if p > str [print ["last lines?: (" len ") " str (as-integer p - str) / 2 lf]]
-
-
 	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
-	draw-text-box-line dc str pos tbox
+	draw-text-box-lines dc str pos size tbox
 ]
 
 OS-draw-text: func [
