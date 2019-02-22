@@ -503,6 +503,9 @@ draw-text-box-lines: func [
 		gstr: as GString! lc/text-markup
 		line: gstr/str
 	
+		;; TO TEST Markup language syntax:  
+		;; line: "<markup><span style='italic'><span color='#00000000'><span face='Sans 10'><span weight='700'>Hello</span><span color='#FF000000'><span bgcolor='#00FF0000'><span font='24'><span face='Arial'> Red </span></span><span color='#0000FF00'>World! csdcndcnsdcndscndsc jndjdsj cndscjdnscj</span>simple text to go to a new line</span></span></span></span></span></markup>"
+	
 		lc/attrs: pango-cairo-set-text dc line no ; yes to save attrs
 
 		set-source-color ctx clr
@@ -765,7 +768,7 @@ OS-draw-image: func [
 		ww: w / h * (as float! height)
 		width: as-integer ww
 		; create new pixbuf
-		sub-img: gdk_pixbuf_scale_simple as handle! img width height 0 ; to correct parameters!!!
+		sub-img: gdk_pixbuf_scale_simple img width height 0 ; to correct parameters!!!
 		;sub-img: as-integer gdk_pixbuf_new 0 yes 8 width height
 		;gdk_pixbuf_scale as handle! img as handle! sub-img 0 0 width height 0.0 0.0 1.0 1.0 0 ; to correct parameters!!!
 	]

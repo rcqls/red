@@ -34,7 +34,8 @@ pango-compare-tag: func [
 	/local
 		comp 	[integer!]
 ][
-	;; DEBUG: print ["pango-compare-tag: (" tag1/pos "," tag1/len "," tag1/opt ") and ("  tag2/pos "," tag2/len "," tag2/opt  ") -> " ]
+	;; DEBUG: 
+	print ["pango-compare-tag: (" tag1/pos "," tag1/len "," tag1/opt ") and ("  tag2/pos "," tag2/len "," tag2/opt  ") -> " ]
 	either tag1/pos = tag2/pos [
 		either tag1/len = tag2/len [comp: 0][
 			comp: either tag1/len > tag2/len [-1][1]
@@ -67,6 +68,7 @@ pango-insert-tag: func [
 		tag 	[handle!]
 		tag2 	[handle!]
 ][
+	if pos + len > lc/text-len [len: lc/text-len - pos]
 	tag: make-pango-opt-tag opt pos len
 	;; DEBUG: print ["insert tag: " tag  lf ]; "<span " tag/opt "> at (" tag/pos "," tag/len ")" lf ]
 	lc/tag-list: g_list_insert_sorted lc/tag-list tag as-integer :pango-compare-tag
@@ -76,6 +78,8 @@ layout-ctx-begin: func [
 	lc 			[layout-ctx!]
 	text 		[c-string!]
 	text-len	[integer!]
+	/local
+		ot		[c-string!]
 ][
 	lc/closed-tags: null
 	lc/text: text
@@ -85,6 +89,9 @@ layout-ctx-begin: func [
 	g_string_assign as GString! lc/text-markup ""
 	lc/tag-list: null
 	lc/attrs: null
+
+	ot: pango-open-tag-string? lc "face" gtk-font
+	pango-insert-tag lc ot 0 text-len
 ]
 
 pango-add-open-tag: func [
@@ -261,7 +268,8 @@ pango-markup-text: func [
 		g_string_assign as GString! lc/text-markup "<markup>"
 		until [
 			tag: as pango-opt-tag! gl/data
-			;; DEBUG: print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+			;; DEBUG: 
+			print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
 			pango-process-tag lc tag/opt tag/pos tag/len
 			
 			gl: gl/next
@@ -299,7 +307,7 @@ int-to-rgba: func [
 	;; DEBUG: print ["color: " color " " r/value "." g/value "." b/value "." a/value lf ]
 ]
 
-int-to-rgba-hex: func [
+int-to-bgra-hex: func [
 	color		[integer!]
 	return: 	[c-string!]
 	/local
@@ -330,7 +338,7 @@ OS-text-box-color: func [
 ][
 	lc: as layout-ctx! layout
 
-	rgba: int-to-rgba-hex color
+	rgba: int-to-bgra-hex color
 	;; DEBUG: print ["col(" rgba ")[" pos "," pos + len - 1 "]" lf]
 	
 	ot: pango-open-tag-string? lc "color" rgba
@@ -350,7 +358,7 @@ OS-text-box-background: func [
 ][
 	lc: as layout-ctx! layout
 	
-	rgba: int-to-rgba-hex color
+	rgba: int-to-bgra-hex color
 	;; DEBUG: print ["bgcol(" rgba ")[" pos "," pos + len - 1 "]" lf]
 	
 	ot: pango-open-tag-string? lc "bgcolor" rgba
