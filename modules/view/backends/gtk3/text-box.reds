@@ -489,45 +489,57 @@ OS-text-box-metrics: func [
 		layout	[handle!]
 		x		[float!]
 		y		[float!]
+		width	[integer!]
+		height	[integer!]
+		pos		[red-pair!]
+		rect	[tagRECT value]
+		idx	[integer!]
+		trail	[integer!]
+		ok?		[logic!]
 ][
 	;; DEBUG: 
-	print ["OS-text-box-metrics" lf]
+	print ["OS-text-box-metrics: " type lf]
 	int: as red-integer! block/rs-head state
 	layout: as handle! int/value
+	if null? layout [return as red-value! none-value]
 	as red-value! switch type [
 		TBOX_METRICS_OFFSET?
 		TBOX_METRICS_OFFSET_LOWER [
-			x: as float! 0.0 y: as float! 0.0
 			int: as red-integer! arg0
-			none-value
+			pango_layout_index_to_pos layout int/value :rect
+			print ["TBOX_METRICS_OFFSET? " rect/x "x" rect/y "x" rect/width "x" rect/height lf] 
+			pair/push rect/x  rect/y
 		]
-		; TBOX_METRICS_INDEX? [
-		; 	pos: as red-pair! arg0
-		; 	x: as float32! pos/x
-		; 	y: as float32! pos/y
-		; ]
-		; TBOX_METRICS_LINE_HEIGHT [
-		; 	lineCount: 0
-		; 	dl/GetLineMetrics this null 0 :lineCount
-		; 	if lineCount > max-line-cnt [
-		; 		max-line-cnt: lineCount + 1
-		; 		line-metrics: as DWRITE_LINE_METRICS realloc
-		; 			as byte-ptr! line-metrics
-		; 			lineCount + 1 * size? DWRITE_HIT_TEST_METRICS
-		; 	]
-		; 	lineCount: 0
-		; 	dl/GetLineMetrics this line-metrics max-line-cnt :lineCount
-		; 	lm: line-metrics
-		; 	hr: as-integer arg0
-		; 	while [
-		; 		hr: hr - lm/length
-		; 		lineCount: lineCount - 1
-		; 		all [hr > 0 lineCount > 0]
-		; 	][
-		; 		lm: lm + 1
-		; 	]
-		; 	integer/push as-integer lm/height
-		; ]
+		TBOX_METRICS_INDEX? 
+		TBOX_METRICS_CHAR_INDEX? [
+			pos: as red-pair! arg0
+			idx: -1 trail: -1
+			ok?: pango_layout_xy_to_index layout (pos/x * PANGO_SCALE) (pos/y * PANGO_SCALE) :idx :trail
+			;; DEBUG: 
+			print ["TBOX_METRICS_INDEX? " pos/x "x" pos/y  " " ok? " index: " idx + 1   lf]
+			if all[type = TBOX_METRICS_INDEX? 0 <> trail] [idx: idx + 1]
+			integer/push idx + 1
+		]
+		TBOX_METRICS_SIZE [
+			width: -1 height: -1
+			pango_layout_get_pixel_size layout :width :height
+			;; DEBUG: 
+			print ["TBOX_METRICS_SIZE: " width "x" height lf]
+			pair/push width	height
+		]
+		TBOX_METRICS_LINE_COUNT [
+			idx: pango_layout_get_line_count layout
+			;; DEBUG: 
+			print ["TBOX_METRICS_LINE_COUNT: " idx lf]
+			integer/push idx
+		]
+		TBOX_METRICS_LINE_HEIGHT [
+			int: as red-integer! arg0
+			pango_layout_index_to_pos layout int/value :rect
+			;; DEBUG: 
+			print ["TBOX_METRICS_LINE_HEIGHT " rect/x "x" rect/y "x" rect/width "x" rect/height lf]
+			integer/push rect/height
+		]
 		default [
 			; metrics: as DWRITE_TEXT_METRICS :left
 			; hr: dl/GetMetrics this metrics
@@ -564,63 +576,78 @@ OS-text-box-layout: func [
 		dc 		[draw-ctx!]
 		lc 		[layout-ctx!]
 		cached? [logic!]
+		force?	[logic!]
 
 		font	[handle!]
 		clr		[integer!]
 		text	[red-string!]
 		len     [integer!]
 		str		[c-string!]
+		pc		[handle!]
 ][	
 	;; DEBUG: print ["OS-text-box-layout: " target lf]
 	values: object/get-values box
 	state: as red-block! values + FACE_OBJ_EXT3
 	cached?: TYPE_OF(state) = TYPE_BLOCK
+	;; DEBUG: print ["cached?: " cached? lf]
+	force?: either cached? [
+		int: as red-integer! block/rs-head state
+		bool: as red-logic! int + 1
+		bool/value
+	][true]
+	;; DEBUG: print ["force?: " force? lf]
 
 	lc: declare layout-ctx! ; this is not dynamic but lc/layout would change dynamically for each rich-text
-	
-	either cached? [
-		int: as red-integer! block/rs-head state
-		lc/layout: as handle! int/value
-		;; DEBUG: print ["lc/layout cached: " lc/layout lf]
-		;int: int + 1 tc: int/value
-		;int: int + 1 ts: int/value
-		;int: int + 1 para: int/value
-		;bool: as red-logic! int + 2
-		;bool/value: false
-	][
-		block/make-at state 2 ;maybe more later
-		lc/layout: null
-		;; DEBUG: print ["lc/layout newly created: " lc/layout lf]
-		integer/make-in state as integer! lc/layout
-	]
+	text: as red-string! values + FACE_OBJ_TEXT
+	len: -1
+	str: unicode/to-utf8 text :len
+	layout-ctx-begin lc str len
 
-	either null? target [
-		null
-	][
-		dc: as draw-ctx! target
-		if null? lc/layout [
-			lc/layout: make-pango-cairo-layout dc/raw dc/font-desc
-			if cached? [
-				;; DEBUG: print ["int/value updated: " int/value " " lc/layout lf]
-				int/value: as integer! lc/layout
-				;; DEBUG: print ["int/value now: " int/value lf]
+	either force? [
+		;; create lc/layout
+		;; DEBUG: print ["create layout" lf]
+		either null? target [
+			either cached? [lc/layout: as handle! int/value]
+			[
+				; this is when OS-text-box-metrics is used before drawing
+				if null? pango-context [pango-context: gdk_pango_context_get]
+				lc/layout: pango_layout_new pango-context
+				print ["rich-text layout: " lc/layout lf]
+				pango_layout_set_font_description lc/layout pango_font_description_from_string  gtk-font ; needs to get the rich-text font
 			]
-		]
-		text: as red-string! values + FACE_OBJ_TEXT
-		len: -1
-		str: unicode/to-utf8 text :len
-		layout-ctx-begin lc str len
-
-		styles: as red-block! values + FACE_OBJ_DATA
-		either all [
-			TYPE_OF(styles) = TYPE_BLOCK
-			1 < block/rs-length? styles
 		][
-			parse-text-styles target as handle! lc styles 7FFFFFFFh catch?
-		][
-			g_string_assign as GString! lc/text-markup lc/text
+			dc: as draw-ctx! target
+			lc/layout: make-pango-cairo-layout dc/raw dc/font-desc
+			bool/value: false
 		]
-		layout-ctx-end lc
-		as handle! lc
+		;; DEBUG: 
+		print ["with  target: " target " lc/layout: " lc/layout lf]
+		either cached? [
+			int/value: as integer! lc/layout
+			;; DEBUG: 
+			print ["lc/layout force to be updated: " lc/layout lf]
+		][
+			block/make-at state 2 ;maybe more later
+			;; DEBUG: 
+			print ["lc/layout newly created: " lc/layout lf]
+			integer/make-in state as integer! lc/layout
+			logic/make-in state either null? target [true][false]
+		]
+	][
+		lc/layout: as handle! int/value
+		;; DEBUG: 
+		print ["lc/layout cached: " lc/layout lf]
 	]
+
+	styles: as red-block! values + FACE_OBJ_DATA
+	either all [
+		TYPE_OF(styles) = TYPE_BLOCK
+		1 < block/rs-length? styles
+	][
+		parse-text-styles target as handle! lc styles 7FFFFFFFh catch?
+	][
+		g_string_assign as GString! lc/text-markup lc/text
+	]
+	layout-ctx-end lc
+	as handle! lc
 ]

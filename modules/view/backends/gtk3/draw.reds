@@ -493,7 +493,8 @@ draw-text-box-lines: func [
 	]
 
 	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
-	 	;; DEBUG: print ["draw-text-box" as int-ptr! dc lf]			;-- text-box!
+	 	;; DEBUG: 
+		print ["draw-text-box-lines: " as int-ptr! dc lf]			;-- text-box!
 	 	as layout-ctx! OS-text-box-layout tbox as int-ptr! dc clr yes
 	 ][
 	 	null
@@ -508,31 +509,33 @@ draw-text-box-lines: func [
 	
 		pango-layout-context-set-text lc/layout dc line
 
-		set-source-color ctx clr
-		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
-		
 		pango_layout_set_width lc/layout PANGO_SCALE * size/x
 		pango_layout_set_height lc/layout PANGO_SCALE * size/y
 
 		pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
 
+		;; 
 		pango_cairo_update_layout ctx lc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
 		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
 		
 		; sizef: (lc/font-size / PANGO_SCALE)
-		irect: null lrect: null
+		; irect: null lrect: null
 		; pango_layout_get_extents lc/layout :irect :lrect
 		; print ["get_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
 		; print ["get_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
-		pango_layout_get_pixel_extents lc/layout irect lrect
+		; pango_layout_get_pixel_extents lc/layout irect lrect
 		; print ["get_pixel_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
 		; print ["get_pixel_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
 		; print ["sizef: " sizef lf]
-		sizef: as float! irect/height
-		cairo_move_to ctx as-float pos/x (as-float pos/y); + sizef
-		pl: pango_layout_get_line_readonly lc/layout 0
+		; sizef: as float! irect/height
+		
+		set-source-color ctx clr
+		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
+		
+		cairo_move_to ctx as-float pos/x (as-float pos/y) ; + sizef
+		; pl: pango_layout_get_line_readonly lc/layout 0
 		;pango_cairo_show_layout_line ctx pl
 		pango_cairo_show_layout ctx lc/layout
 
@@ -557,7 +560,8 @@ draw-text-box: func [
 		str		[c-string!]
 		size 	[red-pair!]
 ][
-	;; DEBUG: print ["draw-text-box: " tbox lf]
+	;; DEBUG: 
+	print ["draw-text-box: " tbox lf]
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]

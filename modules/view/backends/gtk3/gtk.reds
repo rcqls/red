@@ -774,6 +774,10 @@ GList!: alias struct! [
 			text	[c-string!]
 			return:	[handle!]
 		]
+		gtk_widget_create_pango_context: "gtk_widget_create_pango_context" [
+			widget 	[handle!]
+			return: [handle!]
+		]
 		gtk_widget_add_events: "gtk_widget_add_events" [
 			widget 	[handle!]
 			mask 	[integer!]
@@ -1152,6 +1156,10 @@ GList!: alias struct! [
 			context		[handle!]
 			return:		[handle!]
 		]
+		pango_layout_copy: "pango_layout_copy" [
+			context		[handle!]
+			return: 	[handle!]
+		]
 		pango_layout_get_context: "pango_layout_get_context" [
 			layout		[handle!]
 			return: 	[handle!]
@@ -1313,6 +1321,7 @@ GList!: alias struct! [
 			y					[integer!]
 			index			[int-ptr!]
 			trailing	[int-ptr!]
+			return:		[logic!]
 		]
 		pango_layout_get_cursor_pos: "pango_layout_get_cursor_pos" [
 			layout		[handle!]
