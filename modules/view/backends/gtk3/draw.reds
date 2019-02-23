@@ -436,7 +436,8 @@ draw-text-at: func [
 	; either pango-font? [
 		;; print ["draw-text-at: dc/layout: " dc/layout lf]
 		unless null? dc/layout [
-			pango-cairo-set-text dc str no
+			;pango-cairo-set-text dc str
+			pango-layout-context-set-text dc/layout dc str
 			;; print ["pango-cairo-set-text: " dc " " str lf]
 			set-source-color ctx color
 			;; print ["set-source-color: " ctx " " color lf]
@@ -453,7 +454,6 @@ draw-text-at: func [
 			
 			;pango_cairo_show_layout ctx dc/layout
 
-			;free-pango-cairo-font dc
 			do-paint dc
 		]
 	; ][
@@ -499,44 +499,45 @@ draw-text-box-lines: func [
 	 	null
 	 ]
 
-	unless null? dc/layout [
+	unless null? lc/layout [
 		gstr: as GString! lc/text-markup
 		line: gstr/str
 	
 		;; TO TEST Markup language syntax:  
 		;; line: "<markup><span style='italic'><span color='#00000000'><span face='Sans 10'><span weight='700'>Hello</span><span color='#FF000000'><span bgcolor='#00FF0000'><span font='24'><span face='Arial'> Red </span></span><span color='#0000FF00'>World! csdcndcnsdcndscndsc jndjdsj cndscjdnscj</span>simple text to go to a new line</span></span></span></span></span></markup>"
 	
-		lc/attrs: pango-cairo-set-text dc line no ; yes to save attrs
+		pango-layout-context-set-text lc/layout dc line
 
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
 		
-		pango_layout_set_width dc/layout PANGO_SCALE * size/x
-		pango_layout_set_height dc/layout PANGO_SCALE * size/y
+		pango_layout_set_width lc/layout PANGO_SCALE * size/x
+		pango_layout_set_height lc/layout PANGO_SCALE * size/y
 
-		pango_layout_set_wrap dc/layout PANGO_WRAP_WORD_CHAR
+		pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
 
-		pango_cairo_update_layout ctx dc/layout
+		pango_cairo_update_layout ctx lc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
 		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
 		
 		; sizef: (lc/font-size / PANGO_SCALE)
 		irect: null lrect: null
-		; pango_layout_get_extents dc/layout :irect :lrect
+		; pango_layout_get_extents lc/layout :irect :lrect
 		; print ["get_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
 		; print ["get_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
-		pango_layout_get_pixel_extents dc/layout irect lrect
+		pango_layout_get_pixel_extents lc/layout irect lrect
 		; print ["get_pixel_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
 		; print ["get_pixel_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
 		; print ["sizef: " sizef lf]
 		sizef: as float! irect/height
 		cairo_move_to ctx as-float pos/x (as-float pos/y); + sizef
-		pl: pango_layout_get_line_readonly dc/layout 0
+		pl: pango_layout_get_line_readonly lc/layout 0
 		;pango_cairo_show_layout_line ctx pl
-		pango_cairo_show_layout ctx dc/layout
+		pango_cairo_show_layout ctx lc/layout
 
 		free-pango-cairo-font dc
+
 		;; DEBUG: print ["free pango"  lf]
 		do-paint dc
 	]
@@ -567,7 +568,7 @@ draw-text-box: func [
 	str: unicode/to-utf8 text :len
 
 	dc/font-desc: pango_font_description_from_string gtk-font
-	make-pango-cairo-layout dc dc/font-desc
+	;;TORM: dc/layout: make-pango-cairo-layout dc/raw dc/font-desc
 	
 	;; DEBUG: print ["draw-text-box text: " str  " dc/font-desc: " dc/font-desc  lf]
 	draw-text-box-lines dc str pos size tbox

@@ -269,6 +269,12 @@ PangoAttribute!: alias struct! [
   PANGO_FONT_MASK_GRAVITY: 64
 ]
 
+#enum PangoAlignment! [
+	PANGO_ALIGN_LEFT
+	PANGO_ALIGN_CENTER
+	PANGO_ALIGN_RIGHT
+]
+
 #define PANGO_SCALE 1024
 #define PANGO_SCALE_XX_SMALL 0.5787037037037
 #define PANGO_SCALE_X_SMALL  0.6444444444444
@@ -1155,6 +1161,18 @@ GList!: alias struct! [
 			text		[c-string!]
 			len			[integer!]
 		]
+		pango_layout_set_markup: "pango_layout_set_markup" [
+			layout	[handle!]
+			markup	[c-string!]
+			len			[integer!]
+		]
+		pango_layout_set_markup_with_accel: "pango_layout_set_markup_with_accel" [
+			layout			[handle!]
+			markup			[c-string!]
+			len					[integer!]
+			accel_mark	[integer!]
+			accel_char	[int-ptr!]
+		] 
    	pango_layout_set_font_description: "pango_layout_set_font_description" [
 			layout		[handle!]
 			fontdesc	[handle!]
@@ -1173,6 +1191,10 @@ GList!: alias struct! [
 			layout		[handle!]
 			line		[integer!]
 			return:		[handle!]
+		]
+		pango_layout_get_character_count: "pango_layout_get_character_count" [
+			layout		[handle!]
+			return:		[integer!]
 		]
 		pango_layout_is_wrapped: "pango_layout_is_wrapped" [
 			layout		[handle!]
@@ -1198,6 +1220,38 @@ GList!: alias struct! [
 			layout		[handle!]
 			return:		[PangoEllipsizeMode!]
 		]
+		pango_layout_get_indent: "pango_layout_get_indent" [
+			layout		[handle!]
+			return:		[integer!]
+		]
+		pango_layout_set_indent: "pango_layout_set_indent" [
+			layout		[handle!]
+			indent		[integer!]
+		]
+		pango_layout_get_spacing: "pango_layout_get_spacing" [
+			layout		[handle!]
+			return:		[integer!]
+		]
+		pango_layout_set_spacing: "pango_layout_set_spacing" [
+			layout		[handle!]
+			spacing		[integer!]
+		]
+		pango_layout_get_justify: "pango_layout_get_justify" [
+			layout		[handle!]
+			return:		[logic!]
+		]
+		pango_layout_set_justify: "pango_layout_set_justify" [
+			layout		[handle!]
+			justify		[logic!]
+		]
+		pango_layout_set_alignment: "pango_layout_set_alignment" [
+			layout		[handle!]
+			align			[PangoAlignment!]
+		]
+		pango_layout_get_alignment: "pango_layout_get_alignment" [
+			layout		[handle!]
+			return:		[PangoAlignment!]
+		]
 		pango_layout_set_width: "pango_layout_set_width" [
 			layout		[handle!]
 			width			[integer!]
@@ -1219,10 +1273,6 @@ GList!: alias struct! [
 			 width		[int-ptr!]
 			 height		[int-ptr!]
 		]
-		pango_layout_set_spacing: "pango_layout_set_spacing" [
-			layout		[handle!]
-			spacing		[integer!]
-		]
 		pango_layout_set_attributes: "pango_layout_set_attributes" [
 			layout		[handle!]
 			attrs		[handle!]
@@ -1238,13 +1288,53 @@ GList!: alias struct! [
 		pango_layout_get_extents: "pango_layout_get_extents" [
 			layout		[handle!]
 			irect			[tagRECT]
-			lrect			[tagRect]
+			lrect			[tagRECT]
 		]
 		pango_layout_get_pixel_extents: "pango_layout_get_pixel_extents" [
 			layout		[handle!]
 			irect			[tagRECT]
-			lrect			[tagRect]
+			lrect			[tagRECT]
 		]
+		pango_layout_index_to_pos: "pango_layout_index_to_pos" [
+			layout		[handle!]
+			index			[integer!]
+			pos				[tagRECT]
+		]
+		pango_layout_index_to_line_x: "pango_layout_index_to_line_x" [
+			layout		[handle!]
+			index			[integer!]
+			trailing	[integer!]
+			line			[int-ptr!]
+			x-pos			[int-ptr!]
+		]
+		pango_layout_xy_to_index: "pango_layout_xy_to_index" [
+			layout		[handle!]
+			x					[integer!]
+			y					[integer!]
+			index			[int-ptr!]
+			trailing	[int-ptr!]
+		]
+		pango_layout_get_cursor_pos: "pango_layout_get_cursor_pos" [
+			layout		[handle!]
+			index			[integer!]
+			spos			[tagRECT]
+			wpos			[tagRECT]
+		]
+		pango_layout_move_cursor_visually: "pango_layout_move_cursor_visually" [
+			layout		[handle!]
+			strong		[logic!]
+			old_ind		[integer!]
+			old_trail	[integer!]
+			direct		[integer!]
+			new_ind		[int-ptr!]
+			new_trail	[int-ptr!]
+		]
+		pango_layout_get_line_count: "pango_layout_get_line_count" [
+			layout		[handle!]
+			return:		[integer!]
+		]
+
+
 		pango_font_description_new: "pango_font_description_new" [
 			return: 	[handle!]
 		]

@@ -14,7 +14,10 @@ Red/System [
 #define TBOX_METRICS_OFFSET?		0
 #define TBOX_METRICS_INDEX?			1
 #define TBOX_METRICS_LINE_HEIGHT	2
-#define TBOX_METRICS_METRICS		3
+#define TBOX_METRICS_SIZE			3
+#define TBOX_METRICS_LINE_COUNT		4
+#define TBOX_METRICS_CHAR_INDEX?	5
+#define TBOX_METRICS_OFFSET_LOWER	6
 
 #define PANGO_TEXT_MARKUP_SIZED		500
 
@@ -88,7 +91,6 @@ layout-ctx-begin: func [
 	lc/text-markup: as handle! g_string_sized_new PANGO_TEXT_MARKUP_SIZED
 	g_string_assign as GString! lc/text-markup ""
 	lc/tag-list: null
-	lc/attrs: null
 
 	ot: pango-open-tag-string? lc "face" gtk-font
 	pango-insert-tag lc ot 0 text-len
@@ -482,51 +484,62 @@ OS-text-box-metrics: func [
 	arg0	[red-value!]
 	type	[integer!]
 	return: [red-value!]
+	/local
+		int		[red-integer!]
+		layout	[handle!]
+		x		[float!]
+		y		[float!]
 ][
-	as red-value! none-value
-	;as red-value! switch type [
-	;	TBOX_METRICS_OFFSET? [
-	;		x: as float32! 0.0 y: as float32! 0.0
-	;		;int: as red-integer! arg0
-	;	]
-	;	TBOX_METRICS_INDEX? [
-	;		pos: as red-pair! arg0
-	;		x: as float32! pos/x
-	;		y: as float32! pos/y
-	;	]
-	;	TBOX_METRICS_LINE_HEIGHT [
-	;		lineCount: 0
-	;		dl/GetLineMetrics this null 0 :lineCount
-	;		if lineCount > max-line-cnt [
-	;			max-line-cnt: lineCount + 1
-	;			line-metrics: as DWRITE_LINE_METRICS realloc
-	;				as byte-ptr! line-metrics
-	;				lineCount + 1 * size? DWRITE_HIT_TEST_METRICS
-	;		]
-	;		lineCount: 0
-	;		dl/GetLineMetrics this line-metrics max-line-cnt :lineCount
-	;		lm: line-metrics
-	;		hr: as-integer arg0
-	;		while [
-	;			hr: hr - lm/length
-	;			lineCount: lineCount - 1
-	;			all [hr > 0 lineCount > 0]
-	;		][
-	;			lm: lm + 1
-	;		]
-	;		integer/push as-integer lm/height
-	;	]
-	;	default [
-	;		metrics: as DWRITE_TEXT_METRICS :left
-	;		hr: dl/GetMetrics this metrics
-	;		#if debug? = yes [if hr <> 0 [log-error hr]]
+	;; DEBUG: 
+	print ["OS-text-box-metrics" lf]
+	int: as red-integer! block/rs-head state
+	layout: as handle! int/value
+	as red-value! switch type [
+		TBOX_METRICS_OFFSET?
+		TBOX_METRICS_OFFSET_LOWER [
+			x: as float! 0.0 y: as float! 0.0
+			int: as red-integer! arg0
+			none-value
+		]
+		; TBOX_METRICS_INDEX? [
+		; 	pos: as red-pair! arg0
+		; 	x: as float32! pos/x
+		; 	y: as float32! pos/y
+		; ]
+		; TBOX_METRICS_LINE_HEIGHT [
+		; 	lineCount: 0
+		; 	dl/GetLineMetrics this null 0 :lineCount
+		; 	if lineCount > max-line-cnt [
+		; 		max-line-cnt: lineCount + 1
+		; 		line-metrics: as DWRITE_LINE_METRICS realloc
+		; 			as byte-ptr! line-metrics
+		; 			lineCount + 1 * size? DWRITE_HIT_TEST_METRICS
+		; 	]
+		; 	lineCount: 0
+		; 	dl/GetLineMetrics this line-metrics max-line-cnt :lineCount
+		; 	lm: line-metrics
+		; 	hr: as-integer arg0
+		; 	while [
+		; 		hr: hr - lm/length
+		; 		lineCount: lineCount - 1
+		; 		all [hr > 0 lineCount > 0]
+		; 	][
+		; 		lm: lm + 1
+		; 	]
+		; 	integer/push as-integer lm/height
+		; ]
+		default [
+			; metrics: as DWRITE_TEXT_METRICS :left
+			; hr: dl/GetMetrics this metrics
+			; #if debug? = yes [if hr <> 0 [log-error hr]]
 
-	;		values: object/get-values as red-object! arg0
-	;		integer/make-at values + TBOX_OBJ_WIDTH as-integer metrics/width
-	;		integer/make-at values + TBOX_OBJ_HEIGHT as-integer metrics/height
-	;		integer/make-at values + TBOX_OBJ_LINE_COUNT metrics/lineCount
-	;	]
-	;]
+			; values: object/get-values as red-object! arg0
+			; integer/make-at values + TBOX_OBJ_WIDTH as-integer metrics/width
+			; integer/make-at values + TBOX_OBJ_HEIGHT as-integer metrics/height
+			; integer/make-at values + TBOX_OBJ_LINE_COUNT metrics/lineCount
+			none-value
+		]
+	]
 ]
 
 OS-text-box-layout: func [
@@ -550,30 +563,54 @@ OS-text-box-layout: func [
 		h		[integer!]
 		dc 		[draw-ctx!]
 		lc 		[layout-ctx!]
+		cached? [logic!]
 
 		font	[handle!]
 		clr		[integer!]
 		text	[red-string!]
 		len     [integer!]
 		str		[c-string!]
-][
-	lc: declare layout-ctx!
-	values: object/get-values box
-
-	text: as red-string! values + FACE_OBJ_TEXT
-	len: -1
-	str: unicode/to-utf8 text :len
-	layout-ctx-begin lc str len
-
-	state: as red-block! values + FACE_OBJ_EXT3
-	 
+][	
 	;; DEBUG: print ["OS-text-box-layout: " target lf]
+	values: object/get-values box
+	state: as red-block! values + FACE_OBJ_EXT3
+	cached?: TYPE_OF(state) = TYPE_BLOCK
+
+	lc: declare layout-ctx! ; this is not dynamic but lc/layout would change dynamically for each rich-text
+	
+	either cached? [
+		int: as red-integer! block/rs-head state
+		lc/layout: as handle! int/value
+		;; DEBUG: print ["lc/layout cached: " lc/layout lf]
+		;int: int + 1 tc: int/value
+		;int: int + 1 ts: int/value
+		;int: int + 1 para: int/value
+		;bool: as red-logic! int + 2
+		;bool/value: false
+	][
+		block/make-at state 2 ;maybe more later
+		lc/layout: null
+		;; DEBUG: print ["lc/layout newly created: " lc/layout lf]
+		integer/make-in state as integer! lc/layout
+	]
 
 	either null? target [
 		null
 	][
 		dc: as draw-ctx! target
-		; copy-cell as red-value! str pval + 3			;-- save text
+		if null? lc/layout [
+			lc/layout: make-pango-cairo-layout dc/raw dc/font-desc
+			if cached? [
+				;; DEBUG: print ["int/value updated: " int/value " " lc/layout lf]
+				int/value: as integer! lc/layout
+				;; DEBUG: print ["int/value now: " int/value lf]
+			]
+		]
+		text: as red-string! values + FACE_OBJ_TEXT
+		len: -1
+		str: unicode/to-utf8 text :len
+		layout-ctx-begin lc str len
+
 		styles: as red-block! values + FACE_OBJ_DATA
 		either all [
 			TYPE_OF(styles) = TYPE_BLOCK
