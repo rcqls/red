@@ -493,6 +493,7 @@ OS-text-box-metrics: func [
 		height	[integer!]
 		pos		[red-pair!]
 		rect	[tagRECT value]
+		lrect	[tagRECT value]
 		idx		[integer!]
 		trail	[integer!]
 		ok?		[logic!]
@@ -523,6 +524,8 @@ OS-text-box-metrics: func [
 		TBOX_METRICS_SIZE [
 			width: -1 height: -1
 			pango_layout_get_pixel_size layout :width :height
+			width: (pango_layout_get_width layout) / PANGO_SCALE
+			height: height * ((pango_layout_get_line_count layout) / PANGO_SCALE) 
 			;; DEBUG: 
 			print ["TBOX_METRICS_SIZE: " width "x" height lf]
 			pair/push width	height
@@ -538,7 +541,7 @@ OS-text-box-metrics: func [
 			pango_layout_index_to_pos layout int/value :rect
 			;; DEBUG: 
 			print ["TBOX_METRICS_LINE_HEIGHT " rect/x "x" rect/y "x" rect/width "x" rect/height lf]
-			integer/push rect/height
+			integer/push (rect/height / PANGO_SCALE)
 		]
 		default [
 			; metrics: as DWRITE_TEXT_METRICS :left
@@ -605,6 +608,8 @@ OS-text-box-layout: func [
 	str: unicode/to-utf8 text :len
 	layout-ctx-begin lc str len
 
+	size: as red-pair! values + FACE_OBJ_SIZE
+
 	either force? [
 		;; create lc/layout
 		;; DEBUG: print ["create layout: " target  lf]
@@ -649,5 +654,23 @@ OS-text-box-layout: func [
 		g_string_assign as GString! lc/text-markup lc/text
 	]
 	layout-ctx-end lc
+	if null? target [pango-layout-set-text lc size]
 	as handle! lc
 ]
+
+pango-layout-set-text: func [
+	lc 		[layout-ctx!]
+	size	[red-pair!]
+	/local
+		gstr 	[GString!]
+][
+	gstr: as GString! lc/text-markup
+	pango_layout_set_markup lc/layout gstr/str -1
+	pango_layout_set_width lc/layout PANGO_SCALE * size/x
+	pango_layout_set_height lc/layout PANGO_SCALE * size/y
+	pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
+]
+
+; pango-layout-styled-set-text: func [
+
+; ]

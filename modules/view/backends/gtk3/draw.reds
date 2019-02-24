@@ -493,29 +493,31 @@ draw-text-box-lines: func [
 	]
 
 	lc: either TYPE_OF(tbox) = TYPE_OBJECT [	
-	 	;; DEBUG: 
-		print ["draw-text-box-lines: " as int-ptr! dc lf]			;-- text-box!
+	 	;; DEBUG: print ["draw-text-box-lines: " as int-ptr! dc lf]			;-- text-box!
 	 	as layout-ctx! OS-text-box-layout tbox as int-ptr! dc clr yes
 	 ][
 	 	null
 	 ]
 
 	unless null? lc/layout [
-		gstr: as GString! lc/text-markup
-		line: gstr/str
+
+
+		; gstr: as GString! lc/text-markup
+		; line: gstr/str
 	
-		;; TO TEST Markup language syntax:  
-		;; line: "<markup><span style='italic'><span color='#00000000'><span face='Sans 10'><span weight='700'>Hello</span><span color='#FF000000'><span bgcolor='#00FF0000'><span font='24'><span face='Arial'> Red </span></span><span color='#0000FF00'>World! csdcndcnsdcndscndsc jndjdsj cndscjdnscj</span>simple text to go to a new line</span></span></span></span></span></markup>"
+		; ;; TO TEST Markup language syntax:  
+		; ;; line: "<markup><span style='italic'><span color='#00000000'><span face='Sans 10'><span weight='700'>Hello</span><span color='#FF000000'><span bgcolor='#00FF0000'><span font='24'><span face='Arial'> Red </span></span><span color='#0000FF00'>World! csdcndcnsdcndscndsc jndjdsj cndscjdnscj</span>simple text to go to a new line</span></span></span></span></span></markup>"
 	
-		pango-layout-context-set-text lc/layout dc line
+		; pango-layout-context-set-text lc/layout dc line
 
-		pango_layout_set_width lc/layout PANGO_SCALE * size/x
-		pango_layout_set_height lc/layout PANGO_SCALE * size/y
+		; pango_layout_set_width lc/layout PANGO_SCALE * size/x
+		; pango_layout_set_height lc/layout PANGO_SCALE * size/y
 
-		pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
+		; pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
 
-		;; 
-		pango_cairo_update_layout ctx lc/layout
+		pango-layout-set-text lc size
+
+		;; pango_cairo_update_layout ctx lc/layout
 		;; DEBUG: print ["pango_cairo_update_layout"  lf]
 
 		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
@@ -560,16 +562,14 @@ draw-text-box: func [
 		str		[c-string!]
 		size 	[red-pair!]
 ][
-	;; DEBUG: 
-	print ["draw-text-box: " tbox lf]
+	;; DEBUG: print ["draw-text-box: " tbox lf]
 	values: object/get-values tbox
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
 
 	size: as red-pair! values + FACE_OBJ_SIZE
 	
-	;; DEBUG: 
-	print ["pos : " pos/x "x" pos/y " size: " size/x "x" size/y lf]
+	;; DEBUG: print ["pos : " pos/x "x" pos/y " size: " size/x "x" size/y lf]
 
 	len: -1
 	str: unicode/to-utf8 text :len
@@ -591,6 +591,7 @@ OS-draw-text: func [
 	either TYPE_OF(text) = TYPE_STRING [
 		draw-text-at dc text dc/font-color pos/x pos/y
 	][
+		;; DEBUG: print ["OS-draw-text: " pos/x "x" pos/y lf]
 		draw-text-box dc pos as red-object! text catch?
 	]
 

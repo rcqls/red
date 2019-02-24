@@ -1187,7 +1187,7 @@ init-combo-box: func [
 		tail: as red-string! block/rs-tail data
 
 		size: block/rs-length? data
-		print ["combo-size: " size lf]
+		;; DEBUG: print ["combo-size: " size lf]
 
 		;remove all items
 		gtk_combo_box_text_remove_all combo
@@ -1593,6 +1593,7 @@ OS-make-view: func [
 			gtk_widget_set_can_focus widget yes
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
+			print ["richtext " widget " face " face " size: " size/x "x" size/y lf]
 		]
 		sym = window [
 			;; DEBUG: print ["win " GTKApp lf]

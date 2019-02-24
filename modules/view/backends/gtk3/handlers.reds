@@ -211,7 +211,8 @@ base-draw: func [
 	case [
 		sym = base [render-text cr vals]
 		sym = rich-text [
-			;; DEBUG: print ["base-draw (rich-text)" lf]
+			;; DEBUG: 
+			print ["base-draw (rich-text)" widget " face " get-face-obj widget lf]
 			pos/x: 0 pos/y: 0
 			init-draw-ctx :DC cr
 			draw-text-box :DC :pos get-face-obj widget yes
