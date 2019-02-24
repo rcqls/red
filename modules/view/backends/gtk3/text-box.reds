@@ -494,6 +494,7 @@ OS-text-box-metrics: func [
 		pos		[red-pair!]
 		rect	[tagRECT value]
 		lrect	[tagRECT value]
+		pline	[handle!]
 		idx		[integer!]
 		trail	[integer!]
 		ok?		[logic!]
@@ -522,13 +523,16 @@ OS-text-box-metrics: func [
 			integer/push idx + 1
 		]
 		TBOX_METRICS_SIZE [
+			pline: pango_layout_get_line layout 0
+			pango_layout_line_get_pixel_extents pline rect lrect
 			width: -1 height: -1
 			pango_layout_get_pixel_size layout :width :height
-			width: (pango_layout_get_width layout) / PANGO_SCALE
-			height: height * ((pango_layout_get_line_count layout) / PANGO_SCALE) 
+			; width: (pango_layout_get_width layout) / PANGO_SCALE
+			height: (pango_layout_get_line_count layout) * height 
+			width: rect/width
 			;; DEBUG: 
 			print ["TBOX_METRICS_SIZE: " width "x" height lf]
-			pair/push width	height
+			pair/push width height
 		]
 		TBOX_METRICS_LINE_COUNT [
 			idx: pango_layout_get_line_count layout
@@ -539,9 +543,10 @@ OS-text-box-metrics: func [
 		TBOX_METRICS_LINE_HEIGHT [
 			int: as red-integer! arg0
 			pango_layout_index_to_pos layout int/value :rect
+			height: rect/height / PANGO_SCALE
 			;; DEBUG: 
-			print ["TBOX_METRICS_LINE_HEIGHT " rect/x "x" rect/y "x" rect/width "x" rect/height lf]
-			integer/push (rect/height / PANGO_SCALE)
+			print ["TBOX_METRICS_LINE_HEIGHT " height  " (" rect/x "x" rect/y "x" rect/width "x" rect/height ")" lf]
+			integer/push height
 		]
 		default [
 			; metrics: as DWRITE_TEXT_METRICS :left

@@ -1398,6 +1398,11 @@ GList!: alias struct! [
 			layout		[handle!]
 			return:		[integer!]
 		]
+		pango_layout_line_get_pixel_extents: "pango_layout_line_get_pixel_extents" [
+			line			[handle!]
+			irect			[tagRECT]
+			lrect			[tagRECT]
+		]
 
 
 		pango_font_description_new: "pango_font_description_new" [
