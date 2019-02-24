@@ -568,6 +568,9 @@ draw-text-box: func [
 
 	size: as red-pair! values + FACE_OBJ_SIZE
 	
+	;; DEBUG: 
+	print ["pos : " pos/x "x" pos/y " size: " size/x "x" size/y lf]
+
 	len: -1
 	str: unicode/to-utf8 text :len
 

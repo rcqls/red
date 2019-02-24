@@ -517,7 +517,7 @@ widget-enter-notify-event: func [
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "ENTER: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags EVT_OVER
 	no
 ]
@@ -532,7 +532,7 @@ widget-leave-notify-event: func [
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "LEAVE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags or EVT_FLAG_AWAY EVT_OVER
 	no
 ]
@@ -559,7 +559,7 @@ drag-widget-motion-notify-event: func [
 			motion/y_new: as-integer y + either y > 0.0 [0.5][-0.5]
 			motion/x_root: event/x_root
 			motion/y_root: event/y_root
-			flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+			flags: check-flags event/type event/state
 			make-event widget flags EVT_OVER
 		]
 		motion/cpt: motion/cpt + 1
@@ -584,7 +584,7 @@ drag-widget-button-press-event: func [
 	motion/y_root: event/y_root
 	motion/x_new: 0
 	motion/y_new: 0
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
 	yes
 ]
@@ -616,7 +616,7 @@ drag-widget-button-release-event: func [
 	]
 
 	motion/state: no
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags event/state EVT_LEFT_UP
 	yes
 ]
@@ -637,7 +637,7 @@ mouse-button-press-event: func [
 	motion/y_root: event/y_root
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
 	yes
 ]
@@ -658,7 +658,7 @@ mouse-button-release-event: func [
 	motion/y_root: event/y_root
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_UP
 	yes
 ]
@@ -680,7 +680,7 @@ mouse-motion-notify-event: func [
 	motion/y_new: as-integer event/y
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
-	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	flags: check-flags event/type event/state
 	make-event widget flags EVT_OVER	 
 	;; DEBUG: print ["mouse-motion-notify-event:  down? " (event/state and GDK_BUTTON1_MASK <> 0) " " (flags and EVT_FLAG_DOWN <> 0) lf] 
 	yes

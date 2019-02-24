@@ -249,23 +249,6 @@ get-event-flag: func [
 	as red-value! logic/push flags and flag <> 0
 ]
 
-decode-down-flags: func [
-	wParam  [integer!]
-	return: [integer!]
-	/local
-		flags [integer!]
-][
-	flags: 0
-	if wParam and 0001h <> 0 [flags: flags or EVT_FLAG_DOWN]
-	if wParam and 0002h <> 0 [flags: flags or EVT_FLAG_ALT_DOWN]
-	if wParam and 0004h <> 0 [flags: flags or EVT_FLAG_SHIFT_DOWN]
-	if wParam and 0008h <> 0 [flags: flags or EVT_FLAG_CTRL_DOWN]
-	if wParam and 0010h <> 0 [flags: flags or EVT_FLAG_MID_DOWN]
-	if wParam and 0020h <> 0 [flags: flags or EVT_FLAG_AUX_DOWN]
-	if wParam and 0040h <> 0 [flags: flags or EVT_FLAG_AUX_DOWN]	;-- needs an AUX2 flag
-	flags
-]
-
 make-event: func [
 	msg		[handle!]
 	flags	[integer!]
@@ -382,6 +365,45 @@ check-extra-buttons: func [
 	if state and GDK_BUTTON2_MASK  <> 0 [buttons: buttons or EVT_FLAG_DOWN]
 	if state and GDK_BUTTON3_MASK  <> 0 [buttons: buttons or EVT_FLAG_DOWN]
 	buttons
+]
+
+check-down-flags: func [
+	state  [integer!]
+	return: [integer!]
+	/local
+		flags [integer!]
+][
+	flags: 0
+	if state and GDK_BUTTON1_MASK <> 0 [flags: flags or EVT_FLAG_DOWN]
+	if state and GDK_META_MASK <> 0 [flags: flags or EVT_FLAG_ALT_DOWN]
+	if state and GDK_SHIFT_MASK <> 0 [flags: flags or EVT_FLAG_SHIFT_DOWN]
+	if state and GDK_CONTROL_MASK <> 0 [flags: flags or EVT_FLAG_CTRL_DOWN]
+	if state and GDK_BUTTON2_MASK <> 0 [flags: flags or EVT_FLAG_MID_DOWN]
+	if state and GDK_BUTTON3_MASK <> 0 [flags: flags or EVT_FLAG_AUX_DOWN]
+	;;if state and 0040h <> 0 [flags: flags or EVT_FLAG_AUX_DOWN]	;-- needs an AUX2 flag
+	flags
+]
+
+check-flags: func [
+	type   [integer!]
+	state  [integer!]
+	return: [integer!]
+	/local
+		flags [integer!]
+][
+	flags: 0
+	;;[flags: flags or EVT_FLAG_AX2_DOWN]
+	if state and GDK_META_MASK <> 0 [flags: flags or EVT_FLAG_AUX_DOWN]
+	if state and GDK_META_MASK <> 0 [flags: flags or EVT_FLAG_ALT_DOWN]
+	if state and GDK_BUTTON2_MASK <> 0 [flags: flags or EVT_FLAG_MID_DOWN]
+	if state and GDK_BUTTON1_MASK <> 0 [flags: flags or EVT_FLAG_DOWN]
+	;;[flags: flags or EVT_FLAG_AWAY]
+	if type = GDK_DOUBLE_BUTTON_PRESS [flags: flags or EVT_FLAG_DBL_CLICK]
+	if state and GDK_CONTROL_MASK <> 0 [flags: flags or EVT_FLAG_CTRL_DOWN]
+	if state and GDK_SHIFT_MASK <> 0 [flags: flags or EVT_FLAG_SHIFT_DOWN]
+	if state and GDK_HYPER_MASK <> 0 [flags: flags or EVT_FLAG_MENU_DOWN]
+	if state and GDK_SUPER_MASK <> 0 [flags: flags or EVT_FLAG_CMD_DOWN]
+	flags
 ]
 
 translate-key: func [

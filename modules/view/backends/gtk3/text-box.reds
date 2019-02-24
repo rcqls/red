@@ -37,8 +37,7 @@ pango-compare-tag: func [
 	/local
 		comp 	[integer!]
 ][
-	;; DEBUG: 
-	print ["pango-compare-tag: (" tag1/pos "," tag1/len "," tag1/opt ") and ("  tag2/pos "," tag2/len "," tag2/opt  ") -> " ]
+	;; DEBUG: print ["pango-compare-tag: (" tag1/pos "," tag1/len "," tag1/opt ") and ("  tag2/pos "," tag2/len "," tag2/opt  ") -> " ]
 	either tag1/pos = tag2/pos [
 		either tag1/len = tag2/len [comp: 0][
 			comp: either tag1/len > tag2/len [-1][1]
@@ -270,8 +269,7 @@ pango-markup-text: func [
 		g_string_assign as GString! lc/text-markup "<markup>"
 		until [
 			tag: as pango-opt-tag! gl/data
-			;; DEBUG: 
-			print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
+			;; DEBUG: print ["<span "  tag/opt "> at (" tag/pos "," tag/len ")" lf]
 			pango-process-tag lc tag/opt tag/pos tag/len
 			
 			gl: gl/next
@@ -281,6 +279,7 @@ pango-markup-text: func [
 		;; DEBUG: print ["Add </markup>" lf]
 		text: as GString! lc/text-markup
 		g_string_append  text "</markup>"
+		;; DEBUG: 
 		print ["tex-markup: " text/str lf]
 	]
 ]
@@ -586,7 +585,8 @@ OS-text-box-layout: func [
 		str		[c-string!]
 		pc		[handle!]
 ][	
-	;; DEBUG: print ["OS-text-box-layout: " box " target: " target lf]
+	;; DEBUG: 
+	print ["OS-text-box-layout: " box " target: " target lf]
 	values: object/get-values box
 	state: as red-block! values + FACE_OBJ_EXT3
 	cached?: TYPE_OF(state) = TYPE_BLOCK
@@ -607,7 +607,7 @@ OS-text-box-layout: func [
 
 	either force? [
 		;; create lc/layout
-		;; DEBUG: print ["create layout" lf]
+		;; DEBUG: print ["create layout: " target  lf]
 		either null? target [
 			either cached? [lc/layout: as handle! rstate/value]
 			[
@@ -620,12 +620,12 @@ OS-text-box-layout: func [
 		][
 			dc: as draw-ctx! target
 			lc/layout: make-pango-cairo-layout dc/raw dc/font-desc
-			bool/value: false
-			;; DEBUG: print ["rich-text layout with target: " lc/layout " bool: " bool " force: " bool/value lf]
+			;; DEBUG: print ["rich-text layout with target: " lc/layout lf]
 		]
 		;; DEBUG: print ["with  target: " target " lc/layout: " lc/layout lf]
 		either cached? [
 			rstate/value: as integer! lc/layout
+			bool/value: false
 			;; DEBUG: print ["lc/layout force to be updated: " lc/layout " bool: " bool/value lf]
 		][
 			block/make-at state 3 									;maybe more later
