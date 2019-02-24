@@ -486,6 +486,7 @@ OS-text-box-metrics: func [
 	return: [red-value!]
 	/local
 		int		[red-integer!]
+		rstate	[red-integer!]
 		layout	[handle!]
 		x		[float!]
 		y		[float!]
@@ -493,14 +494,14 @@ OS-text-box-metrics: func [
 		height	[integer!]
 		pos		[red-pair!]
 		rect	[tagRECT value]
-		idx	[integer!]
+		idx		[integer!]
 		trail	[integer!]
 		ok?		[logic!]
 ][
 	;; DEBUG: 
 	print ["OS-text-box-metrics: " type lf]
-	int: as red-integer! block/rs-head state
-	layout: as handle! int/value
+	rstate: as red-integer! block/rs-head state
+	layout: as handle! rstate/value
 	if null? layout [return as red-value! none-value]
 	as red-value! switch type [
 		TBOX_METRICS_OFFSET?
@@ -564,7 +565,7 @@ OS-text-box-layout: func [
 		hWnd	[handle!]
 		values	[red-value!]
 		size	[red-pair!]
-		int		[red-integer!]
+		rstate	[red-integer!]
 		bool	[red-logic!]
 		state	[red-block!]
 		styles	[red-block!]
@@ -585,14 +586,15 @@ OS-text-box-layout: func [
 		str		[c-string!]
 		pc		[handle!]
 ][	
-	;; DEBUG: print ["OS-text-box-layout: " target lf]
+	;; DEBUG: print ["OS-text-box-layout: " box " target: " target lf]
 	values: object/get-values box
 	state: as red-block! values + FACE_OBJ_EXT3
 	cached?: TYPE_OF(state) = TYPE_BLOCK
-	;; DEBUG: print ["cached?: " cached? lf]
+	;; DEBUG: print ["cached?: " cached? " state: " state lf]
 	force?: either cached? [
-		int: as red-integer! block/rs-head state
-		bool: as red-logic! int + 1
+		rstate: as red-integer! block/rs-head state
+		bool: as red-logic! rstate + 1
+		;; DEBUG: print ["rstate: " rstate " -> " rstate/value " bool: " bool " -> " bool/value  lf]
 		bool/value
 	][true]
 	;; DEBUG: print ["force?: " force? lf]
@@ -607,36 +609,34 @@ OS-text-box-layout: func [
 		;; create lc/layout
 		;; DEBUG: print ["create layout" lf]
 		either null? target [
-			either cached? [lc/layout: as handle! int/value]
+			either cached? [lc/layout: as handle! rstate/value]
 			[
 				; this is when OS-text-box-metrics is used before drawing
 				if null? pango-context [pango-context: gdk_pango_context_get]
 				lc/layout: pango_layout_new pango-context
-				print ["rich-text layout: " lc/layout lf]
+				;; DEBUG: print ["rich-text layout: " lc/layout lf]
 				pango_layout_set_font_description lc/layout pango_font_description_from_string  gtk-font ; needs to get the rich-text font
 			]
 		][
 			dc: as draw-ctx! target
 			lc/layout: make-pango-cairo-layout dc/raw dc/font-desc
 			bool/value: false
+			;; DEBUG: print ["rich-text layout with target: " lc/layout " bool: " bool " force: " bool/value lf]
 		]
-		;; DEBUG: 
-		print ["with  target: " target " lc/layout: " lc/layout lf]
+		;; DEBUG: print ["with  target: " target " lc/layout: " lc/layout lf]
 		either cached? [
-			int/value: as integer! lc/layout
-			;; DEBUG: 
-			print ["lc/layout force to be updated: " lc/layout lf]
+			rstate/value: as integer! lc/layout
+			;; DEBUG: print ["lc/layout force to be updated: " lc/layout " bool: " bool/value lf]
 		][
-			block/make-at state 2 ;maybe more later
-			;; DEBUG: 
-			print ["lc/layout newly created: " lc/layout lf]
-			integer/make-in state as integer! lc/layout
-			logic/make-in state either null? target [true][false]
+			block/make-at state 3 									;maybe more later
+			;; DEBUG: print ["lc/layout newly created: " lc/layout lf]
+			integer/make-in state as integer! lc/layout				; handle for lc/layout
+			logic/make-in state either null? target [true][false] 	; force build lc/layout
+			logic/make-in state true								; possible use for redraw used in gui.red/update-richtext
 		]
 	][
-		lc/layout: as handle! int/value
-		;; DEBUG: 
-		print ["lc/layout cached: " lc/layout lf]
+		lc/layout: as handle! rstate/value
+		;; DEBUG: print ["lc/layout cached: " lc/layout lf]
 	]
 
 	styles: as red-block! values + FACE_OBJ_DATA

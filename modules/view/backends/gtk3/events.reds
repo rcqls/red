@@ -228,6 +228,7 @@ get-event-flags: func [
 	/local
 		blk [red-block!]
 ][
+	;; DEBUG: print ["get-event-flags: " evt/flags lf]
 	blk: flags-blk
 	block/rs-clear blk	
 	if evt/flags and EVT_FLAG_AWAY		 <> 0 [block/rs-append blk as red-value! _away]
@@ -282,6 +283,8 @@ make-event: func [
 	gui-evt/msg:   as byte-ptr! msg
 	gui-evt/flags: flags
 
+	;; DEBUG: print ["make-event:  down? " flags and EVT_FLAG_DOWN <> 0 lf]
+
 	state: EVT_DISPATCH
 
 	switch evt [
@@ -314,10 +317,12 @@ make-event: func [
 	#call [system/view/awake gui-evt]
 
 	res: as red-word! stack/arguments
+
 	if TYPE_OF(res) = TYPE_WORD [
 		sym: symbol/resolve res/symbol
+		;; DEBUG: print ["make-events result:" sym lf]
 		case [
-			sym = done [state: EVT_DISPATCH]			;-- prevent other high-level events
+			sym = done [state: EVT_NO_DISPATCH]			;-- prevent other high-level events
 			sym = stop [state: EVT_NO_DISPATCH]			;-- prevent all other events
 			true 	   [0]								;-- ignore others
 		]
@@ -364,6 +369,19 @@ check-extra-keys: func [
 	if state and GDK_CONTROL_MASK <> 0 [key: key or EVT_FLAG_CTRL_DOWN]
 	if any [state and GDK_MOD1_MASK <> 0  state and GDK_MOD5_MASK <> 0][key: key or EVT_FLAG_MENU_DOWN]
 	key
+]
+
+check-extra-buttons: func [
+	state	[integer!]
+	return:	[integer!]
+	/local
+		buttons	[integer!]
+][
+	buttons: 0
+	if state and GDK_BUTTON1_MASK  <> 0 [buttons: EVT_FLAG_DOWN]
+	if state and GDK_BUTTON2_MASK  <> 0 [buttons: buttons or EVT_FLAG_DOWN]
+	if state and GDK_BUTTON3_MASK  <> 0 [buttons: buttons or EVT_FLAG_DOWN]
+	buttons
 ]
 
 translate-key: func [

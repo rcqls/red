@@ -211,7 +211,7 @@ base-draw: func [
 	case [
 		sym = base [render-text cr vals]
 		sym = rich-text [
-			print ["base-draw (rich-text)" lf]
+			;; DEBUG: print ["base-draw (rich-text)" lf]
 			pos/x: 0 pos/y: 0
 			init-draw-ctx :DC cr
 			draw-text-box :DC :pos get-face-obj widget yes
@@ -513,9 +513,12 @@ widget-enter-notify-event: func [
 	event	[GdkEventCrossing!]
 	ctx 	[node!]
 	return: [logic!]
+	/local
+		flags 		[integer!]
 ][
 	;; DEBUG: print [ "ENTER: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	make-event widget 0 EVT_OVER
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags EVT_OVER
 	no
 ]
 
@@ -525,9 +528,12 @@ widget-leave-notify-event: func [
 	event	[GdkEventCrossing!]
 	ctx 	[node!]
 	return: [logic!]
+	/local
+		flags 		[integer!]
 ][
 	;; DEBUG: print [ "LEAVE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	make-event widget EVT_FLAG_AWAY EVT_OVER
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags or EVT_FLAG_AWAY EVT_OVER
 	no
 ]
 
@@ -541,9 +547,7 @@ drag-widget-motion-notify-event: func [
 		offset 	[red-pair!]
 		x 		[float!]
 		y 		[float!]
-		; state 	[red-block!]
-		; int 	[red-integer!]
-		; s 		[series!]
+		flags 	[integer!]
 
 ][
 	;; Drag -> DEBUG: print [ "MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
@@ -555,7 +559,8 @@ drag-widget-motion-notify-event: func [
 			motion/y_new: as-integer y + either y > 0.0 [0.5][-0.5]
 			motion/x_root: event/x_root
 			motion/y_root: event/y_root
-			make-event widget 0 EVT_OVER
+			flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+			make-event widget flags EVT_OVER
 		]
 		motion/cpt: motion/cpt + 1
 		yes
@@ -570,6 +575,7 @@ drag-widget-button-press-event: func [
 	return: [logic!]
 	/local
 		offset 	[red-pair!]
+		flags 	[integer!]
 ][
 	;; Drag -> DEBUG: print [ "BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	motion/state: yes
@@ -578,7 +584,8 @@ drag-widget-button-press-event: func [
 	motion/y_root: event/y_root
 	motion/x_new: 0
 	motion/y_new: 0
-	make-event widget 0 EVT_LEFT_DOWN
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags EVT_LEFT_DOWN
 	yes
 ]
 
@@ -592,6 +599,7 @@ drag-widget-button-release-event: func [
 		type	[red-word!]
 		sym		[integer!]
 		state	[logic!]
+		flags 	[integer!]
 ][
 	; print [ "Drag -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	
@@ -608,7 +616,8 @@ drag-widget-button-release-event: func [
 	]
 
 	motion/state: no
-	make-event widget 0 EVT_LEFT_UP
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags event/state EVT_LEFT_UP
 	yes
 ]
 
@@ -618,16 +627,18 @@ mouse-button-press-event: func [
 	event	[GdkEventButton!]
 	ctx 	[node!]
 	return: [logic!]
+	/local
+		flags 		[integer!]
 ][
-	;; DEBUG: 
-	print [ "mouse -> BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
-	make-event widget 0 EVT_LEFT_DOWN
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags EVT_LEFT_DOWN
 	yes
 ]
 
@@ -637,16 +648,18 @@ mouse-button-release-event: func [
 	event	[GdkEventButton!]
 	ctx 	[node!]
 	return: [logic!]
+	/local
+		flags 		[integer!]
 ][
-	;; DEBUG: 
-	print [ "mouse -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	motion/state: yes
 	motion/cpt: 0
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
-	make-event widget 0 EVT_LEFT_UP
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags EVT_LEFT_UP
 	yes
 ]
 
@@ -660,18 +673,16 @@ mouse-motion-notify-event: func [
 		offset 	[red-pair!]
 		x 		[float!]
 		y 		[float!]
-		; state 	[red-block!]
-		; int 	[red-integer!]
-		; s 		[series!]
-
+		flags	[integer!]
 ][
-	;; DEBUG: 
-	print [ "mouse -> MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
-	make-event widget 0 EVT_OVER	 
+	flags: (check-extra-keys event/state) or (check-extra-buttons event/state)
+	make-event widget flags EVT_OVER	 
+	;; DEBUG: print ["mouse-motion-notify-event:  down? " (event/state and GDK_BUTTON1_MASK <> 0) " " (flags and EVT_FLAG_DOWN <> 0) lf] 
 	yes
 ]
 
