@@ -501,44 +501,12 @@ draw-text-box-lines: func [
 
 	unless null? lc/layout [
 
-
-		; gstr: as GString! lc/text-markup
-		; line: gstr/str
-	
-		; ;; TO TEST Markup language syntax:  
-		; ;; line: "<markup><span style='italic'><span color='#00000000'><span face='Sans 10'><span weight='700'>Hello</span><span color='#FF000000'><span bgcolor='#00FF0000'><span font='24'><span face='Arial'> Red </span></span><span color='#0000FF00'>World! csdcndcnsdcndscndsc jndjdsj cndscjdnscj</span>simple text to go to a new line</span></span></span></span></span></markup>"
-	
-		; pango-layout-context-set-text lc/layout dc line
-
-		; pango_layout_set_width lc/layout PANGO_SCALE * size/x
-		; pango_layout_set_height lc/layout PANGO_SCALE * size/y
-
-		; pango_layout_set_wrap lc/layout PANGO_WRAP_WORD_CHAR
-
 		pango-layout-set-text lc size
 
-		;; pango_cairo_update_layout ctx lc/layout
-		;; DEBUG: print ["pango_cairo_update_layout"  lf]
-
-		;; DEBUG: print ["font-size: " lc/font-size " vs " 24 * PANGO_SCALE  lf]
-		
-		; sizef: (lc/font-size / PANGO_SCALE)
-		; irect: null lrect: null
-		; pango_layout_get_extents lc/layout :irect :lrect
-		; print ["get_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
-		; print ["get_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
-		; pango_layout_get_pixel_extents lc/layout irect lrect
-		; print ["get_pixel_extents -> irect: " irect/x "x" irect/y "x" irect/width "x" irect/height lf]
-		; print ["get_pixel_extents -> lrect: " lrect/x "x" lrect/y "x" lrect/width "x" lrect/height lf]
-		; print ["sizef: " sizef lf]
-		; sizef: as float! irect/height
-		
 		set-source-color ctx clr
 		;; DEBUG: print ["set-source-color: " ctx " " clr lf]
 		
 		cairo_move_to ctx as-float pos/x (as-float pos/y) ; + sizef
-		; pl: pango_layout_get_line_readonly lc/layout 0
-		;pango_cairo_show_layout_line ctx pl
 		pango_cairo_show_layout ctx lc/layout
 
 		free-pango-cairo-font dc
