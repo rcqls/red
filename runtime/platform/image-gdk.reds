@@ -14,7 +14,7 @@ Red/System [
 #define IMG_NODE_MODIFIED		2
 
 
-argb-to-abgr: func [
+argb-to-rgba: func [
 	color		[integer!]
 	return: 	[integer!]
 	/local
@@ -321,7 +321,7 @@ OS-image: context [
 		while [data-pixbuf < end-data-pixbuf][
 			pixel: data-pixbuf/value
 			;; DEBUG: print ["pixel:" pixel lf]
-			pixel: argb-to-abgr pixel
+			pixel: argb-to-rgba pixel
 			data-pixbuf/value: pixel
 			data-pixbuf: data-pixbuf + 1
 		]
@@ -340,8 +340,7 @@ OS-image: context [
 			width		[integer!]
 			height		[integer!]
 			ctx			[integer!]
-			;rect		[NSRect!]
-			bytes-row	[integer!]
+			; bytes-row	[integer!]
 			image-data	[integer!]
 			image		[integer!]
 			n			[integer!]
@@ -366,14 +365,7 @@ OS-image: context [
 		width: gdk_pixbuf_get_width as handle! image
 		height: gdk_pixbuf_get_height as handle! image
 
-		bytes-row: width * 4
-		; ??? either alpha? [
-		; 	info: 2101h		;-- kCGImageAlphaPremultipliedLast | kCGBitmapFloatComponents
-		; 	n: 4
-		; ][
-		; 	info: 8198		;-- kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Little
-		; 	n: 1
-		; ]
+		; bytes-row: width * 4
 
 		; maybe better use other copy
 		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! image
@@ -407,13 +399,20 @@ OS-image: context [
 		return:		[node!]
 		/local
 			path 	[c-string!]
-			h		[int-ptr!]
+			pixbuf	[int-ptr!]
+			h		[integer!]
+			w		[integer!]
+			buf 	[byte-ptr!]
+
 	][
 		path: file/to-OS-path src ; DOES NOT WORK as in macOS: simple-io/to-NSURL src yes
 		;; DEBUG: print [ "load-image: " path lf]
-		h: gdk_pixbuf_new_from_file path null
-		;; print ["handle: " h ", wxh: " gdk_pixbuf_get_width h "x" gdk_pixbuf_get_height h]
-		make-node h null 0 gdk_pixbuf_get_width h gdk_pixbuf_get_height h
+		pixbuf: gdk_pixbuf_new_from_file path null
+		;; print ["handle: " pixbuf ", wxh: " gdk_pixbuf_get_width h "x" gdk_pixbuf_get_height h]
+		w: gdk_pixbuf_get_width pixbuf h: gdk_pixbuf_get_height pixbuf
+		;buf: gdk_pixbuf_get_pixels pixbuf
+		;buffer-argb-to-abgr as int-ptr! buf w h
+		make-node pixbuf null 0 w h
 	]
 
 	; DO NOT KNOW IF USEFUL!
@@ -566,8 +565,7 @@ OS-image: context [
 			width 	[integer!]
 			height 	[integer!]
 	][
-		;; DEBUG: 
-		print ["OS-image/to-pixbuf" lf]
+		;; DEBUG: print ["OS-image/to-pixbuf" lf]
 		inode: as img-node! (as series! img/node/value) + 1
 		if inode/flags and IMG_NODE_MODIFIED <> 0 [
 			pixbuf: make-pixbuf img
@@ -595,55 +593,13 @@ OS-image: context [
 		stride: 0
 		bitmap: OS-image/lock-bitmap image yes
 		data: OS-image/get-data bitmap :stride
-		pixbuf: gdk_pixbuf_new 0 yes 8 w h;CGImageCreate w h 8 32 w * 4 clr 2004h data null true 0 ;-- kCGRenderingIntentDefault
+		pixbuf: gdk_pixbuf_new 0 yes 8 w h
 		copy-memory gdk_pixbuf_get_pixels pixbuf as byte-ptr! data w * h * 4
 		OS-image/unlock-bitmap image bitmap
 		buf: gdk_pixbuf_get_pixels pixbuf
 		buffer-argb-to-abgr as int-ptr! buf w h
 		pixbuf
 	]
-
-	; ; used in OS-image/do-draw -> to adapt to gdk
-	; to-bitmap-ctx: func [
-	; 	img		[integer!]
-	; 	return: [int-ptr!]
-	; 	/local
-	; 		color-space [integer!]
-	; 		width		[integer!]
-	; 		height		[integer!]
-	; 		;rect		[NSRect!]
-	; 		ctx			[integer!]
-	; ][
-	; 	; color-space: CGColorSpaceCreateDeviceRGB
-	; 	; width: CGImageGetWidth as int-ptr! img
-	; 	; height: CGImageGetHeight as int-ptr! img
-
-	; 	; rect: make-rect 0 0 width height
-	; 	; ctx: CGBitmapContextCreate null width height 32 width * 16 color-space 2101h
-	; 	; CGContextDrawImage ctx rect/x rect/y rect/w rect/h img
-	; 	; CGColorSpaceRelease color-space
-	; 	as int-ptr! 0;ctx
-	; ]
-
-	; ; used in OS-image/do-draw -> to adapt to gdk
-	; ctx-to-image: func [
-	; 	img		[red-image!]
-	; 	ctx		[integer!]
-	; 	/local
-	; 		;data	[float32-ptr!]
-	; 		buf		[int-ptr!]
-	; 		inode	[img-node!]
-	; ][
-	; 	; inode: as img-node! (as series! img/node/value) + 1
-	; 	; CGImageRelease as-integer inode/handle
-	; 	; inode/handle: as int-ptr! CGBitmapContextCreateImage ctx
-	; 	; if inode/flags <> 0 [
-	; 	; 	data: as float32-ptr! CGBitmapContextGetData ctx
-	; 	; 	unpremultiply-data inode/buffer data IMAGE_WIDTH(img/size) * IMAGE_HEIGHT(img/size)
-	; 	; 	inode/flags: IMG_NODE_HAS_BUFFER
-	; 	; ]
-	; 	; CGContextRelease ctx
-	; ]
 
 	encode: func [
 		image	[red-image!]
