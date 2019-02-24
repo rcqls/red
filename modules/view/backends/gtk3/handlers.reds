@@ -620,7 +620,7 @@ drag-widget-button-release-event: func [
 
 	motion/state: no
 	flags: check-flags event/type event/state
-	make-event widget flags event/state EVT_LEFT_UP
+	make-event widget flags  EVT_LEFT_UP
 	yes
 ]
 
