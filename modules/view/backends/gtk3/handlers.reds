@@ -744,3 +744,15 @@ key-release-event: func [
 	]
 	
 ]
+
+menu-item-activate: func [
+	[cdecl]
+	item		[handle!]
+	widget		[handle!]
+	/local
+		key		[integer!]
+][
+	key: menu-item-key? item
+	;; DEBUG: print ["menu-item activated: " item " with key: " key " on widget " widget  lf]
+	make-event widget key EVT_MENU
+]

@@ -400,6 +400,18 @@ GList!: alias struct! [
   prev 		[GList!]
 ]
 
+#enum GtkPackDirection! [
+	GTK_PACK_DIRECTION_LTR
+	GTK_PACK_DIRECTION_RTL
+	GTK_PACK_DIRECTION_TTB
+	GTK_PACK_DIRECTION_BTT
+]
+
+#enum GtkOrientation! [
+	GTK_ORIENTATION_HORIZONTAL
+  GTK_ORIENTATION_VERTICAL
+]
+
 #either OS = 'Windows [
 	;#define LIBGOBJECT-file "libgobject-2.0-0.dll"
 	;#define LIBGLIB-file	"libglib-2.0-0.dll"
@@ -660,6 +672,115 @@ GList!: alias struct! [
 			app			[handle!]
 			window		[handle!]
 		]
+		gtk_menu_bar_new: "gtk_menu_bar_new" [
+			return:		[handle!]
+		]
+		gtk_menu_bar_set_pack_direction: "gtk_menu_bar_set_pack_direction" [
+			menubar		[handle!]
+			dir				[GtkPackDirection!]
+		]
+		gtk_menu_bar_set_child_pack_direction: "gtk_menu_bar_set_child_pack_direction" [
+			menubar		[handle!]
+			dir				[GtkPackDirection!]
+		]
+		gtk_menu_new: "gtk_menu_new" [
+			return:		[handle!]
+		]
+		gtk_menu_shell_append: "gtk_menu_shell_append" [
+			menu			[handle!]
+			item		[handle!]
+		]
+		gtk_menu_shell_prepend: "gtk_menu_shell_prepend" [
+			menu			[handle!]
+			item			[handle!]
+		]
+		gtk_menu_shell_insert: "gtk_menu_shell_insert" [
+			menu			[handle!]
+			item			[handle!]
+			pos				[integer!]
+		]
+		gtk_menu_shell_select_item: "gtk_menu_shell_select_item" [
+			menu			[handle!]
+			item			[handle!]
+		]
+		gtk_menu_shell_select_first: "gtk_menu_shell_select_first" [
+			menu			[handle!]
+			sensitive	[logic!]
+		]
+		gtk_menu_shell_deselect: "gtk_menu_shell_deselect" [
+			menu			[handle!]
+		]
+		gtk_menu_shell_activate_item: "gtk_menu_shell_activate_item" [
+			menu			[handle!]
+			item			[handle!]
+			force			[integer!]
+		]
+		gtk_menu_shell_cancel: "gtk_menu_shell_cancel" [
+			menu			[handle!]
+		]
+		gtk_menu_shell_set_take_focus: "gtk_menu_shell_set_take_focus" [
+			menu			[handle!]
+			focus			[integer!]
+		]
+		gtk_menu_shell_get_take_focus: "gtk_menu_shell_get_take_focus" [
+			menu			[handle!]
+			return:		[integer!]
+		]
+		gtk_menu_shell_get_selected_item: "gtk_menu_shell_get_selected_item" [
+			menu			[handle!]
+			return:		[handle!]
+		]
+		gtk_menu_shell_get_parent_shell: "gtk_menu_shell_get_parent_shell" [
+			menu			[handle!]
+			return:		[handle!]
+		]
+		gtk_menu_item_new: "gtk_menu_item_new" [
+			return:		[handle!]
+		]
+		gtk_menu_item_new_with_label: "gtk_menu_item_new_with_label" [
+			label			[c-string!]
+			return:		[handle!]
+		]
+		gtk_menu_item_new_with_mnemonic: "gtk_menu_item_new_with_mnemonic" [
+			label			[c-string!]
+			return:		[handle!]
+		]
+		gtk_menu_item_get_label: "gtk_menu_item_get_label" [
+			item			[handle!]
+			return: 	[c-string!]
+		]
+		gtk_menu_item_set_label: "gtk_menu_item_set_label" [
+			item			[handle!]
+			label 	[c-string!]
+		]
+		gtk_menu_item_get_use_underline: "gtk_menu_item_get_use_underline" [
+			item			[handle!]
+			return: 	[logic!]
+		]
+		gtk_menu_item_set_use_underline: "gtk_menu_item_set_use_underline" [
+			item			[handle!]
+			setting 	[logic!]
+		]
+		gtk_menu_item_set_submenu: "gtk_menu_item_set_submenu" [
+			item			[handle!]
+			submenu		[handle!]
+		]
+		gtk_menu_item_get_submenu: "gtk_menu_item_get_submenu" [
+			item			[handle!]
+			return:		[handle!]
+		]
+		gtk_menu_item_select: "gtk_menu_item_select" [
+			item			[handle!]
+		]
+		gtk_menu_item_deselect: "gtk_menu_item_deselect" [
+			item			[handle!]
+		]
+		gtk_menu_item_activate: "gtk_menu_item_activate" [
+			item			[handle!]
+		]
+		gtk_separator_menu_item_new: "gtk_separator_menu_item_new" [
+			return: 	[handle!]
+		]
 		gtk_file_chooser_dialog_new: "gtk_file_chooser_dialog_new" [
 			[variadic]
 			return:		[handle!]
@@ -884,6 +1005,18 @@ GList!: alias struct! [
 		gtk_frame_set_shadow_type: "gtk_frame_set_shadow_type" [
 			frame		[handle!]
 			shadow		[integer!]
+		]
+		gtk_box_new: "gtk_box_new" [
+			orient		[GtkOrientation!]
+			spacing		[integer!]
+			return:		[handle!]
+		]
+		gtk_box_pack_start: "gtk_box_pack_start" [
+			box				[handle!]
+			widget		[handle!]
+			expand		[logic!]
+			fill			[logic!]
+			padding		[integer!]
 		]
 		gtk_fixed_new: "gtk_fixed_new" [
 			return:		[handle!]

@@ -18,7 +18,7 @@ Red/System [
 #include %para.reds
 #include %draw.reds
 
-;#include %gdkkeysyms.reds
+#include %menu.reds
 #include %handlers.reds
 #include %comdlgs.reds
 
@@ -29,13 +29,16 @@ exit-loop:		0
 ;;;close-window?:	no
 ;;;win-array:		declare red-vector!
 win-cnt:		0
+AppMainMenu:	as handle! 0
 
-red-face-id:	0
-_widget-id:		1
-gtk-layout-id:	2
-red-timer-id:	3
-css-id:			4
-size-id:		5
+red-face-id:		0
+_widget-id:			1
+gtk-layout-id:		2
+red-timer-id:		3
+css-id:				4
+size-id:			5
+real-container-id:	6
+menu-item-id:		7
 
 
 gtk-style-id:	0
@@ -1504,8 +1507,10 @@ OS-make-view: func [
 		len		  [integer!]
 		widget	  [handle!]
 		_widget	  [handle!]
+		winbox	  [handle!]
 		buffer	  [handle!]
 		container [handle!]
+		hMenu	  [handle!]
 		value	  [integer!]
 		fvalue	  [float!]
 		vertical? [logic!]
@@ -1607,7 +1612,23 @@ OS-make-view: func [
 			main-window: widget
 			unless null? caption [gtk_window_set_title widget caption]
 			gtk_window_set_default_size widget size/x size/y
-			gtk_container_add widget gtk_layout_new null null
+			winbox: gtk_box_new GTK_ORIENTATION_VERTICAL  0
+      		gtk_container_add widget winbox
+			if all [						;@@ application menu ?
+				null? AppMainMenu
+				menu-bar? menu window
+			][
+				AppMainMenu: gtk_menu_bar_new
+				;; DEBUG: print ["AppMainMenu " AppMainMenu " creation for window " widget lf]
+				build-menu menu AppMainMenu widget
+				gtk_box_pack_start winbox  AppMainMenu no yes 0 			
+			]
+			gtk_widget_show winbox
+			container: gtk_layout_new null null
+			gtk_layout_set_size container size/x size/y
+			gtk_box_pack_start winbox container yes yes 0 			
+			g_object_set_qdata widget real-container-id container
+			;; DEBUG: print ["window is " widget " real container is " container lf]
 			gtk_window_move widget offset/x offset/y
 			gobj_signal_connect(widget "delete-event" :window-delete-event null)
 			;BUG (make `vid.red` failing):gtk_widget_add_events widget GDK_STRUCTURE_MASK
@@ -1758,7 +1779,14 @@ OS-make-view: func [
 			; 	gtk_layout_put container _widget offset/x offset/y
 			; ]
 			true [
-				container:  as handle! either p-sym = panel [parent][buffer: gtk_container_get_children as handle! parent buffer/value]
+				container:  as handle! case [
+					p-sym = window [
+						g_object_get_qdata as handle! parent real-container-id
+					]
+					p-sym = panel [parent]
+					true [buffer: gtk_container_get_children as handle! parent buffer/value]
+				]
+				;; DEBUG: print ["parent of " widget " is " parent " with real " container lf]
 				;save gtk_fixed container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
 				g_object_set_qdata widget gtk-layout-id container
 				if sym = text [g_object_set_qdata _widget gtk-layout-id container]

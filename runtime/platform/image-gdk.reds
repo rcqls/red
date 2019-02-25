@@ -157,6 +157,7 @@ OS-image: context [
 	][
 		inode: as img-node! (as series! img/node/value) + 1
 		if zero? inode/flags [
+			;; DEBUG: print ["lock-bitmap: flags" lf]
 			inode/flags: IMG_NODE_HAS_BUFFER
 			inode/buffer: OS-image/data-to-image inode/handle -1 yes yes
 		]

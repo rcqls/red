@@ -215,12 +215,13 @@ write %build/bin/sources.r set-cache [
 				]
 				%gtk3/ [
 					%comdlgs.reds
-					%font.reds
-					%gui.reds
 					%draw.reds
-					%handlers.reds
 					%events.reds
+					%font.reds
 					%gtk.reds
+					%gui.reds
+					%handlers.reds
+					%menu.reds
 					%para.reds
 					%text-box.reds
 				]
