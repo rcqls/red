@@ -15,6 +15,10 @@ Red/System [
 	EVT_DISPATCH										;-- allow DispatchMessage call only
 ]
 
+#define GDK_BUTTON_PRIMARY 1
+#define GDK_BUTTON_MIDDLE 2
+#define GDK_BUTTON_SECONDARY 3
+
 gui-evt: declare red-event!								;-- low-level event value slot
 gui-evt/header: TYPE_EVENT
 
@@ -385,8 +389,8 @@ check-down-flags: func [
 ]
 
 check-flags: func [
-	type   [integer!]
-	state  [integer!]
+	type   	[integer!]
+	state  	[integer!]
 	return: [integer!]
 	/local
 		flags [integer!]

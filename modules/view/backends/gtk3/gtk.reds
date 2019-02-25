@@ -686,6 +686,10 @@ GList!: alias struct! [
 		gtk_menu_new: "gtk_menu_new" [
 			return:		[handle!]
 		]
+		gtk_menu_popup_at_pointer: "gtk_menu_popup_at_pointer" [
+			menu			[handle!]
+			event			[handle!]
+		]
 		gtk_menu_shell_append: "gtk_menu_shell_append" [
 			menu			[handle!]
 			item		[handle!]

@@ -38,7 +38,7 @@ red-timer-id:		3
 css-id:				4
 size-id:			5
 real-container-id:	6
-menu-item-id:		7
+menu-id:			7
 
 
 gtk-style-id:	0
@@ -1598,7 +1598,7 @@ OS-make-view: func [
 			gtk_widget_set_can_focus widget yes
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
-			print ["richtext " widget " face " face " size: " size/x "x" size/y lf]
+			;; DEBUG: print ["richtext " widget " face " face " size: " size/x "x" size/y lf]
 		]
 		sym = window [
 			;; DEBUG: print ["win " GTKApp lf]
@@ -1681,6 +1681,8 @@ OS-make-view: func [
 			_widget: gtk_scrolled_window_new null null
 			gtk_container_add _widget widget
 			gobj_signal_connect(buffer "changed" :area-changed widget)
+			g_object_set [widget "populate-all" yes null] 
+			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
@@ -1692,7 +1694,7 @@ OS-make-view: func [
 			gtk_container_add widget container
 		]
 		sym = panel [
-			widget: gtk_layout_new null null 
+			widget: gtk_layout_new null null
 			unless null? caption [
 				buffer: gtk_label_new caption
 				gtk_container_add widget buffer
@@ -1795,6 +1797,8 @@ OS-make-view: func [
 			]
 		]
 	]
+
+	unless any[sym = window sym = area][build-context-menu widget menu]
 
 	connect-mouse-events widget face as red-object! values + FACE_OBJ_ACTORS sym
 

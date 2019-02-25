@@ -213,8 +213,7 @@ base-draw: func [
 	case [
 		sym = base [render-text cr vals]
 		sym = rich-text [
-			;; DEBUG: 
-			print ["base-draw (rich-text)" widget " face " get-face-obj widget lf]
+			;; DEBUG: print ["base-draw (rich-text)" widget " face " get-face-obj widget lf]
 			pos/x: 0 pos/y: 0
 			init-draw-ctx :DC cr
 			draw-text-box :DC :pos get-face-obj widget yes
@@ -490,6 +489,18 @@ area-changed: func [
 	]
 ]
 
+area-populate-popup: func [
+	[cdecl]
+	widget	[handle!]
+	hMenu	[handle!]
+	ctx 	[node!]
+	/local
+		menu	[red-block!]
+][
+	menu: as red-block! get-node-facet ctx FACE_OBJ_MENU
+	append-context-menu menu hMenu widget 
+]
+
 red-timer-action: func [
 	[cdecl]
 	self	[handle!]
@@ -632,17 +643,32 @@ mouse-button-press-event: func [
 	return: [logic!]
 	/local
 		flags 		[integer!]
+		hMenu		[handle!]
 ][
 	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
+
+	;; DEBUG: 
+	print ["with button " event/button lf]
+	if  event/button = GDK_BUTTON_SECONDARY  [
+		hMenu: context-menu? widget
+		;; DEBUG : 
+		print ["widget " widget " with menu " hMenu lf]
+		unless null? hMenu [
+			gtk_menu_popup_at_pointer hMenu	 as handle! event
+			return yes
+		]
+
+	]
+
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
-	yes
+	no
 ]
 
 mouse-button-release-event: func [
@@ -663,7 +689,7 @@ mouse-button-release-event: func [
 	motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_UP
-	yes
+	no
 ]
 
 mouse-motion-notify-event: func [
@@ -686,7 +712,7 @@ mouse-motion-notify-event: func [
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_OVER	 
 	;; DEBUG: print ["mouse-motion-notify-event:  down? " (event/state and GDK_BUTTON1_MASK <> 0) " " (flags and EVT_FLAG_DOWN <> 0) lf] 
-	yes
+	no
 ]
 
 key-press-event: func [
