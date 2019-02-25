@@ -32,7 +32,7 @@ win-cnt:		0
 
 red-face-id:	0
 _widget-id:		1
-gtk-fixed-id:	2
+gtk-layout-id:	2
 red-timer-id:	3
 css-id:			4
 size-id:		5
@@ -368,7 +368,7 @@ debug-show-children: func [
 		if TYPE_OF(face) <> TYPE_OBJECT [print-line "not face object"]
 		widget: face-handle? face
 		
-		either null? widget [print-line "null container" container: null][container: g_object_get_qdata widget gtk-fixed-id]
+		either null? widget [print-line "null container" container: null][container: g_object_get_qdata widget gtk-layout-id]
 		print ["container handle: " container lf]
 		
 		 sx: 0 sy: 0
@@ -505,7 +505,7 @@ adjust-sizes: func [
 		tail: as red-object! block/rs-tail pane
 		if debug [print ["Parent type: " get-symbol-name sym lf]]
 		child: face-handle? face
-		container: either null? child [null][g_object_get_qdata child gtk-fixed-id]
+		container: either null? child [null][g_object_get_qdata child gtk-layout-id]
 		dx: 0 dy: 0
 		ox: 0 oy: 0 sx: 0 sy: 0
 		cpt: 0
@@ -526,7 +526,7 @@ adjust-sizes: func [
 					widget: g_object_get_qdata child _widget-id
 					if null? widget [widget: child]
 					if debug [ print ["move child: " offset/x "+" dx "("  offset/x + dx ")" " " offset/y lf]]
-					gtk_fixed_move container widget offset/x + dx  offset/y
+					gtk_layout_move container widget offset/x + dx  offset/y
 					gtk_widget_get_allocation widget as handle! rect
 					; rmk: rect/x and rect/y are absolute coordinates when offset/x and offset/y are relative coordinates
 					if debug [ print ["widget->rect:" rect/x "x" rect/y  "x" rect/width "x" rect/height lf]]
@@ -811,7 +811,7 @@ change-offset: func [
 	][
 		unless null? hWnd [
 			;OS-refresh-window as integer! main-window
-			container: either null? hWnd [null][g_object_get_qdata hWnd gtk-fixed-id]
+			container: either null? hWnd [null][g_object_get_qdata hWnd gtk-layout-id]
 			;; DEBUG: print ["change-offset by" pos lf]
 			; _widget: either type = text [
 			; 	g_object_get_qdata hWnd _widget-id
@@ -820,7 +820,7 @@ change-offset: func [
 			_widget: g_object_get_qdata hWnd _widget-id
 			_widget: either null? _widget [hWnd][_widget]
 			unless null? container [
-				gtk_fixed_move container _widget pos/x pos/y
+				gtk_layout_move container _widget pos/x pos/y
 				gtk_widget_queue_draw _widget
 			]
 		]
@@ -1607,7 +1607,7 @@ OS-make-view: func [
 			main-window: widget
 			unless null? caption [gtk_window_set_title widget caption]
 			gtk_window_set_default_size widget size/x size/y
-			gtk_container_add widget gtk_fixed_new
+			gtk_container_add widget gtk_layout_new null null
 			gtk_window_move widget offset/x offset/y
 			gobj_signal_connect(widget "delete-event" :window-delete-event null)
 			;BUG (make `vid.red` failing):gtk_widget_add_events widget GDK_STRUCTURE_MASK
@@ -1667,19 +1667,21 @@ OS-make-view: func [
 			widget: gtk_frame_new caption
 			gtk_frame_set_shadow_type widget 3
 			gtk_frame_set_label_align widget 0.5 0.5; Todo: does not seem to work
-			container: gtk_fixed_new
+			container: gtk_layout_new null null 
 			gtk_container_add widget container
 		]
 		sym = panel [
-			widget: gtk_fixed_new
+			widget: gtk_layout_new null null 
 			unless null? caption [
 				buffer: gtk_label_new caption
 				gtk_container_add widget buffer
 			]
+			gtk_layout_set_size widget size/x size/y
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_set_focus_on_click widget yes
-			print ["panel had focus:" gtk_widget_get_focus_on_click widget  lf]
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
+			value: gtk_widget_get_events widget
+			;; DEBUG: print ["panel had focus: " gtk_widget_get_focus_on_click widget  lf "get events: " value  " GDK_BUTTON_PRESS_MASK? " GDK_BUTTON_PRESS_MASK and value lf]
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
 			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
@@ -1747,13 +1749,21 @@ OS-make-view: func [
 				tabs/cur: tabs/cur + 1
 				if tabs/cur = tabs/nb [tabs/cur: 0 tabs/nb: 0]
 			]
+			; p-sym = panel [
+			; 	container:  as handle! parent
+			; 	;save gtk_fixed container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
+			; 	g_object_set_qdata widget gtk-layout-id container
+			; 	if sym = text [g_object_set_qdata _widget gtk-layout-id container]
+			; 	gtk_widget_set_size_request _widget size/x size/y
+			; 	gtk_layout_put container _widget offset/x offset/y
+			; ]
 			true [
 				container:  as handle! either p-sym = panel [parent][buffer: gtk_container_get_children as handle! parent buffer/value]
 				;save gtk_fixed container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
-				g_object_set_qdata widget gtk-fixed-id container
-				if sym = text [g_object_set_qdata _widget gtk-fixed-id container]
+				g_object_set_qdata widget gtk-layout-id container
+				if sym = text [g_object_set_qdata _widget gtk-layout-id container]
 				gtk_widget_set_size_request _widget size/x size/y
-				gtk_fixed_put container _widget offset/x offset/y
+				gtk_layout_put container _widget offset/x offset/y
 			]
 		]
 	]

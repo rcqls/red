@@ -836,7 +836,11 @@ GList!: alias struct! [
 		]
 		gtk_widget_add_events: "gtk_widget_add_events" [
 			widget 	[handle!]
-			mask 	[integer!]
+			mask 		[integer!]
+		]
+		gtk_widget_get_events: "gtk_widget_get_events" [
+			widget 	[handle!]
+			return: [integer!]
 		]
 		gtk_widget_override_font: "gtk_widget_override_font" [
 			widget	[handle!]
@@ -885,27 +889,43 @@ GList!: alias struct! [
 			return:		[handle!]
 		]
 		gtk_fixed_put: "gtk_fixed_put" [
-			fixed		[handle!]
+			fixed			[handle!]
 			widget		[handle!]
-			x			[integer!]
-			y			[integer!]
+			x					[integer!]
+			y					[integer!]
 		]
 		gtk_fixed_move: "gtk_fixed_move" [
-			fixed		[handle!]
+			fixed			[handle!]
 			widget		[handle!]
-			x			[integer!]
-			y			[integer!]
+			x					[integer!]
+			y					[integer!]
 		]
 		gtk_layout_new: "gtk_layout_new" [
-			hadj		[handle!]
-			vadj		[handle!]
+			hadj			[handle!]
+			vadj			[handle!]
 			return:		[handle!]
 		]
 		gtk_layout_put: "gtk_layout_put" [
 			layout		[handle!]
 			widget		[handle!]
-			x			[integer!]
-			y			[integer!]
+			x					[integer!]
+			y					[integer!]
+		]
+		gtk_layout_move: "gtk_layout_move" [
+			layout		[handle!]
+			widget		[handle!]
+			x					[integer!]
+			y					[integer!]
+		]
+		gtk_layout_set_size: "gtk_layout_set_size" [
+			layout		[handle!]
+			w					[integer!]
+			h					[integer!]
+		]
+		gtk_layout_get_size: "gtk_layout_get_size" [
+			layout		[handle!]
+			w					[int-ptr!]
+			h					[int-ptr!]
 		]
 		gtk_bin_get_child: "gtk_bin_get_child" [
 			bin			[handle!]
