@@ -505,14 +505,14 @@ OS-text-box-metrics: func [
 	if null? layout [return as red-value! none-value]
 	as red-value! switch type [
 		TBOX_METRICS_OFFSET?
-		TBOX_METRICS_OFFSET_LOWER [
+		TBOX_METRICS_OFFSET_LOWER [ ; caret-to-offset 
 			int: as red-integer! arg0
 			pango_layout_index_to_pos layout int/value :rect
 			;; DEBUG: print ["TBOX_METRICS_OFFSET? " rect/x "x" rect/y "x" rect/width "x" rect/height lf] 
 			pair/push rect/x  rect/y
 		]
 		TBOX_METRICS_INDEX? 
-		TBOX_METRICS_CHAR_INDEX? [
+		TBOX_METRICS_CHAR_INDEX? [ ; offset-to-caret
 			pos: as red-pair! arg0
 			idx: -1 trail: -1
 			;; DEBUG: print ["TBOX_METRICS_INDEX? pos: " pos/x "x" pos/y lf]

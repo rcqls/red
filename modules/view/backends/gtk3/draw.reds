@@ -605,10 +605,12 @@ OS-draw-arc: func [
 	closed?: angle < end
 
 	cairo_save ctx
+	unless closed? [dc/brush?: no]
 	cairo_translate ctx cx    cy
 	cairo_scale     ctx rad-x rad-y
-	cairo_arc ctx 0.0 0.0 1.0 angle-begin angle-end
+	cairo_arc_negative ctx 0.0 0.0 1.0 angle-begin angle-end
 	if closed? [
+		cairo_line_to ctx 0.0 0.0
 		cairo_close_path ctx
 	]
 	cairo_restore ctx

@@ -1739,6 +1739,14 @@ GList!: alias struct! [
 			angle1		[float!]
 			angle2		[float!]
 		]
+		cairo_arc_negative: "cairo_arc_negative" [
+			cr			[handle!]
+			xc			[float!]
+			yc			[float!]
+			radius		[float!]
+			angle1		[float!]
+			angle2		[float!]
+		]
 		cairo_rectangle: "cairo_rectangle" [
 			cr			[handle!]
 			x			[float!]
