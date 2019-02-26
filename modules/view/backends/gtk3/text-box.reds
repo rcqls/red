@@ -498,8 +498,7 @@ OS-text-box-metrics: func [
 		trail	[integer!]
 		ok?		[logic!]
 ][
-	;; DEBUG: 
-	print ["OS-text-box-metrics: " type lf]
+	;; DEBUG: print ["OS-text-box-metrics: " type lf]
 	rstate: as red-integer! block/rs-head state
 	layout: as handle! rstate/value
 	if null? layout [return as red-value! none-value]
@@ -525,11 +524,12 @@ OS-text-box-metrics: func [
 			pline: pango_layout_get_line layout 0
 			pango_layout_line_get_pixel_extents pline rect lrect
 			width: -1 height: -1
-			pango_layout_get_pixel_size layout :width :height
+			;pango_layout_get_pixel_size layout :width :height
 			; width: (pango_layout_get_width layout) / PANGO_SCALE
-			height: (pango_layout_get_line_count layout) * height 
-			width: rect/width
-			;; DEBUG: print ["TBOX_METRICS_SIZE: " width "x" height lf]
+			height: (pango_layout_get_line_count layout) * lrect/height 
+			width: lrect/width
+			;; DEBUG: print ["TBOX_METRICS_SIZE: " width "x" height " " pango_layout_get_line_count layout lf]
+			;print ["text: " layout/text lf]
 			pair/push width height
 		]
 		TBOX_METRICS_LINE_COUNT [
@@ -581,8 +581,7 @@ OS-text-box-layout: func [
 		str		[c-string!]
 		pc		[handle!]
 ][	
-	;; DEBUG: 
-	print ["OS-text-box-layout: " box " target: " target lf]
+	;; DEBUG: print ["OS-text-box-layout: " box " target: " target lf]
 	values: object/get-values box
 	state: as red-block! values + FACE_OBJ_EXT3
 	cached?: TYPE_OF(state) = TYPE_BLOCK
