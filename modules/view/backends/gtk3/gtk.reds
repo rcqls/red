@@ -1196,6 +1196,12 @@ GList!: alias struct! [
 			text		[c-string!]
 			len			[integer!]
 		]
+		gtk_editable_get_selection_bounds: "gtk_editable_get_selection_bounds" [
+			entry		[handle!]
+			start		[int-ptr!]
+			end			[int-ptr!]
+			return: [logic!]
+		]
 
 		gtk_scale_new_with_range: "gtk_scale_new_with_range" [
 			vertical?	[logic!]

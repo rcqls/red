@@ -464,6 +464,34 @@ field-move-focus: func [
 	print-line "move-focus"
 ]
 
+field-button-release-event: func [
+	[cdecl]
+	widget 	[handle!] 
+	event	[GdkEventButton!]
+	ctx 	[node!]
+	return: [logic!]
+	/local	
+		x			[integer!]
+		y			[integer!]
+		sel			[red-pair!]
+][
+	;; DEBUG: print [ "field  mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	if event/button = GDK_BUTTON_PRIMARY [ 
+		x: -1 y: -1
+		if gtk_editable_get_selection_bounds widget :x :y [
+			;; DEBUG: print ["from " x " to " y lf ]
+			sel: as red-pair! (get-face-values widget) + FACE_OBJ_SELECTED
+			either x = y [sel/header: TYPE_NONE][
+				sel/header: TYPE_PAIR
+				sel/x: x + 1
+				sel/y: y
+			]
+			make-event widget 0 EVT_SELECT
+		]
+	]
+	no
+]
+
 area-changed: func [
 	[cdecl]
 	buffer	[handle!]
@@ -513,7 +541,6 @@ area-button-release-event: func [
 			x: -1 y: -1
 			x: gtk_text_iter_get_offset as handle! start
 			y: gtk_text_iter_get_offset as handle! end
-			free as byte-ptr! start free as byte-ptr! end 
 			;; DEBUG: print ["from " x " to " y lf ]
 			sel: as red-pair! (get-face-values widget) + FACE_OBJ_SELECTED
 			either x = y [sel/header: TYPE_NONE][
@@ -523,6 +550,7 @@ area-button-release-event: func [
 			]
 			make-event widget 0 EVT_SELECT
 		]
+		free as byte-ptr! start free as byte-ptr! end 
 	]
 	no
 ]

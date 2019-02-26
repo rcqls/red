@@ -1677,6 +1677,7 @@ OS-make-view: func [
 			unless null? caption [gtk_entry_buffer_set_text buffer caption -1]
 			gobj_signal_connect(widget "key-release-event" :field-key-release-event face/ctx)
 			;Do not work: gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
+			gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)
 			
 			gtk_widget_set_can_focus widget yes
 			;This depends on version >= 3.2
