@@ -1263,9 +1263,23 @@ GList!: alias struct! [
 			start		[handle!]
 			end			[handle!]
 		]
+		gtk_text_buffer_get_selection_bounds: "gtk_text_buffer_get_selection_bounds" [
+			buffer		[handle!]
+			start		[handle!]
+			end			[handle!]
+			return: [logic!]
+		]
 		gtk_text_buffer_create_tag: "gtk_text_buffer_create_tag" [
 			[variadic]
 			return: 	[handle!]
+		]
+		gtk_text_iter_get_offset: "gtk_text_iter_get_offset" [
+			iter		[handle!]
+			return:	[integer!]
+		]
+		gtk_text_iter_get_line: "gtk_text_iter_get_line" [
+			iter		[handle!]
+			return:	[integer!]
 		]
 		gtk_combo_box_text_new: "gtk_combo_box_text_new" [
 			return:		[handle!]

@@ -1001,15 +1001,34 @@ change-selection: func [
 	int	   [red-integer!]								;-- can be also none! | object!
 	type   [integer!]
 	/local
-		idx [integer!]
-		sz	[integer!]
-		wnd [integer!]
-		item [handle!]
+		idx 	[integer!]
+		sz		[integer!]
+		wnd 	[integer!]
+		item 	[handle!]
+		sel		[red-pair!]
 ][
 	if type <> window [
 		idx: either TYPE_OF(int) = TYPE_INTEGER [int/value - 1][-1]
 	]
 	case [
+		any [type = field type = area][
+			sel: as red-pair! int
+			either TYPE_OF(sel) = TYPE_NONE [
+				idx: 0
+				sz:  0
+			][
+				idx: sel/x - 1
+				sz: sel/y - idx						;-- should point past the last selected char
+			]
+			; either type = field [
+				; win: objc_msgSend [NSApp sel_getUid "mainWindow"]
+				; objc_msgSend [win sel_getUid "makeFirstResponder:" hWnd]
+				; wnd: objc_msgSend [hWnd sel_getUid "currentEditor"]
+			; ][
+				; wnd: objc_msgSend [hWnd sel_getUid "documentView"]
+			; ]
+			; objc_msgSend [wnd sel_getUid "setSelectedRange:" idx sz]
+		]
 	; 	type = camera [
 	; 		either TYPE_OF(int) = TYPE_NONE [
 	; 			toggle-preview hWnd false
@@ -1049,7 +1068,7 @@ set-selected-focus: func [
 	if values <> null [
 		face: as red-object! values + FACE_OBJ_SELECTED
 		if TYPE_OF(face) = TYPE_OBJECT [
-			0;@@ TBD
+			0 ;@@ TBD
 		]
 	]
 ]
@@ -1683,8 +1702,9 @@ OS-make-view: func [
 			gobj_signal_connect(buffer "changed" :area-changed widget)
 			g_object_set [widget "populate-all" yes null] 
 			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
+			gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
-			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
+			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)		
 		]
 		sym = group-box [
 			widget: gtk_frame_new caption

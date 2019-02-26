@@ -109,7 +109,7 @@ context-menu?: func [
 	widget		[handle!]
 	return: 	[handle!]
 ][
-	as handle! g_object_get_qdata widget menu-id
+	g_object_get_qdata widget menu-id
 ]
 
 build-context-menu: func [

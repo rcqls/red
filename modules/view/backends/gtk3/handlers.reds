@@ -489,6 +489,44 @@ area-changed: func [
 	]
 ]
 
+area-button-release-event: func [
+	[cdecl]
+	widget 	[handle!] 
+	event	[GdkEventButton!]
+	ctx 	[node!]
+	return: [logic!]
+	/local
+		flags 		[integer!]
+		buffer		[handle!]
+		start		[GtkTextIter!]; value does not work
+		end			[GtkTextIter!]		
+		x			[integer!]
+		y			[integer!]
+		sel			[red-pair!]
+][
+	;; DEBUG: print [ "area  mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	if event/button = GDK_BUTTON_PRIMARY [
+		start: as GtkTextIter! allocate (size? GtkTextIter!) 
+		end: as GtkTextIter! allocate (size? GtkTextIter!) 
+		buffer: gtk_text_view_get_buffer widget 
+		if gtk_text_buffer_get_selection_bounds buffer as handle! start as handle! end [
+			x: -1 y: -1
+			x: gtk_text_iter_get_offset as handle! start
+			y: gtk_text_iter_get_offset as handle! end
+			free as byte-ptr! start free as byte-ptr! end 
+			;; DEBUG: print ["from " x " to " y lf ]
+			sel: as red-pair! (get-face-values widget) + FACE_OBJ_SELECTED
+			either x = y [sel/header: TYPE_NONE][
+				sel/header: TYPE_PAIR
+				sel/x: x + 1
+				sel/y: y
+			]
+			make-event widget 0 EVT_SELECT
+		]
+	]
+	no
+]
+
 area-populate-popup: func [
 	[cdecl]
 	widget	[handle!]
@@ -649,12 +687,10 @@ mouse-button-press-event: func [
 	; motion/state: yes
 	; motion/cpt: 0
 
-	;; DEBUG: 
-	print ["with button " event/button lf]
+	;; DEBUG: print ["with button " event/button lf]
 	if  event/button = GDK_BUTTON_SECONDARY  [
 		hMenu: context-menu? widget
-		;; DEBUG : 
-		print ["widget " widget " with menu " hMenu lf]
+		;; DEBUG: print ["widget " widget " with menu " hMenu lf]
 		unless null? hMenu [
 			gtk_menu_popup_at_pointer hMenu	 as handle! event
 			return yes
