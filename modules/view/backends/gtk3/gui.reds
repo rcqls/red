@@ -1027,21 +1027,16 @@ change-selection: func [
 				gtk_editable_select_region hWnd idx idx + sz
 			][
 				buffer: gtk_text_view_get_buffer hWnd
-				print ["buffer " buffer lf] 
 				ins: as GtkTextIter! allocate (size? GtkTextIter!) 
 				bound: as GtkTextIter! allocate (size? GtkTextIter!)
+				;; Careful! GtkTextIter! needs to be initialized first (so this weird call first!)
 				gtk_text_buffer_get_selection_bounds buffer as handle! ins as handle! bound
-				print [" pos : " idx "x" idx + sz lf]
+				;; DEBUG: print [" pos : " idx "x" idx + sz lf]
 				gtk_text_iter_set_offset as handle! ins idx
-				print ["ins " ins lf]
 				gtk_text_iter_set_offset as handle! bound idx + sz
-				print ["bound " bound lf]
-				
 				gtk_text_buffer_select_range buffer as handle! ins as handle! bound
-				print ["ici" lf]
 				free as byte-ptr! ins free as byte-ptr! bound 
 			]
-			; objc_msgSend [wnd sel_getUid "setSelectedRange:" idx sz]
 		]
 	; 	type = camera [
 	; 		either TYPE_OF(int) = TYPE_NONE [

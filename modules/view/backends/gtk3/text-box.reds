@@ -508,17 +508,16 @@ OS-text-box-metrics: func [
 		TBOX_METRICS_OFFSET_LOWER [
 			int: as red-integer! arg0
 			pango_layout_index_to_pos layout int/value :rect
-			print ["TBOX_METRICS_OFFSET? " rect/x "x" rect/y "x" rect/width "x" rect/height lf] 
+			;; DEBUG: print ["TBOX_METRICS_OFFSET? " rect/x "x" rect/y "x" rect/width "x" rect/height lf] 
 			pair/push rect/x  rect/y
 		]
 		TBOX_METRICS_INDEX? 
 		TBOX_METRICS_CHAR_INDEX? [
 			pos: as red-pair! arg0
 			idx: -1 trail: -1
-			print ["TBOX_METRICS_INDEX? pos: " pos/x "x" pos/y lf]
+			;; DEBUG: print ["TBOX_METRICS_INDEX? pos: " pos/x "x" pos/y lf]
 			ok?: pango_layout_xy_to_index layout (pos/x * PANGO_SCALE) (pos/y * PANGO_SCALE) :idx :trail
-			;; DEBUG: 
-			print ["TBOX_METRICS_INDEX? " pos/x "x" pos/y  " " ok? " index: " idx + 1   lf]
+			;; DEBUG: print ["TBOX_METRICS_INDEX? " pos/x "x" pos/y  " " ok? " index: " idx + 1   lf]
 			if all[type = TBOX_METRICS_INDEX? 0 <> trail] [idx: idx + 1]
 			integer/push idx + 1
 		]
@@ -530,33 +529,22 @@ OS-text-box-metrics: func [
 			; width: (pango_layout_get_width layout) / PANGO_SCALE
 			height: (pango_layout_get_line_count layout) * height 
 			width: rect/width
-			;; DEBUG: 
-			print ["TBOX_METRICS_SIZE: " width "x" height lf]
+			;; DEBUG: print ["TBOX_METRICS_SIZE: " width "x" height lf]
 			pair/push width height
 		]
 		TBOX_METRICS_LINE_COUNT [
 			idx: pango_layout_get_line_count layout
-			;; DEBUG: 
-			print ["TBOX_METRICS_LINE_COUNT: " idx lf]
+			;; DEBUG: print ["TBOX_METRICS_LINE_COUNT: " idx lf]
 			integer/push idx
 		]
 		TBOX_METRICS_LINE_HEIGHT [
 			int: as red-integer! arg0
 			pango_layout_index_to_pos layout int/value :rect
 			height: rect/height / PANGO_SCALE
-			;; DEBUG: 
-			print ["TBOX_METRICS_LINE_HEIGHT " height  " (" rect/x "x" rect/y "x" rect/width "x" rect/height ")" lf]
+			;; DEBUG: print ["TBOX_METRICS_LINE_HEIGHT " height  " (" rect/x "x" rect/y "x" rect/width "x" rect/height ")" lf]
 			integer/push height
 		]
 		default [
-			; metrics: as DWRITE_TEXT_METRICS :left
-			; hr: dl/GetMetrics this metrics
-			; #if debug? = yes [if hr <> 0 [log-error hr]]
-
-			; values: object/get-values as red-object! arg0
-			; integer/make-at values + TBOX_OBJ_WIDTH as-integer metrics/width
-			; integer/make-at values + TBOX_OBJ_HEIGHT as-integer metrics/height
-			; integer/make-at values + TBOX_OBJ_LINE_COUNT metrics/lineCount
 			none-value
 		]
 	]
