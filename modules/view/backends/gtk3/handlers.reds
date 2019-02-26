@@ -489,6 +489,7 @@ field-button-release-event: func [
 			make-event widget 0 EVT_SELECT
 		]
 	]
+	make-event widget 0 EVT_LEFT_UP
 	no
 ]
 
@@ -515,6 +516,26 @@ area-changed: func [
 		set-text widget face/ctx text
 		make-event widget 0 EVT_CHANGE
 	]
+]
+
+area-button-press-event: func [
+	[cdecl]
+	widget 	[handle!] 
+	event	[GdkEventButton!]
+	ctx 	[node!]
+	return: [logic!]
+	/local
+		flags 		[integer!]
+][
+	;; DEBUG: 
+	print [ "area -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	
+	menu-x: as-integer event/x
+	menu-y: as-integer event/y
+	print ["menu cursor pos: " menu-x "x" menu-y lf]
+	flags: check-flags event/type event/state
+	make-event widget flags EVT_LEFT_DOWN
+	no
 ]
 
 area-button-release-event: func [
@@ -563,8 +584,9 @@ area-populate-popup: func [
 	/local
 		menu	[red-block!]
 ][
+	;; DEBUG: print ["populate menu for " widget " and menu " hMenu lf] 
 	menu: as red-block! get-node-facet ctx FACE_OBJ_MENU
-	append-context-menu menu hMenu widget 
+	append-context-menu menu hMenu widget
 ]
 
 red-timer-action: func [
@@ -720,6 +742,9 @@ mouse-button-press-event: func [
 		hMenu: context-menu? widget
 		;; DEBUG: print ["widget " widget " with menu " hMenu lf]
 		unless null? hMenu [
+			menu-x: as-integer event/x
+			menu-y: as-integer event/y
+			;; DEBUG: print ["menu pointer : " menu-x "x" menu-y lf]
 			gtk_menu_popup_at_pointer hMenu	 as handle! event
 			return yes
 		]

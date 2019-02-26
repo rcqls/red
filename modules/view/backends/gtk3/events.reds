@@ -76,6 +76,7 @@ get-event-offset: func [
 		offset	[red-pair!]
 		value	[integer!]
 ][
+	;; DEBUG: print ["get-event-offset: " evt/type lf]
 	case [
 		any [
 			evt/type <= EVT_OVER
@@ -124,6 +125,13 @@ get-event-offset: func [
 
 			offset: as red-pair! stack/push*
 			offset/header: TYPE_PAIR
+			as red-value! offset
+		]
+		evt/type = EVT_MENU [
+			offset: as red-pair! stack/push*
+			offset/header: TYPE_PAIR
+			offset/x: menu-x
+			offset/y: menu-y
 			as red-value! offset
 		]
 		true [as red-value! none-value]

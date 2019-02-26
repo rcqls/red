@@ -10,6 +10,9 @@ Red/System [
 	}
 ]
 
+menu-x:			0
+menu-y:			0
+
 menu-item-key: func [
 	item	[handle!]
 	key		[integer!]

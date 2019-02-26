@@ -647,6 +647,17 @@ GList!: alias struct! [
 		gtk_get_micro_version: "gtk_get_micro_version" [
 			return: 		[integer!]
 		]
+		gtk_get_current_event_device: "gtk_get_current_event_device" [
+			return: 		[handle!]
+		]
+		gdk_window_get_device_position: "gdk_window_get_device_position" [
+			window			[handle!]
+ 			device			[handle!]
+   		x						[int-ptr!]
+			y						[int-ptr!]
+ 			mask				[handle!]
+			return:			[handle!]
+		]
 		gtk_application_new: "gtk_application_new" [
 			app-id		[c-string!]
 			flags		[integer!]
@@ -1196,6 +1207,11 @@ GList!: alias struct! [
 			text		[c-string!]
 			len			[integer!]
 		]
+		gtk_editable_select_region: "gtk_editable_select_region" [
+			entry		[handle!]
+			start		[integer!]
+			end			[integer!]
+		]
 		gtk_editable_get_selection_bounds: "gtk_editable_get_selection_bounds" [
 			entry		[handle!]
 			start		[int-ptr!]
@@ -1275,6 +1291,11 @@ GList!: alias struct! [
 			end			[handle!]
 			return: [logic!]
 		]
+		gtk_text_buffer_select_range: "gtk_text_buffer_select_range" [
+			buffer	[handle!]
+			ins			[handle!]
+			bound		[handle!]
+		]
 		gtk_text_buffer_create_tag: "gtk_text_buffer_create_tag" [
 			[variadic]
 			return: 	[handle!]
@@ -1282,6 +1303,10 @@ GList!: alias struct! [
 		gtk_text_iter_get_offset: "gtk_text_iter_get_offset" [
 			iter		[handle!]
 			return:	[integer!]
+		]
+		gtk_text_iter_set_offset: "gtk_text_iter_set_offset" [
+			iter		[handle!]
+			offset	[integer!]
 		]
 		gtk_text_iter_get_line: "gtk_text_iter_get_line" [
 			iter		[handle!]

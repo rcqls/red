@@ -279,8 +279,7 @@ pango-markup-text: func [
 		;; DEBUG: print ["Add </markup>" lf]
 		text: as GString! lc/text-markup
 		g_string_append  text "</markup>"
-		;; DEBUG: 
-		print ["tex-markup: " text/str lf]
+		;; DEBUG: print ["tex-markup: " text/str lf]
 	]
 ]
 
@@ -516,6 +515,7 @@ OS-text-box-metrics: func [
 		TBOX_METRICS_CHAR_INDEX? [
 			pos: as red-pair! arg0
 			idx: -1 trail: -1
+			print ["TBOX_METRICS_INDEX? pos: " pos/x "x" pos/y lf]
 			ok?: pango_layout_xy_to_index layout (pos/x * PANGO_SCALE) (pos/y * PANGO_SCALE) :idx :trail
 			;; DEBUG: 
 			print ["TBOX_METRICS_INDEX? " pos/x "x" pos/y  " " ok? " index: " idx + 1   lf]

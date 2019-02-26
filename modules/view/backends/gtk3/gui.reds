@@ -1006,6 +1006,9 @@ change-selection: func [
 		wnd 	[integer!]
 		item 	[handle!]
 		sel		[red-pair!]
+		ins		[GtkTextIter!]
+		bound	[GtkTextIter!]
+		buffer	[handle!]
 ][
 	if type <> window [
 		idx: either TYPE_OF(int) = TYPE_INTEGER [int/value - 1][-1]
@@ -1020,13 +1023,24 @@ change-selection: func [
 				idx: sel/x - 1
 				sz: sel/y - idx						;-- should point past the last selected char
 			]
-			; either type = field [
-				; win: objc_msgSend [NSApp sel_getUid "mainWindow"]
-				; objc_msgSend [win sel_getUid "makeFirstResponder:" hWnd]
-				; wnd: objc_msgSend [hWnd sel_getUid "currentEditor"]
-			; ][
-				; wnd: objc_msgSend [hWnd sel_getUid "documentView"]
-			; ]
+			either type = field [
+				gtk_editable_select_region hWnd idx idx + sz
+			][
+				buffer: gtk_text_view_get_buffer hWnd
+				print ["buffer " buffer lf] 
+				ins: as GtkTextIter! allocate (size? GtkTextIter!) 
+				bound: as GtkTextIter! allocate (size? GtkTextIter!)
+				gtk_text_buffer_get_selection_bounds buffer as handle! ins as handle! bound
+				print [" pos : " idx "x" idx + sz lf]
+				gtk_text_iter_set_offset as handle! ins idx
+				print ["ins " ins lf]
+				gtk_text_iter_set_offset as handle! bound idx + sz
+				print ["bound " bound lf]
+				
+				gtk_text_buffer_select_range buffer as handle! ins as handle! bound
+				print ["ici" lf]
+				free as byte-ptr! ins free as byte-ptr! bound 
+			]
 			; objc_msgSend [wnd sel_getUid "setSelectedRange:" idx sz]
 		]
 	; 	type = camera [
@@ -1702,6 +1716,7 @@ OS-make-view: func [
 			gtk_container_add _widget widget
 			gobj_signal_connect(buffer "changed" :area-changed widget)
 			g_object_set [widget "populate-all" yes null] 
+			gobj_signal_connect(widget "button-press-event" :area-button-press-event face/ctx)
 			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
 			gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
