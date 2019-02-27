@@ -388,6 +388,16 @@ cairo_font_extents_t!: alias struct! [
 	max_y_advance	[float!]
 ]
 
+#enum cairo_format_t! [
+	CAIRO_FORMAT_INVALID
+	CAIRO_FORMAT_ARGB32
+	CAIRO_FORMAT_RGB24
+	CAIRO_FORMAT_A8
+	CAIRO_FORMAT_A1
+	CAIRO_FORMAT_RGB16_565
+	CAIRO_FORMAT_RGB30
+]
+
 GString!: alias struct! [
 	str 			[c-string!]
 	len				[integer!]
@@ -1687,10 +1697,19 @@ GList!: alias struct! [
 		]
 
 	;; LIBCAIRO-file cdecl [
+		cairo_create: "cairo_create" [
+			surf			[handle!]
+			return:		[handle!]
+		]
+
+		cairo_destroy: "cairo_destroy" [
+			cr			[handle!]
+		]
+
 		cairo_line_to: "cairo_line_to" [
 			cr			[handle!]
-			x			[float!]
-			y			[float!]
+			x				[float!]
+			y				[float!]
 		]
 
 		cairo_rel_line_to: "cairo_rel_line_to" [
@@ -1855,9 +1874,6 @@ GList!: alias struct! [
 			cr			[handle!]
 			antialias	[integer!]
 		]
-		cairo_surface_destroy: "cairo_surface_destroy" [
-			surface		[handle!]
-		]
 		cairo_pattern_create_linear: "cairo_pattern_create_linear" [
 			x0			[float!]
 			y0			[float!]
@@ -1927,6 +1943,40 @@ GList!: alias struct! [
 		; 	cr			[handle!]
 		; 	text 		[c-string!]
 		; ]
+		cairo_image_surface_create: "cairo_image_surface_create" [
+			format		[cairo_format_t!]
+			width			[integer!]
+			height		[integer!]	
+		]
+		cairo_image_surface_create_for_data: "cairo_image_surface_create_for_data" [
+			data			[byte-ptr!]
+			format		[cairo_format_t!]
+			width			[integer!]
+			height		[integer!]
+			stride		[integer!]
+			return:		[handle!]
+		]
+		cairo_surface_finish: "cairo_surface_finish" [
+			surf			[handle!]
+		]
+		cairo_surface_destroy: "cairo_surface_destroy" [
+			surf			[handle!]
+		]
+		cairo_image_surface_get_data: "cairo_image_surface_get_data" [
+			surf			[handle!]
+			return:		[byte-ptr!]
+		]
+		cairo_surface_flush: "cairo_surface_flush" [
+			surf			[handle!]
+		]
+		cairo_surface_mark_dirty: "cairo_surface_mark_dirty" [
+			surf			[handle!]
+		]
+		cairo_format_stride_for_width: "cairo_format_stride_for_width" [
+			format		[cairo_format_t!]
+			width			[integer!]
+			return: 	[integer!]
+		]
 		gdk_cairo_set_source_pixbuf: "gdk_cairo_set_source_pixbuf" [
 			cr 			[handle!]
 			pixbuf 		[handle!]

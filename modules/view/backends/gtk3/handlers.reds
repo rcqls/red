@@ -222,6 +222,7 @@ base-draw: func [
 	]
 	
 	either TYPE_OF(draw) = TYPE_BLOCK [
+		;; DEBUG: print ["do-draw in base-draw" lf]
 		do-draw cr null draw no yes yes yes
 	][
 		; system/thrown: 0

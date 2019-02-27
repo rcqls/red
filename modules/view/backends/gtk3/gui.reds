@@ -2099,12 +2099,37 @@ OS-to-image: func [
 ]
 
 OS-do-draw: func [
-	img		[red-image!]
+	image	[red-image!]
 	cmds	[red-block!]
+	/local
+		cr		[handle!]
+		surf	[handle!]
+		w	 	[integer!]
+		h	 	[integer!]
+		bitmap	[integer!]
+		data	[int-ptr!]
+		stride	[integer!]
+		pixbuf	[int-ptr!]
+		buf		[byte-ptr!]
 ][
-	;; DEBUG:
-	print ["OS-do-draw " img lf]
-	do-draw null img cmds no no no no
+	;; DEBUG: print ["OS-do-draw " image lf]
+	; rc: make-rect IMAGE_WIDTH(img/size) IMAGE_HEIGHT(img/size) 0 0
+	; ctx: OS-image/to-bitmap-ctx OS-image/to-cgimage img
+	; do-draw ctx as red-image! rc cmds yes no no no
+	; OS-image/ctx-to-image img as-integer ctx
+	
+	w: IMAGE_WIDTH(image/size)
+	h: IMAGE_HEIGHT(image/size)
+	stride: 0
+	bitmap: OS-image/lock-bitmap image yes
+	data: OS-image/get-data bitmap :stride
+	surf: cairo_image_surface_create_for_data as byte-ptr! data CAIRO_FORMAT_ARGB32 w h stride
+	;ctx: OS-image/to-pixbuf img
+	cr: cairo_create surf
+	do-draw cr null cmds no yes yes yes
+	cairo_destroy cr
+	cairo_surface_destroy surf
+	OS-image/unlock-bitmap image bitmap
 ]
 
 OS-draw-face: func [
