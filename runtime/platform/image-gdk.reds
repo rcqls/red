@@ -44,7 +44,7 @@ argb-to-abgr: func [
 	r: (color >> 16 and FFh) 
 	g: (color >> 8 and FFh) 
 	b: (color  and FFh)
-	color: (r << a and FF000000h) or (b << 16  and 00FF0000h) or ( g << 8 and FF00h) or ( r and FFh)
+	color: (a << 24 and FF000000h) or (b << 16  and 00FF0000h) or ( g << 8 and FF00h) or ( r and FFh)
 	color
 ]
 
