@@ -2123,6 +2123,7 @@ OS-do-draw: func [
 	stride: 0
 	bitmap: OS-image/lock-bitmap image yes
 	data: OS-image/get-data bitmap :stride
+	stride: cairo_format_stride_for_width CAIRO_FORMAT_ARGB32 w
 	surf: cairo_image_surface_create_for_data as byte-ptr! data CAIRO_FORMAT_ARGB32 w h stride
 	;ctx: OS-image/to-pixbuf img
 	cr: cairo_create surf

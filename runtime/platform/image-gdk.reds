@@ -27,7 +27,24 @@ argb-to-rgba: func [
 	r: (color >> 16 and FFh) 
 	g: (color >> 8 and FFh) 
 	b: (color  and FFh)
-	color: (a << 24 and FF000000h) or (b << 16  and 00FF0000h) or ( g << 8 and FF00h) or ( r and FFh)
+	color: (r << 24 and FF000000h) or (g << 16  and 00FF0000h) or ( b << 8 and FF00h) or ( a and FFh)
+	color
+]
+
+argb-to-abgr: func [
+	color		[integer!]
+	return: 	[integer!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	a: (color >> 24 and FFh) 
+	r: (color >> 16 and FFh) 
+	g: (color >> 8 and FFh) 
+	b: (color  and FFh)
+	color: (r << a and FF000000h) or (b << 16  and 00FF0000h) or ( g << 8 and FF00h) or ( r and FFh)
 	color
 ]
 
@@ -306,6 +323,30 @@ OS-image: context [
 	]
 
 	buffer-argb-to-abgr: func [
+		buf 	[int-ptr!]
+		width	[integer!]
+		height	[integer!]
+		return: [int-ptr!]	; not necessary since buf is already a pointer
+		/local
+			data-pixbuf 	[int-ptr!]
+			end-data-pixbuf	[int-ptr!]
+			pixel			[integer!]
+			i 				[integer!]
+	][
+		data-pixbuf:  buf
+		end-data-pixbuf: data-pixbuf + (width * height)
+		;; DEBUG: print ["buffer-argb -> size: " width "x" height lf]
+		while [data-pixbuf < end-data-pixbuf][
+			pixel: data-pixbuf/value
+			;; DEBUG: print ["pixel:" pixel lf]
+			pixel: argb-to-abgr pixel
+			data-pixbuf/value: pixel
+			data-pixbuf: data-pixbuf + 1
+		]
+		buf
+	]
+
+	buffer-argb-to-rgba: func [
 		buf 	[int-ptr!]
 		width	[integer!]
 		height	[integer!]
