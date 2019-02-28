@@ -114,7 +114,7 @@ render-text: func [
 	text: as red-string! values + FACE_OBJ_TEXT
 	if TYPE_OF(text) <> TYPE_STRING [exit]
 
-	print ["render-text: " cr lf]
+	;; DEBUG: print ["render-text: " cr lf]
 	para: as red-object! values + FACE_OBJ_PARA
 	flags: either TYPE_OF(para) = TYPE_OBJECT [		;@@ TBD set alignment attribute
 		get-para-flags base para

@@ -165,6 +165,12 @@ OS-image: context [
 		IMAGE_HEIGHT(inode/size)
 	]
 
+	#enum post-transf! [POST-TRANSF-NONE POST-ARGB-TO-ABGR POST-ARGB-TO-RGBA]
+	
+	post-transf?: POST-TRANSF-NONE
+	
+	post-transf: func [ mode [post-transf!]][post-transf?: mode]
+	
 	lock-bitmap: func [
 		img			[red-image!]
 		write?		[logic!]
@@ -179,13 +185,36 @@ OS-image: context [
 			inode/buffer: OS-image/data-to-image inode/handle -1 yes yes
 		]
 		if write? [inode/flags: inode/flags or IMG_NODE_MODIFIED]
+		post-transf POST-TRANSF-NONE ; no post-transf to apply before 
 		as integer! inode
 	]
 
+	; unlock-bitmap: func [					;-- do nothing on GDK backend
+	; 	image		[red-image!]
+	; 	bitmap		[integer!]
+	; ][
+	; ]
+
 	unlock-bitmap: func [					;-- do nothing on GDK backend
-		img			[red-image!]
-		data		[integer!]
-	][]
+		image		[red-image!]
+		bitmap		[integer!]
+		/local
+			w	 	[integer!]
+			h	 	[integer!]
+			node	[img-node!]
+	][
+		unless post-transf? = POST-TRANSF-NONE [
+			w: IMAGE_WIDTH(image/size)
+			h: IMAGE_HEIGHT(image/size)
+			node: as img-node! bitmap
+			case [
+				post-transf? = POST-ARGB-TO-ABGR [buffer-argb-to-abgr node/buffer w h]
+				post-transf? = POST-ARGB-TO-RGBA [buffer-argb-to-rgba node/buffer w h]
+			]
+		]
+	]
+
+	
 
 	get-data: func [
 		handle		[integer!]

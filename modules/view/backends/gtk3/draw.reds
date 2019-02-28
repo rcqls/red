@@ -699,6 +699,7 @@ GDK-draw-image: func [
 	gdk_cairo_set_source_pixbuf cr img 0 0
 	cairo_paint cr
 	cairo_translate cr as-float (0 - x) as-float (0 - y)
+	if width > 0 [g_object_unref img]
 ]
 
 OS-draw-image: func [
@@ -711,23 +712,35 @@ OS-draw-image: func [
 	crop1		[red-pair!]
 	pattern		[red-word!]
 	/local
-		img		[int-ptr!]
-		sub-img [int-ptr!]
-		x		[integer!]
-		y		[integer!]
-		width	[integer!]
-		height	[integer!]
-		w		[float!]
-		h		[float!]
-		ww		[float!]
-		crop2	[red-pair!]
+		cr			[handle!]	
+		img			[int-ptr!]
+		x			[integer!]
+		y			[integer!]
+		width		[integer!]
+		height		[integer!]
+		w			[float!]
+		h			[float!]
+		crop_x		[float!]
+		crop_y		[float!]
+		crop2		[red-pair!]
+		crop_cr		[handle!]
+		crop_surf	[handle!]
+		crop_xscale	[float!]
+		crop_yscale	[float!]
+		format		[cairo_format_t!]
+		img_w		[float!]
+		img_h		[float!]
+		crop_img_sx	[integer!]
+		crop_img_sy	[integer!]
 ][
 	;; DEBUG: print ["OS-draw-image" lf]
+	img_w:	as float! IMAGE_WIDTH(image/size)
+	img_h:	as float! IMAGE_HEIGHT(image/size)
 	either null? start [x: 0 y: 0][x: start/x y: start/y]
 	case [
 		start = end [
-			width:  IMAGE_WIDTH(image/size)
-			height: IMAGE_HEIGHT(image/size)
+			width:  as integer! img_w
+			height: as integer! img_h
 		]
 		start + 1 = end [					;-- two control points
 			width: end/x - x
@@ -736,24 +749,44 @@ OS-draw-image: func [
 		start + 2 = end [0]					;@@ TBD three control points
 		true [0]							;@@ TBD four control points
 	]
-
-	;; DEBUG: print ["OS-draw-image: " x "x" y " " width "x" height lf]
+	cr: dc/raw
+	;; DEBUG: print ["OS-draw-image: " x "x" y " " width "x" height "original: " IMAGE_WIDTH(image/size) "x" IMAGE_HEIGHT(image/size)  lf]
 
 	img: OS-image/to-pixbuf image
-	if crop1 <> null [
+	either crop1 <> null [
+		crop_x: as float! crop1/x
+		crop_y: as float! crop1/y
 		crop2: crop1 + 1
 		w: as float! crop2/x
 		h: as float! crop2/y
-		ww: w / h * (as float! height)
-		width: as-integer ww
-		; create new pixbuf
-		sub-img: gdk_pixbuf_scale_simple img width height 0 ; to correct parameters!!!
-		;sub-img: as-integer gdk_pixbuf_new 0 yes 8 width height
-		;gdk_pixbuf_scale as handle! img as handle! sub-img 0 0 width height 0.0 0.0 1.0 1.0 0 ; to correct parameters!!!
-	]
+		crop_xscale: w / (as float! width) 
+		crop_yscale: h / (as float! height)
+		crop_img_sx: as integer! (img_w / crop_xscale)
+		crop_img_sy: as integer! (img_h / crop_yscale)
+		;width: as-integer (w / h * (as float! height))
+		;; DEBUG: print ["cropping dest: " crop_x "x" crop_y "x" w "x" h " img size: " crop_img_sx "x" crop_img_sy lf]
+		img: gdk_pixbuf_scale_simple img crop_img_sx crop_img_sy 2	
+		format: CAIRO_FORMAT_RGB24 ;either 3 = gdk_pixbuf_get_n_channels img [CAIRO_FORMAT_RGB24][CAIRO_FORMAT_ARGB32]
+		;; DEBÙG: print ["pixbuf format: " format lf]
+		crop_surf: cairo_image_surface_create format crop_img_sx crop_img_sy
+		crop_cr: cairo_create crop_surf
+    	gdk_cairo_set_source_pixbuf crop_cr img 0 0
+		cairo_paint crop_cr
+		cairo_destroy crop_cr
 
-	GDK-draw-image dc/raw img x y width height
-	if crop1 <> null [g_object_unref sub-img]
+		cairo_save cr
+		cairo_translate cr as-float x as-float y
+		cairo_set_source_surface cr crop_surf (0.0 - (crop_x / crop_xscale)) (0.0 - (crop_y / crop_yscale)) 
+		cairo_rectangle cr 0.0 0.0 as float! width as float! height
+		cairo_fill cr
+		cairo_translate cr as-float (0 - x) as-float (0 - y)
+		cairo_restore cr
+
+		cairo_surface_destroy crop_surf
+		g_object_unref img
+	][
+		GDK-draw-image cr img x y width height
+	]
 ]
 
 OS-draw-grad-pen-old: func [

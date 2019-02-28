@@ -1706,6 +1706,10 @@ GList!: alias struct! [
 			cr			[handle!]
 		]
 
+		cairo_clip: "cairo_clip" [
+			cr			[handle!]
+		]
+
 		cairo_line_to: "cairo_line_to" [
 			cr			[handle!]
 			x				[float!]
@@ -1946,7 +1950,8 @@ GList!: alias struct! [
 		cairo_image_surface_create: "cairo_image_surface_create" [
 			format		[cairo_format_t!]
 			width			[integer!]
-			height		[integer!]	
+			height		[integer!]
+			return:		[handle!]	
 		]
 		cairo_image_surface_create_for_data: "cairo_image_surface_create_for_data" [
 			data			[byte-ptr!]
@@ -1979,7 +1984,7 @@ GList!: alias struct! [
 		]
 		gdk_cairo_set_source_pixbuf: "gdk_cairo_set_source_pixbuf" [
 			cr 			[handle!]
-			pixbuf 		[handle!]
+			pixbuf 	[handle!]
 			x 			[integer!]
 			y 			[integer!]
 		]
@@ -2014,6 +2019,26 @@ GList!: alias struct! [
 			dest_height	[integer!]
 			interp_type	[integer!]
 			return: 	[handle!]
+		]
+		gdk_pixbuf_get_from_surface: "gdk_pixbuf_get_from_surface" [
+			surf			[handle!]
+			src_x			[integer!]
+			src_y			[integer!]
+			width			[integer!]
+			height		[integer!]
+			return:		[handle!]
+		]
+		gdk_pixbuf_get_from_window: "gdk_pixbuf_get_from_window" [
+			window		[handle!]
+			src_x			[integer!]
+			src_y			[integer!]
+			width			[integer!]
+			height		[integer!]
+			return:		[handle!]
+		]
+		gdk_pixbuf_get_n_channels: "gdk_pixbuf_get_n_channels" [
+			pixbuf		[handle!]
+			return: 	[integer!]
 		]
 
 		;; Useless since already called inside pango_cairo_create_context
