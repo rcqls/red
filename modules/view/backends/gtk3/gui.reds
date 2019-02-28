@@ -39,6 +39,7 @@ css-id:				4
 size-id:			5
 real-container-id:	6
 menu-id:			7
+drag-id:			8
 
 
 gtk-style-id:	0
@@ -182,6 +183,20 @@ get-widget-data: func [
 ][
 	values: get-face-values widget
     as red-block! values + FACE_OBJ_DATA
+]
+
+set-draggable: func [
+	item	[handle!]
+	key		[logic!]
+][
+	g_object_set_qdata item drag-id as int-ptr! either key [1][0]
+]
+
+draggable?: func [
+	item		[handle!]
+	return: 	[logic!]
+][
+	1 = as integer! g_object_get_qdata item drag-id
 ]
 
 get-child-from-xy: func [
@@ -1415,6 +1430,7 @@ parse-common-opts: func [
 					gobj_signal_connect(hWnd "motion-notify-event" :drag-widget-motion-notify-event face/ctx)
 					gobj_signal_connect(hWnd "button-press-event" :drag-widget-button-press-event face/ctx)
 					gobj_signal_connect(hWnd "button-release-event" :drag-widget-button-release-event face/ctx)
+					set-draggable hWnd yes
 				]
 				; sym = _cursor [
 				; 	w: word + 1

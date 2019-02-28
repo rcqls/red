@@ -653,7 +653,7 @@ drag-widget-motion-notify-event: func [
 		flags 	[integer!]
 
 ][
-	;; Drag -> DEBUG: print [ "MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "DRAG MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	either motion/state [
 		if 0 = (motion/cpt % motion/sensitiv) [
 			x:  event/x_root - motion/x_root
@@ -680,13 +680,15 @@ drag-widget-button-press-event: func [
 		offset 	[red-pair!]
 		flags 	[integer!]
 ][
-	;; Drag -> DEBUG: print [ "BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	motion/state: yes
-	motion/cpt: 0
-	motion/x_root: event/x_root
-	motion/y_root: event/y_root
-	motion/x_new: 0
-	motion/y_new: 0
+	;; DEBUG: print [ "DRAG BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	if event/button = GDK_BUTTON_PRIMARY [
+		motion/state: yes
+		motion/cpt: 0
+		motion/x_root: event/x_root
+		motion/y_root: event/y_root
+		motion/x_new: 0
+		motion/y_new: 0
+	]
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
 	yes
@@ -704,8 +706,8 @@ drag-widget-button-release-event: func [
 		state	[logic!]
 		flags 	[integer!]
 ][
-	; print [ "Drag -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	
+	;; DEBUG: print [ "Drag -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	unless event/button = GDK_BUTTON_PRIMARY [return no]
 	; Special treatment for check and radio buttons (TODO: button)
 	type: as red-word! get-node-facet ctx FACE_OBJ_TYPE
 	sym:	symbol/resolve type/symbol
@@ -737,6 +739,7 @@ mouse-button-press-event: func [
 	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
+	if draggable? widget [return no] ; delegate to drag
 
 	;; DEBUG: print ["with button " event/button lf]
 	if  event/button = GDK_BUTTON_SECONDARY  [
@@ -771,6 +774,7 @@ mouse-button-release-event: func [
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	if draggable? widget [return no] ; delegate to drag
 	motion/state: yes
 	motion/cpt: 0
 	motion/x_root: event/x_root
@@ -795,6 +799,7 @@ mouse-motion-notify-event: func [
 		flags	[integer!]
 ][
 	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	if draggable? widget [return no] ; delegate to drag
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
 	motion/x_root: event/x_root
