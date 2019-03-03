@@ -599,6 +599,11 @@ GList!: alias struct! [
 			[variadic]
 			return:	[c-string!]
 		]
+		g_strcmp0: "g_strcmp0" [
+			str			[c-string!]
+			str2		[c-string!]
+			return: [integer!]
+		]
 		g_free: "g_free" [
 			ptr		[handle!]
 		]
@@ -835,6 +840,12 @@ GList!: alias struct! [
 			font-sel 	[handle!]
 			return: 	[handle!]
 		]
+		gtk_init: "gtk_init" [
+			argc		[int-ptr!]
+			argv		[handle!]
+		]
+		gtk_main: "gtk_main" []
+		gtk_main_quit: "gtk_main_quit" []
 		gtk_main_iteration: "gtk_main_iteration" [
 			return: 	[logic!]
 		]
@@ -853,6 +864,10 @@ GList!: alias struct! [
 			window		[handle!]
 			width		[integer!]
 			height		[integer!]
+		]
+		gtk_window_set_resizable: "gtk_window_set_resizable" [
+			window		[handle!]
+			mode			[logic!]
 		]
 		gtk_window_move: "gtk_window_move" [
 			window		[handle!]

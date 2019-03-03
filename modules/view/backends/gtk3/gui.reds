@@ -1620,7 +1620,7 @@ OS-make-view: func [
 			]
 		]
 		sym = base [
-			widget: gtk_drawing_area_new
+			widget: gtk_layout_new null null;gtk_drawing_area_new
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
@@ -1632,7 +1632,7 @@ OS-make-view: func [
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
 		sym = rich-text [
-			widget: gtk_drawing_area_new
+			widget: gtk_layout_new null null;gtk_drawing_area_new
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
@@ -1802,6 +1802,7 @@ OS-make-view: func [
 		p-sym: get-widget-symbol as handle! parent
 		either null? _widget [_widget: widget][g_object_set_qdata widget _widget-id _widget ]
 		; TODO: case to replace with either if no more choice
+		;; DEBUG: print ["Parent: " get-symbol-name p-sym " _widget" _widget lf]
 		case [
 			p-sym = tab-panel [
 				container: as handle! parent
@@ -1832,9 +1833,26 @@ OS-make-view: func [
 					p-sym = window [
 						g_object_get_qdata as handle! parent real-container-id
 					]
-					p-sym = panel [parent]
-					true [buffer: gtk_container_get_children as handle! parent buffer/value]
+					any [p-sym = panel p-sym = rich-text p-sym = base] [parent]
+					p-sym = group-box [
+						buffer: gtk_container_get_children as handle! parent 
+						;; DEBUG: print ["Parent when not container : " buffer/value lf]
+						buffer/value
+					]
+					true [
+						; CAREFULL: NOT SURE THIS WAS USED PROPERLY -> for compilation of gui-console this clearly leads to a bug 
+						; buffer: gtk_container_get_children as handle! parent 
+						; ;; DEBUG: 
+						; print ["Parent when not container : " buffer/value lf]
+						; buffer/value
+
+						;; redirect to the layout of the parent
+						;; WARNING: (since completedly changed code)
+						print ["WARNING: <<NOTHING SHOULD GO HERE>>  (ONLY FOR DEVELOPMENT SINCE CODE HAS FULLY CHANGED BUT IMPOSSIBLE TO TEST) " lf]
+						g_object_get_qdata as handle! parent gtk-layout-id
+					]
 				]
+				;; DEBUG: print ["widget (" get-symbol-name sym "):" widget " with parent (" get-symbol-name p-sym ") " lf ]; parent " with container (" get-symbol-name get-widget-symbol container  ") " container lf]
 				;; DEBUG: print ["parent of " widget " is " parent " with real " container lf]
 				;save gtk_fixed container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
 				g_object_set_qdata widget gtk-layout-id container
@@ -1844,7 +1862,7 @@ OS-make-view: func [
 			]
 		]
 	]
-
+	
 	unless any[sym = window sym = area][build-context-menu widget menu]
 
 	connect-mouse-events widget face as red-object! values + FACE_OBJ_ACTORS sym
