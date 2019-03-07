@@ -524,7 +524,7 @@ area-button-press-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 ][
@@ -536,7 +536,7 @@ area-button-press-event: func [
 	print ["menu cursor pos: " menu-x "x" menu-y lf]
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
-	no
+	0;;no
 ]
 
 area-button-release-event: func [
@@ -544,7 +544,7 @@ area-button-release-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 		buffer		[handle!]
@@ -574,7 +574,7 @@ area-button-release-event: func [
 		]
 		free as byte-ptr! start free as byte-ptr! end 
 	]
-	no
+	0
 ]
 
 area-populate-popup: func [
@@ -593,7 +593,7 @@ area-populate-popup: func [
 red-timer-action: func [
 	[cdecl]
 	self	[handle!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		timer	[int-ptr!]
 ][
@@ -602,7 +602,7 @@ red-timer-action: func [
 	;either null? main-window [no]
 	;[
 	 	make-event self 0 EVT_TIME
-	 	yes
+	 	1
 	;];[
 	; 	print ["timer for widget " self " will stop!" lf]
 	; 	remove-widget-timer self
@@ -615,14 +615,14 @@ widget-enter-notify-event: func [
 	widget 	[handle!] 
 	event	[GdkEventCrossing!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "ENTER: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_OVER
-	no
+	0;;no
 ]
 
 widget-leave-notify-event: func [
@@ -630,14 +630,14 @@ widget-leave-notify-event: func [
 	widget 	[handle!] 
 	event	[GdkEventCrossing!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "LEAVE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	flags: check-flags event/type event/state
 	make-event widget flags or EVT_FLAG_AWAY EVT_OVER
-	no
+	0;;no
 ]
 
 drag-widget-motion-notify-event: func [
@@ -645,16 +645,18 @@ drag-widget-motion-notify-event: func [
 	widget 	[handle!] 
 	event	[GdkEventMotion!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		offset 	[red-pair!]
 		x 		[float!]
 		y 		[float!]
 		flags 	[integer!]
+		state	[integer!]
 
 ][
+	state: 0
 	;; DEBUG: print [ "DRAG MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	either motion/state [
+	if motion/state [
 		if 0 = (motion/cpt % motion/sensitiv) [
 			x:  event/x_root - motion/x_root
 			y:  event/y_root - motion/y_root
@@ -663,11 +665,12 @@ drag-widget-motion-notify-event: func [
 			motion/x_root: event/x_root
 			motion/y_root: event/y_root
 			flags: check-flags event/type event/state
-			make-event widget flags EVT_OVER
+			state: make-event widget flags EVT_OVER
 		]
 		motion/cpt: motion/cpt + 1
-		yes
-	][no]
+		state: 1;;yes
+	]
+	state
 ]
 
 drag-widget-button-press-event: func [
@@ -675,7 +678,7 @@ drag-widget-button-press-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		offset 	[red-pair!]
 		flags 	[integer!]
@@ -691,7 +694,7 @@ drag-widget-button-press-event: func [
 	]
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
-	yes
+	1;;yes
 ]
 
 drag-widget-button-release-event: func [
@@ -699,7 +702,7 @@ drag-widget-button-release-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		type	[red-word!]
 		sym		[integer!]
@@ -707,7 +710,7 @@ drag-widget-button-release-event: func [
 		flags 	[integer!]
 ][
 	;; DEBUG: print [ "Drag -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	unless event/button = GDK_BUTTON_PRIMARY [return no]
+	unless event/button = GDK_BUTTON_PRIMARY [return 0]
 	; Special treatment for check and radio buttons (TODO: button)
 	type: as red-word! get-node-facet ctx FACE_OBJ_TYPE
 	sym:	symbol/resolve type/symbol
@@ -723,7 +726,7 @@ drag-widget-button-release-event: func [
 	motion/state: no
 	flags: check-flags event/type event/state
 	make-event widget flags  EVT_LEFT_UP
-	yes
+	1;;yes
 ]
 
 mouse-button-press-event: func [
@@ -731,15 +734,17 @@ mouse-button-press-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 		hMenu		[handle!]
 ][
-	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: 
+	print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
-	if draggable? widget [return no] ; delegate to drag
+	if gtk_widget_get_focus_on_click widget [print ["grab focus on mouse " widget lf] gtk_widget_grab_focus widget]
+	if draggable? widget [return 0] ; delegate to drag
 
 	;; DEBUG: print ["with button " event/button lf]
 	if  event/button = GDK_BUTTON_SECONDARY  [
@@ -750,7 +755,7 @@ mouse-button-press-event: func [
 			menu-y: as-integer event/y
 			;; DEBUG: print ["menu pointer : " menu-x "x" menu-y lf]
 			gtk_menu_popup_at_pointer hMenu	 as handle! event
-			return yes
+			return 1
 		]
 
 	]
@@ -761,7 +766,7 @@ mouse-button-press-event: func [
 	motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
-	no
+	;;0;;no
 ]
 
 mouse-button-release-event: func [
@@ -769,12 +774,12 @@ mouse-button-release-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	if draggable? widget [return no] ; delegate to drag
+	if draggable? widget [return 0] ; delegate to drag
 	motion/state: yes
 	motion/cpt: 0
 	motion/x_root: event/x_root
@@ -783,7 +788,7 @@ mouse-button-release-event: func [
 	motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_UP
-	no
+	;;0 ;;no
 ]
 
 mouse-motion-notify-event: func [
@@ -791,23 +796,27 @@ mouse-motion-notify-event: func [
 	widget 	[handle!] 
 	event	[GdkEventMotion!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local
 		offset 	[red-pair!]
 		x 		[float!]
 		y 		[float!]
+		wflags	[integer!]
 		flags	[integer!]
 ][
 	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	if draggable? widget [return no] ; delegate to drag
+	if draggable? widget [return 0] ; delegate to drag
 	motion/x_new: as-integer event/x
 	motion/y_new: as-integer event/y
 	motion/x_root: event/x_root
 	motion/y_root: event/y_root
-	flags: check-flags event/type event/state
-	make-event widget flags EVT_OVER	 
+	wflags: get-flags (as red-block! get-face-values widget) + FACE_OBJ_FLAGS
+	if wflags and FACET_FLAGS_ALL_OVER <> 0 [
+		flags: check-flags event/type event/state
+		make-event widget flags EVT_OVER	 
+	]
 	;; DEBUG: print ["mouse-motion-notify-event:  down? " (event/state and GDK_BUTTON1_MASK <> 0) " " (flags and EVT_FLAG_DOWN <> 0) lf] 
-	no
+	0 ;;no
 ]
 
 key-press-event: func [
@@ -815,27 +824,29 @@ key-press-event: func [
 	widget		[handle!]
 	event-key	[GdkEventKey!]
 	ctx			[node!]
-	;return:		[logic!]
+	return:		[integer!]
 	/local
-		res		[integer!]
+		state	[integer!]
 		key		[integer!]
 		flags	[integer!]
 		text	[c-string!]
 ][
 
-	;; DEBUG: print ["key-press-event: " event-key/keyval lf]
+	;; DEBUG: 
+	print ["key-press-event: " event-key/keyval " " widget lf]
+	state: 0
+	either event-key/keyval > FFFFh [state: 1][
+		key: translate-key event-key/keyval
+		flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
+		flags: flags or check-extra-keys event-key/state
 
-	if event-key/keyval > FFFFh [exit];return yes]
-	key: translate-key event-key/keyval
-	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
-	flags: flags or check-extra-keys event-key/state
 
-
-	res: make-event widget key or flags EVT_KEY_DOWN
-	either res = EVT_NO_DISPATCH [yes][
-	 	make-event widget key or flags EVT_KEY
-		no
+		state: make-event widget key or flags EVT_KEY_DOWN
+		unless state = EVT_NO_DISPATCH [
+			state: make-event widget key or flags EVT_KEY
+		]
 	]
+	state
 ]
 
 key-release-event: func [
@@ -843,27 +854,28 @@ key-release-event: func [
 	widget		[handle!]
 	event-key	[GdkEventKey!]
 	ctx			[node!]
-	;return:		[logic!]
+	return:		[integer!]
 	/local
-		res		[integer!]
+		state	[integer!]
 		key		[integer!]
 		flags	[integer!]
 		text	[c-string!]
 ][
-	;; DEBUG: print ["key-release-event: " event-key/keyval lf]
+	;; DEBUG: 
+	print ["key-release-event: " event-key/keyval " " widget lf]
+	state: 0
+	either event-key/keyval > FFFFh [state: 1][
+		key: translate-key event-key/keyval
+		flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
+		flags: flags or check-extra-keys event-key/state
 
-	if event-key/keyval > FFFFh [exit];return yes]
-	key: translate-key event-key/keyval
-	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
-	flags: flags or check-extra-keys event-key/state
 
-
-	res: make-event widget key or flags EVT_KEY_UP
-	either res = EVT_NO_DISPATCH [yes][
-	 	make-event widget key or flags EVT_KEY
-		no
+		state: make-event widget key or flags EVT_KEY_UP
+		unless state = EVT_NO_DISPATCH [
+			state: make-event widget key or flags EVT_KEY
+		]
 	]
-	
+	state
 ]
 
 menu-item-activate: func [

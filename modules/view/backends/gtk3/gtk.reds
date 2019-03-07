@@ -538,6 +538,17 @@ GList!: alias struct! [
 			block?		[logic!]
 			return:		[logic!]
 		]
+		g_main_context_pending: "g_main_context_pending" [
+			context		[integer!]
+			return: 	[logic!]
+		]
+		g_main_context_is_owner: "g_main_context_is_owner" [
+			context		[integer!]
+			return: 	[logic!]
+		]
+		g_main_current_source: "g_main_current_source" [
+			return:		[handle!]
+		]
 		g_list_length: "g_list_length" [
 			list			[int-ptr!]
 			return:		[integer!]
@@ -662,7 +673,36 @@ GList!: alias struct! [
 		gtk_get_micro_version: "gtk_get_micro_version" [
 			return: 		[integer!]
 		]
+		gdk_cursor_new_from_pixbuf: "gdk_cursor_new_from_pixbuf" [
+			display			[handle!]
+			pixbuf			[handle!]
+			x						[integer!]
+			y						[integer!]
+			return:			[handle!]
+		]
+		gdk_cursor_new_from_name: "gdk_cursor_new_from_name" [
+			display			[handle!]
+			name				[c-string!]
+			return:			[handle!]
+		]
+		gtk_get_current_event_time: "gtk_get_current_event_time" [
+			return:			[integer!]
+		]
+		gtk_get_current_event_state: "gtk_get_current_event_state" [
+			state				[int-ptr!]
+		]
+		gtk_get_current_event: "gtk_get_current_event" [
+			return:			[handle!]
+		]
 		gtk_get_current_event_device: "gtk_get_current_event_device" [
+			return: 		[handle!]
+		]
+		gtk_get_event_widget: "gtk_get_event_widget" [
+			event				[handle!]
+			return:			[handle!]
+		]
+		gdk_window_get_display: "gdk_window_get_display" [
+			window			[handle!]
 			return: 		[handle!]
 		]
 		gdk_window_get_device_position: "gdk_window_get_device_position" [
@@ -903,6 +943,18 @@ GList!: alias struct! [
 			window		[handle!]
 			width		[handle!]
 			height		[handle!]
+		]
+		gtk_propagate_event: "gtk_propagate_event" [
+			widget		[handle!]
+			event			[handle!]
+		]
+		gtk_widget_register_window: "gtk_widget_register_window" [
+			widget		[handle!]
+			window		[handle!]
+		]
+		gtk_widget_unregister_window: "gtk_widget_unregister_window" [
+			widget		[handle!]
+			window		[handle!]
 		]
 		gtk_widget_queue_draw: "gtk_widget_queue_draw" [
 			widget		[handle!]
@@ -1703,6 +1755,8 @@ GList!: alias struct! [
 			return:		[handle!]
 		]
 
+		
+
 		gtk_widget_get_pango_context: "gtk_widget_get_pango_context" [
 			return:		[handle!]
 		]
@@ -2082,7 +2136,13 @@ GList!: alias struct! [
 			layout_line [handle!]
 		]
 		pango_cairo_context_set_font_options: "pango_cairo_context_set_font_options" [
-
+			cr 			[handle!]
+			opts		[handle!]
+		]
+		pango_context_load_font: "pango_context_load_font" [
+			context		[handle!]
+			fd				[handle!]
+			return: 	[handle!]
 		]
 		pango_font_map_create_context: "pango_font_map_create_context" [
 			fontmap		[handle!]

@@ -145,7 +145,10 @@ get-para-flags: func [
 	flags:	 0
 	
 	case [
-		type = base [
+		any [
+			type = base
+			type = rich-text
+		][
 			left:	0000h								;-- DT_LEFT
 			center: 0001h								;-- DT_CENTER
 			right:  0002h								;-- DT_RIGHT

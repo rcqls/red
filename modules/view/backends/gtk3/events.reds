@@ -10,9 +10,10 @@ Red/System [
 	}
 ]
 
+;; In the GTK world, gboolean is a gint and the dispatching is as follows:
 #enum event-action! [
-	EVT_NO_DISPATCH										;-- no further msg processing allowed
-	EVT_DISPATCH										;-- allow DispatchMessage call only
+	EVT_DISPATCH: 0										;-- allow DispatchMessage call only
+	EVT_NO_DISPATCH 									;-- no further msg processing allowed
 ]
 
 #define GDK_BUTTON_PRIMARY 1
@@ -155,7 +156,8 @@ get-event-key: func [
 			code: evt/flags
 			special?: code and 80000000h <> 0
 			code: code and FFFFh
-			;; DEBUG: print ["key-code=" code " flags=" evt/flags " special?=" special? lf]
+			;; DEBUG: 
+			print ["key-code=" code " flags=" evt/flags " special?=" special? lf]
 			if special? [
 				res: as red-value! switch code [
 					RED_VK_PRIOR	[_page-up]
@@ -309,19 +311,41 @@ make-event: func [
 		default	 [0]
 	]
 
-	#call [system/view/awake gui-evt]
-
+	stack/mark-try-all words/_anon
 	res: as red-word! stack/arguments
-
+	catch CATCH_ALL_EXCEPTIONS [
+		#call [system/view/awake gui-evt]
+		stack/unwind
+	]
+	stack/adjust-post-try
+	if system/thrown <> 0 [system/thrown: 0]
+	
 	if TYPE_OF(res) = TYPE_WORD [
 		sym: symbol/resolve res/symbol
-		;; DEBUG: print ["make-events result:" sym lf]
+		;; DEBUG: 
+		print ["make-events result:" sym lf]
 		case [
-			sym = done [state: EVT_NO_DISPATCH]			;-- prevent other high-level events
+			sym = done [state: EVT_DISPATCH]			;-- prevent other high-level events
 			sym = stop [state: EVT_NO_DISPATCH]			;-- prevent all other events
 			true 	   [0]								;-- ignore others
 		]
 	]
+
+	; #call [system/view/awake gui-evt]
+	; res: as red-word! stack/arguments
+
+	; if TYPE_OF(res) = TYPE_WORD [
+	; 	sym: symbol/resolve res/symbol
+	; 	;; DEBUG: 
+	; 	print ["make-events result:" sym lf]
+
+	; 	case [
+	; 		sym = done [state: EVT_DISPATCH]			;-- prevent other high-level events
+	; 		sym = stop [state: EVT_NO_DISPATCH]			;-- prevent all other events
+	; 		true 	   [0]								;-- ignore others
+	; 	]
+	; ]
+
 	state
 ]
 
@@ -330,14 +354,32 @@ do-events: func [
 	return:  [logic!]
 	/local
 		msg? [logic!]
+		;; DEBUG
+		; event	[handle!]
+		; widget	[handle!]
+		; state	[GdkModifierType!]
+		; source	[handle!]
 ][
 	msg?: no
+	;; DEBUG: state: 0
+
 	;@@ Improve it!!!
 	;@@ as we cannot access gapplication->priv->use_count
 	;@@ we use a global value to simulate it
 	unless no-wait? [exit-loop: exit-loop + 1]
 
 	while [exit-loop > 0][
+		;; DEBUG: 
+		; print ["owner " GTKApp-Ctx "  " g_main_context_is_owner GTKApp-Ctx lf]
+		; source: g_main_current_source 
+		; print ["source: " source lf]
+		; gtk_get_current_event_state :state
+		; print ["state: " state lf]
+		; print ["time: " gtk_get_current_event_time lf]
+		; event: gtk_get_current_event
+		; print ["event: " event lf]
+		; widget: gtk_get_event_widget event	
+		; print ["event widget: " widget lf]
 		if g_main_context_iteration GTKApp-Ctx not no-wait? [msg?: yes]
 		if no-wait? [break]
 	]
@@ -348,7 +390,9 @@ do-events: func [
 	]
 	
 	;g_settings_sync
+	;; UNCOMMENTING THE NEXT LINE makes ballots.red failing at least for the 3rd window
 	;g_main_context_release GTKApp-Ctx			;@@ release it?
+	;; UNCOMMENTING THE NEXT LINE generates an ERROR
 	;g_object_unref GTKApp
 	msg?
 ]
@@ -470,4 +514,130 @@ post-quit-msg: func [
 		tm	[float!]
 ][
 	0
+]
+
+;; centralize here connection handlers
+
+
+respond-event?: func [
+	actors		[red-object!]	
+	type		[c-string!]
+	return:		[logic!]
+][
+	-1 <> object/rs-find actors as red-value! word/load type
+]
+
+respond-down-event?: func [
+	actors		[red-object!]
+	return:		[logic!]
+][
+	any [
+		respond-event?  actors "on-click"
+		respond-event?  actors "on-down"
+		respond-event?  actors "on-mid-down"
+		respond-event?  actors "on-aux-down"
+	] 
+]
+
+respond-up-event?: func [
+	actors		[red-object!]
+	return:		[logic!]
+][
+	any [
+		respond-event?  actors "on-up"
+		respond-event?  actors "on-mid-up"
+		respond-event?  actors "on-aux-up"
+	] 
+]
+
+respond-key-down-event?: func [
+	actors		[red-object!]
+	return:		[logic!]
+][
+	any [
+		respond-event?  actors "on-key-down"
+		respond-event?  actors "on-key"
+	]
+]
+
+respond-key-up-event?: func [
+	actors		[red-object!]
+	return:		[logic!]
+][
+	respond-event?  actors "on-key-up"
+]
+
+;; The goal is to connect only 
+;; TODO:
+;; 		*) if useful: create a mask to know what is the connectable
+;;		*) if dynamically used in red, create an update-common-event(s) function
+
+connect-common-events: function [
+	widget 		[handle!]
+	face 		[red-object!]
+	actors		[red-object!]
+	type		[integer!]
+	; /local
+	; 	_widget [handle!]
+][
+	if all [
+		not null? widget
+		not null? actors/ctx
+	][
+		; _widget: either type = text [
+		; 	g_object_get_qdata widget _widget-id
+		; ][widget]
+		; OR (NOT YET TESTED but if needed for widget with _widget)
+		; _widget: g_object_get_qdata widget _widget-id
+		; _widget: either null? _widget [widget][_widget]
+
+		if respond-down-event? actors [
+			;; DEBUG: 
+			print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
+			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
+			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
+		]
+		if respond-up-event? actors [
+			;; DEBUG: 
+			print [ "ON-UP: " get-symbol-name type "->" widget lf]
+			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
+		]
+		if respond-key-down-event? actors [
+			;; DEBUG: 
+			print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
+			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
+		]
+		if respond-key-up-event?  actors [
+			;; DEBUG: 
+			print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
+			gtk_widget_add_events widget GDK_KEY_RELEASE_MASK
+			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
+		]
+	]
+]
+
+connect-notify-events: function [
+	widget 		[handle!]
+	face 		[red-object!]
+	actors		[red-object!]
+	type		[integer!]
+	/local
+		_widget [handle!]
+][
+	if all [
+		not null? widget
+		not null? actors/ctx
+	][
+		_widget: either type = text [
+			g_object_get_qdata widget _widget-id
+		][widget]
+		if respond-event?  actors "on-over" [
+			;; DEBUG: 
+			print [ "ON-OVER: notify " get-symbol-name type "->" widget lf]
+
+			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK
+			gobj_signal_connect(_widget "enter-notify-event" :widget-enter-notify-event face/ctx)
+			gobj_signal_connect(_widget "leave-notify-event" :widget-leave-notify-event face/ctx)
+		]
+	]
 ]
