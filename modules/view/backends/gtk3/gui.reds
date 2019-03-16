@@ -1032,8 +1032,7 @@ change-selection: func [
 		bound	[GtkTextIter!]
 		buffer	[handle!]
 ][
-	;; DEBUG: 
-	print ["change-selection: " widget " (" get-symbol-name type ")" lf]
+	;; DEBUG: print ["change-selection: " widget " (" get-symbol-name type ")" lf]
 
 	if type <> window [
 		idx: either TYPE_OF(int) = TYPE_INTEGER [int/value - 1][-1]
@@ -1796,8 +1795,7 @@ OS-make-view: func [
 	; save the previous group-radio state as a global variable
 	group-radio: either sym = radio [widget][as handle! 0] 
 
-	;;DEBUG: 
-	print [ "New widget " get-symbol-name sym "->" widget lf]
+	;;DEBUG: print [ "New widget " get-symbol-name sym "->" widget lf]
 	
 	if all [
 		sym <> window
@@ -1856,8 +1854,7 @@ OS-make-view: func [
 						g_object_get_qdata as handle! parent gtk-layout-id
 					]
 				]
-				;; DEBUG: 
-				print ["widget (" get-symbol-name sym "):" widget "[_widget: " _widget "] with parent (" get-symbol-name p-sym ") " as handle! parent " with container (" (get-symbol-name get-widget-symbol container)  ") " container lf]
+				;; DEBUG: print ["widget (" get-symbol-name sym "):" widget "[_widget: " _widget "] with parent (" get-symbol-name p-sym ") " as handle! parent " with container (" (get-symbol-name get-widget-symbol container)  ") " container lf]
 
 				;save gtk_layout container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
 				g_object_set_qdata widget gtk-layout-id container
