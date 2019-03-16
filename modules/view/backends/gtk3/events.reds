@@ -275,6 +275,7 @@ make-event: func [
 		state  [integer!]
 		key	   [integer!]
 		char   [integer!]
+		type   [integer!]
 ][
 	gui-evt/type:  evt
 	gui-evt/msg:   as byte-ptr! msg
@@ -303,7 +304,11 @@ make-event: func [
 		EVT_RIGHT_UP
 		EVT_MIDDLE_DOWN
 		EVT_MIDDLE_UP
-		EVT_DBL_CLICK [0
+		EVT_DBL_CLICK [
+			if flags and EVT_FLAG_DBL_CLICK <> 0 [
+				;; DEBUG: print ["Double click!!!!!" lf]
+				gui-evt/type: EVT_DBL_CLICK
+			]
 		]
 		EVT_CLICK [0
 		]
@@ -319,11 +324,11 @@ make-event: func [
 	]
 	stack/adjust-post-try
 	if system/thrown <> 0 [system/thrown: 0]
-	
-	if TYPE_OF(res) = TYPE_WORD [
+	;; DEBUG: print ["make-event result:" res lf]
+	type: TYPE_OF(res)
+	if  ANY_WORD?(type) [
 		sym: symbol/resolve res/symbol
-		;; DEBUG: 
-		print ["make-events result:" sym lf]
+		;; DEBUG: print ["make-event symbol:" get-symbol-name sym lf]
 		case [
 			sym = done [state: EVT_DISPATCH]			;-- prevent other high-level events
 			sym = stop [state: EVT_NO_DISPATCH]			;-- prevent all other events
@@ -592,24 +597,20 @@ connect-common-events: function [
 		; _widget: either null? _widget [widget][_widget]
 
 		if respond-down-event? actors [
-			;; DEBUG: 
-			print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
+			;; DEBUG: print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
 			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
 		]
 		if respond-up-event? actors [
-			;; DEBUG: 
-			print [ "ON-UP: " get-symbol-name type "->" widget lf]
+			;; DEBUG: print [ "ON-UP: " get-symbol-name type "->" widget lf]
 			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 		]
 		if respond-key-down-event? actors [
-			;; DEBUG: 
-			print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
+			;; DEBUG: print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
 			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
 		]
 		if respond-key-up-event?  actors [
-			;; DEBUG: 
-			print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
+			;; DEBUG: print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
 			gtk_widget_add_events widget GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
@@ -632,8 +633,7 @@ connect-notify-events: function [
 			g_object_get_qdata widget _widget-id
 		][widget]
 		if respond-event?  actors "on-over" [
-			;; DEBUG: 
-			print [ "ON-OVER: notify " get-symbol-name type "->" widget lf]
+			;; DEBUG: print [ "ON-OVER: notify " get-symbol-name type "->" widget lf]
 
 			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK
 			gobj_signal_connect(_widget "enter-notify-event" :widget-enter-notify-event face/ctx)

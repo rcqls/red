@@ -528,12 +528,11 @@ area-button-press-event: func [
 	/local
 		flags 		[integer!]
 ][
-	;; DEBUG: 
-	print [ "area -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "area -> BUTTON-PRESS: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	
 	menu-x: as-integer event/x
 	menu-y: as-integer event/y
-	print ["menu cursor pos: " menu-x "x" menu-y lf]
+	;; DEBUG: print ["menu cursor pos: " menu-x "x" menu-y lf]
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
 	0;;no
@@ -739,8 +738,7 @@ mouse-button-press-event: func [
 		flags 		[integer!]
 		hMenu		[handle!]
 ][
-	;; DEBUG: 
-	print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; motion/state: yes
 	; motion/cpt: 0
 	if gtk_widget_get_focus_on_click widget [print ["grab focus on mouse " widget lf] gtk_widget_grab_focus widget]
@@ -766,7 +764,7 @@ mouse-button-press-event: func [
 	motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_LEFT_DOWN
-	;;0;;no
+	1;;no
 ]
 
 mouse-button-release-event: func [
@@ -832,8 +830,7 @@ key-press-event: func [
 		text	[c-string!]
 ][
 
-	;; DEBUG: 
-	print ["key-press-event: " event-key/keyval " " widget lf]
+	;; DEBUG: print ["key-press-event: " event-key/keyval " " widget lf]
 	state: 0
 	either event-key/keyval > FFFFh [state: 1][
 		key: translate-key event-key/keyval
@@ -861,8 +858,7 @@ key-release-event: func [
 		flags	[integer!]
 		text	[c-string!]
 ][
-	;; DEBUG: 
-	print ["key-release-event: " event-key/keyval " " widget lf]
+	;; DEBUG: print ["key-release-event: " event-key/keyval " " widget lf]
 	state: 0
 	either event-key/keyval > FFFFh [state: 1][
 		key: translate-key event-key/keyval

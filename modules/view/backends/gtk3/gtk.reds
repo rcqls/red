@@ -42,6 +42,12 @@ tagRECT: alias struct! [
 	height	[integer!]
 ]
 
+GdkEventAny!: alias struct! [
+	type          [integer!]
+  window        [int-ptr!]
+  send_event    [byte!]
+]
+
 GdkEventKey!: alias struct! [
   type          [integer!]
   window        [int-ptr!]
@@ -701,6 +707,19 @@ GList!: alias struct! [
 			event				[handle!]
 			return:			[handle!]
 		]
+		gdk_event_get: "gdk_event_get" [
+			return:			[handle!]
+		]
+		gdk_event_peek: "gdk_event_peek" [
+			return:			[handle!]
+		]
+		gdk_event_copy: "gdk_event_copy" [
+			event			[handle!]
+			return:		[handle!]
+		]
+		gdk_event_free: " gdk_event_free" [
+			event			[handle!]
+		]
 		gdk_window_get_display: "gdk_window_get_display" [
 			window			[handle!]
 			return: 		[handle!]
@@ -712,6 +731,11 @@ GList!: alias struct! [
 			y						[int-ptr!]
  			mask				[handle!]
 			return:			[handle!]
+		]
+		gdk_window_invalidate_rect: "gdk_window_invalidate_rect" [
+			window							[handle!]
+			rect								[tagRECT]
+			invalidate_children	[logic!]
 		]
 		gtk_application_new: "gtk_application_new" [
 			app-id		[c-string!]
@@ -944,6 +968,26 @@ GList!: alias struct! [
 			width		[handle!]
 			height		[handle!]
 		]
+		gtk_window_propagate_key_event: "gtk_window_propagate_key_event" [
+			widget		[handle!]
+			event			[handle!]
+		]
+		gtk_window_get_focus: "gtk_window_get_focus" [
+			window 		[handle!]
+			return: 	[handle!]
+		]
+		gtk_window_set_focus: "gtk_window_set_focus" [
+			window 		[handle!]
+			widget	 	[handle!]	
+		]
+		gtk_window_get_default_widget: "gtk_window_get_default_widget" [
+			window 		[handle!]
+			return:	 	[handle!]	
+		]
+		gtk_window_set_default: "gtk_window_set_default" [
+			window 					[handle!]
+			default_widget	[handle!]
+		]
 		gtk_propagate_event: "gtk_propagate_event" [
 			widget		[handle!]
 			event			[handle!]
@@ -956,8 +1000,20 @@ GList!: alias struct! [
 			widget		[handle!]
 			window		[handle!]
 		]
+		gtk_widget_event: "gtk_widget_event" [
+			widget		[handle!]
+			event			[handle!]
+			return: 	[logic!]
+		]
 		gtk_widget_queue_draw: "gtk_widget_queue_draw" [
 			widget		[handle!]
+		]
+		gtk_widget_queue_draw_area: "gtk_widget_queue_draw_area" [
+			widget		[handle!]
+			x					[integer!]
+			y					[integer!]
+			w					[integer!]
+			h					[integer!]
 		]
 		gtk_widget_queue_resize: "gtk_widget_queue_resize" [
 			widget		[handle!]
@@ -977,6 +1033,10 @@ GList!: alias struct! [
 		gtk_widget_show: "gtk_widget_show" [
 			widget		[handle!]
 		]
+		gtk_widget_activate: "gtk_widget_activate" [
+			widget		[handle!]
+			return: 	[logic!]
+		]
 		gtk_widget_set_halign: "gtk_widget_set_halign" [
 			widget		[handle!]
 			type		[integer!]
@@ -989,7 +1049,22 @@ GList!: alias struct! [
 			widget		[handle!]
 			state 		[logic!]
 		]
+		gtk_widget_get_sensitive: "gtk_widget_get_sensitive" [
+			widget		[handle!]
+			return: 	[logic!]
+		]
+		gtk_widget_is_sensitive: "gtk_widget_is_sensitive" [
+			widget		[handle!]
+			return: 	[logic!]
+		]
+		gtk_widget_is_focus: "gtk_widget_is_focus" [
+			widget		[handle!]
+			return: 	[logic!]
+		]
 		gtk_widget_grab_focus: "gtk_widget_grab_focus" [
+			widget		[handle!]
+		]
+		gtk_widget_grab_default: "gtk_widget_grab_default" [
 			widget		[handle!]
 		]
 		gtk_widget_set_size_request: "gtk_widget_set_size_request" [
@@ -1027,9 +1102,17 @@ GList!: alias struct! [
 			widget		[handle!]
 			focus		[logic!]
 		]
+		gtk_widget_set_can_default: "gtk_widget_set_can_default" [
+			widget				[handle!]
+			can_default		[logic!]
+		]
 		gtk_widget_set_focus_on_click: "gtk_widget_set_focus_on_click" [
 			widget		[handle!]
 			focus		[logic!]
+		]
+		gtk_widget_get_can_default: "gtk_widget_get_can_default" [
+			widget		[handle!]
+			return:		[logic!]
 		]
 		gtk_widget_get_focus_on_click: "gtk_widget_get_focus_on_click" [
 			widget		[handle!]
@@ -1267,6 +1350,10 @@ GList!: alias struct! [
 			entry		[handle!]
 			nchars		[integer!]
 		]
+		gtk_entry_set_max_width_chars: "gtk_entry_set_max_width_chars" [
+			entry		[handle!]
+			nchars		[integer!]
+		]
 		gtk_entry_get_buffer: "gtk_entry_get_buffer" [
 			entry		[handle!]
 			return:		[handle!]
@@ -1413,6 +1500,10 @@ GList!: alias struct! [
 		gtk_combo_box_text_get_active_text: "gtk_combo_box_text_get_active_text"  [
 			combo		[handle!]
 			return:		[c-string!]
+		]
+		gtk_combo_box_set_popup_fixed_width: "gtk_combo_box_set_popup_fixed_width" [
+			combo		[handle!]
+			fixed 	[logic!]
 		]
 		gtk_notebook_new: "gtk_notebook_new" [
 			return:		[handle!]

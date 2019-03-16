@@ -482,7 +482,9 @@ get-symbol-name: function [
 		sym = drop-list ["drop-list"]
 		sym = drop-down ["drop-down"]
 		sym = rich-text ["rich-text"]
-		true ["other widget"]
+		sym = done ["done"]
+		sym = stop ["stop"]
+		true ["undefinded"]
 	]
 ]
 ; this adjustment is supposed to fix only horizontally consecutive widgets in the same pane  
@@ -1293,22 +1295,27 @@ init-text-list: func [
 		val		[c-string!]
 		len		[integer!]
 		label	[handle!]
+		type	[integer!]
 ][
 	if any [
 		TYPE_OF(data) = TYPE_BLOCK
 		TYPE_OF(data) = TYPE_HASH
 		TYPE_OF(data) = TYPE_MAP
 	][
+		;; DEBUG: print ["init-text-list" lf]
 		str:  as red-string! block/rs-head data
 		tail: as red-string! block/rs-tail data
 
 		if str = tail [exit]
 
 		while [str < tail][
-			if TYPE_OF(str) = TYPE_STRING [
+			type: TYPE_OF(str)
+			;; DEBUG: print ["type " type lf]
+			if ANY_STRING?(type) [
 				len: -1
 				val: unicode/to-utf8 str :len
 				label: gtk_label_new val
+				;; DEBUG: print ["Add elt: " val lf]
 				gtk_widget_set_halign label 1		;-- GTK_ALIGN_START
 				gtk_container_add widget label
 			]
@@ -1625,6 +1632,7 @@ OS-make-view: func [
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
 			gtk_widget_set_can_focus widget yes
 			gtk_widget_set_focus_on_click widget yes
+			gtk_widget_is_focus widget
 			gtk_widget_grab_focus widget
 			connect-common-events widget face actors sym 
 			;; DEBUG: print ["richtext " widget " face " face " size: " size/x "x" size/y lf]
@@ -1690,6 +1698,7 @@ OS-make-view: func [
 			gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)
 			
 			gtk_widget_set_can_focus widget yes
+			gtk_widget_is_focus widget
 			;This depends on version >= 3.2
 			;gtk_widget_set_focus_on_click widget yes
 			gobj_signal_connect(widget "move-focus" :field-move-focus face/ctx)
@@ -1763,6 +1772,7 @@ OS-make-view: func [
 			]
 			gtk_container_add _widget widget
 			gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)
+			connect-common-events widget face actors sym 
 		]
 		any [
 			sym = drop-list
@@ -1770,6 +1780,8 @@ OS-make-view: func [
 		][
 			widget: either sym = drop-list [gtk_combo_box_text_new][gtk_combo_box_text_new_with_entry]
 			init-combo-box widget data caption sym = drop-list
+			;; TODO: improve it but better than nothing from now otherwise it is uggly!
+			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (face/size-x - 20) / 10 ]
 			gtk_combo_box_set_active widget 0
 			gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
 		]
