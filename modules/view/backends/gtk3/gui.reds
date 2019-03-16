@@ -1781,7 +1781,7 @@ OS-make-view: func [
 			widget: either sym = drop-list [gtk_combo_box_text_new][gtk_combo_box_text_new_with_entry]
 			init-combo-box widget data caption sym = drop-list
 			;; TODO: improve it but better than nothing from now otherwise it is uggly!
-			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (face/size-x - 20) / 10 ]
+			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (size/x - 20) / 10 ]
 			gtk_combo_box_set_active widget 0
 			gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
 		]
