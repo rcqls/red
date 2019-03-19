@@ -1382,6 +1382,10 @@ GList!: alias struct! [
 			buffer		[handle!]
 			text			[c-string!]
 		]
+		gtk_entry_set_visibility: "gtk_entry_set_visibility" [
+			entry			[handle!]
+			visible		[logic!]
+		]
 		gtk_entry_buffer_set_text: "gtk_entry_buffer_set_text" [
 			buffer		[handle!]
 			text		[c-string!]

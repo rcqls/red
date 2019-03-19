@@ -1731,6 +1731,7 @@ OS-make-view: func [
 			gobj_signal_connect(widget "move-focus" :field-move-focus face/ctx)
 			gtk_entry_set_width_chars widget size/x / 10
 			set-hint-text widget as red-block! values + FACE_OBJ_OPTIONS
+			if bits and FACET_FLAGS_PASSWORD <> 0 [gtk_entry_set_visibility widget no]
 		]
 		sym = progress [
 			widget: gtk_progress_bar_new
@@ -1987,15 +1988,19 @@ OS-update-view: func [
 		int2: as red-integer! values + FACE_OBJ_SELECTED
 		change-selection widget int2 type
 	]
-	;if flags and FACET_FLAG_FLAGS <> 0 [
-	;	SetWindowLong
-	;		widget
-	;		wc-offset + 16
-	;		get-flags as red-block! values + FACE_OBJ_FLAGS
-	;]
+	if flags and FACET_FLAG_FLAGS <> 0 [
+		flags: get-flags as red-block! values + FACE_OBJ_FLAGS
+		if all[
+			type = field 
+			flags and FACET_FLAGS_PASSWORD <> 0
+		][
+			;; DEBUG: print ["password flag activated for field" lf]
+			gtk_entry_set_visibility widget no
+		]
+	]
 	if flags and FACET_FLAG_DRAW  <> 0 [
-		;gtk_widget_queue_draw widget
-		0
+		gtk_widget_queue_draw widget
+		; 0
 	]
 	if flags and FACET_FLAG_COLOR <> 0 [
 		if type = base [
