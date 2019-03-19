@@ -1519,7 +1519,8 @@ OS-refresh-window: func [widget [integer!]][
 
 OS-show-window: func [
 	widget	[integer!]
-	; /local
+	/local
+		face 	[red-object!]
 	; 	auto-adjust?	[red-logic!]
 ][
 	;; DEBUG: print ["OS-show-window" lf]
@@ -1533,6 +1534,8 @@ OS-show-window: func [
 	;	adjust-sizes as handle! widget
 	;	gtk_widget_queue_draw as handle! widget
 	;]
+	face: (as red-object! get-face-values as handle! widget) + FACE_OBJ_SELECTED
+	if TYPE_OF(face) = TYPE_OBJECT [gtk_widget_grab_focus face-handle? face]
 ]
 
 OS-make-view: func [
