@@ -92,6 +92,13 @@ make-font: func [
 	hFont
 ]
 
+face-font?: func [
+	face	[red-object!]
+	return:	[red-object!]
+][
+	as red-object!	(object/get-values face) + FACE_OBJ_FONT
+]
+
 get-font-handle: func [
 	font	[red-object!]
 	idx		[integer!]
@@ -337,56 +344,58 @@ css-styles: func [
 		bgcolor  [red-tuple!]
 		rgba     [c-string!]
 ][
-	values: object/get-values font
-
-	;name:
-	str: 	as red-string!	values + FONT_OBJ_NAME
-	size:	as red-integer!	values + FONT_OBJ_SIZE
-	style:	as red-word!	values + FONT_OBJ_STYLE
-	;angle:
-	color:	as red-tuple!	values + FONT_OBJ_COLOR
-	;anti-alias?:
-
 	css:	g_strdup_printf ["* {"]
+	
+	if TYPE_OF(font) = TYPE_OBJECT [ 
+		values: object/get-values font
 
-	if TYPE_OF(str) = TYPE_STRING [
-		len: -1
-		name: unicode/to-utf8 str :len
-		css: g_strdup_printf [{%s font-family: "%s";} css name]
-	]
+		;name:
+		str: 	as red-string!	values + FONT_OBJ_NAME
+		size:	as red-integer!	values + FONT_OBJ_SIZE
+		style:	as red-word!	values + FONT_OBJ_STYLE
+		;angle:
+		color:	as red-tuple!	values + FONT_OBJ_COLOR
+		;anti-alias?:
 
-	if TYPE_OF(size) = TYPE_INTEGER [
-		css: add-to-string css "%s font-size: %dpt;" as handle! size/value
-	]
-
-	len: switch TYPE_OF(style) [
-		TYPE_BLOCK [
-			blk: as red-block! style
-			style: as red-word! block/rs-head blk
-			block/rs-length? blk
+		if TYPE_OF(str) = TYPE_STRING [
+			len: -1
+			name: unicode/to-utf8 str :len
+			css: g_strdup_printf [{%s font-family: "%s";} css name]
 		]
-		TYPE_WORD	[1]
-		default		[0]
-	]
 
-	unless zero? len [
-		loop len [
-			sym: symbol/resolve style/symbol
-			case [
-				sym = _bold      ["bold" css: g_strdup_printf ["%s font-weight: bold; " css]]
-				sym = _italic    ["italic" css: g_strdup_printf ["%s font-style: italic;" css]]
-				sym = _underline ["underline" css: g_strdup_printf ["%s text-decoration: underline;" css]]
-				sym = _strike    ["strike" css: g_strdup_printf ["%s text-decoration: line-through;" css]]
-				true             [""]
+		if TYPE_OF(size) = TYPE_INTEGER [
+			css: add-to-string css "%s font-size: %dpt;" as handle! size/value
+		]
+
+		len: switch TYPE_OF(style) [
+			TYPE_BLOCK [
+				blk: as red-block! style
+				style: as red-word! block/rs-head blk
+				block/rs-length? blk
 			]
-			style: style + 1
+			TYPE_WORD	[1]
+			default		[0]
 		]
-	]
 
-	if TYPE_OF(color) = TYPE_TUPLE [
-		rgba: to-css-rgba color
-		css: add-to-string css "%s color: %s;" as handle! rgba
-		g_free as handle! rgba
+		unless zero? len [
+			loop len [
+				sym: symbol/resolve style/symbol
+				case [
+					sym = _bold      ["bold" css: g_strdup_printf ["%s font-weight: bold; " css]]
+					sym = _italic    ["italic" css: g_strdup_printf ["%s font-style: italic;" css]]
+					sym = _underline ["underline" css: g_strdup_printf ["%s text-decoration: underline;" css]]
+					sym = _strike    ["strike" css: g_strdup_printf ["%s text-decoration: line-through;" css]]
+					true             [""]
+				]
+				style: style + 1
+			]
+		]
+
+		if TYPE_OF(color) = TYPE_TUPLE [
+			rgba: to-css-rgba color
+			css: add-to-string css "%s color: %s;" as handle! rgba
+			g_free as handle! rgba
+		]
 	]
 
 	;; Further styles from face
@@ -394,7 +403,7 @@ css-styles: func [
 		bgcolor: as red-tuple!	(object/get-values face) + FACE_OBJ_COLOR
 		if TYPE_OF(bgcolor) = TYPE_TUPLE [
 			rgba: to-css-rgba bgcolor
-			css: add-to-string css "%s background-color: %s;" as handle! rgba
+			css: add-to-string css "%s background: %s;" as handle! rgba
 			g_free as handle! rgba
 		]
 	]
@@ -406,6 +415,24 @@ css-styles: func [
 	css
 ]
 
+apply-css-styles: func [
+	widget	[handle!]
+	face	[red-object!]
+	font	[red-object!]
+	/local
+		provider	[handle!]
+		css			[c-string!]
+][
+	provider: get-styles-provider widget
+
+	;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
+	css: ""
+	css: css-styles face font
+
+	;; DEBUG: print ["change-font ccs: " css lf]
+
+	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
+]
 
 ; move this to draw-ctx!? (used in draw-text-at)
 cairo-font-size: 10.0						;-- used to find top line

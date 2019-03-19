@@ -32,6 +32,8 @@ win-cnt:		0
 AppMainMenu:	as handle! 0
 
 red-face-id:		0
+gtk-style-id:		0
+
 _widget-id:			1
 gtk-layout-id:		2
 red-timer-id:		3
@@ -40,9 +42,6 @@ size-id:			5
 real-container-id:	6
 menu-id:			7
 drag-id:			8
-
-
-gtk-style-id:	0
 
 group-radio:	as handle! 0
 tabs: context [
@@ -708,6 +707,8 @@ change-color: func [
 		clr  [integer!]
 		set? [logic!]
 		t	 [integer!]
+		face [red-object!]
+		font [red-object!]
 ][
 	t: TYPE_OF(color)
 	if all [t <> TYPE_NONE t <> TYPE_TUPLE][exit]
@@ -717,19 +718,22 @@ change-color: func [
 	; ]
 	; set?: yes
 	case [
-	; 	type = area [
-	; 		widget: objc_msgSend [widget sel_getUid "documentView"]
-	; 		clr: either t = TYPE_NONE [00FFFFFFh][color/array1]
-	; 		set-caret-color widget clr
-	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "textBackgroundColor"]]
-	; 	]
-		type = text [
+		type = area [
+			face: get-face-obj widget
+			font: face-font? face
+			apply-css-styles widget face font 
+			; widget: objc_msgSend [widget sel_getUid "documentView"]
+			; clr: either t = TYPE_NONE [00FFFFFFh][color/array1]
+			; set-caret-color widget clr
+			; if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "textBackgroundColor"]]
+		]
+		; type = text [
 	; 		if t = TYPE_NONE [
 	; 			clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "controlColor"]
 	; 			set?: no
 	; 		]
 	; 		objc_msgSend [widget sel_getUid "setDrawsBackground:" set?]
-		]
+		; ]
 	; 	any [type = check type = radio][
 	; 		widget: objc_msgSend [widget sel_getUid "cell"]
 	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "controlColor"]]
@@ -737,19 +741,20 @@ change-color: func [
 	; 	type = field [
 	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "textBackgroundColor"]]
 	; 	]
-	; 	type = window [
-	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "windowBackgroundColor"]]
-	; 	]
-	; 	true [
-	; 		set?: no
-	; 		objc_msgSend [widget sel_getUid "setNeedsDisplay:" yes]
-	; 	]
+		; type = window [
+		; 	;if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "windowBackgroundColor"]]
+		; 0
+		; ]
+		true [
+			face: get-face-obj widget
+			font: face-font? face
+			apply-css-styles widget face font  
+		]
 	]
 	; if set? [
 	; 	if t = TYPE_TUPLE [clr: to-NSColor color]
 	; 	objc_msgSend [widget sel_getUid "setBackgroundColor:" clr]
 	; ]
-	0
 ]
 
 update-z-order: func [
@@ -800,21 +805,23 @@ change-font: func [
 	type	[integer!]
 	return: [logic!]
 	/local
-		css		 [c-string!]
-		provider [handle!]
+		; css		 [c-string!]
+		; provider [handle!]
 		hFont	[handle!]
 ][
 	if TYPE_OF(font) <> TYPE_OBJECT [return no]
 
-	provider: get-styles-provider widget
+	; provider: get-styles-provider widget
 
-	;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
-	css: ""
-	css: css-styles face font
+	; ;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
+	; css: ""
+	; css: css-styles face font
 
-	;; DEBUG: print ["change-font ccs: " css lf]
+	; ;; DEBUG: print ["change-font ccs: " css lf]
 
-	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
+	; unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
+
+	apply-css-styles widget face font
 
 	;; Update the pango_font_description hFont (directly used by get-text-size)
 	make-font face font
@@ -1882,12 +1889,12 @@ OS-make-view: func [
 	unless enabled?/value [change-enabled widget no sym]
 	
 	make-styles-provider widget
-		if sym <> base [
-			change-font widget face font sym
-		]
+	if sym <> base [
+		change-font widget face font sym
+	]
 
 	if TYPE_OF(rate) <> TYPE_NONE [change-rate widget rate]
-	; if sym <> base [change-color widget as red-tuple! values + FACE_OBJ_COLOR sym]
+	if sym <> base [change-color widget as red-tuple! values + FACE_OBJ_COLOR sym]
 
 	stack/unwind
 	as-integer widget

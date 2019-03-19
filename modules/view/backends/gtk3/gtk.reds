@@ -1041,6 +1041,19 @@ GList!: alias struct! [
 			widget		[handle!]
 			type		[integer!]
 		]
+		gtk_widget_set_hexpand: "gtk_widget_set_hexpand" [
+			widget		[handle!]
+			type		 	[logic!]
+		]
+		gtk_widget_set_vexpand: "gtk_widget_set_vexpand" [
+			widget		[handle!]
+			type		 	[logic!]
+		]
+		gtk_widget_compute_expand: "gtk_widget_compute_expand" [
+			widget		[handle!]
+			orient		[GtkOrientation!]
+			return: 	[logic!]
+		]
 		gtk_widget_set_visible: "gtk_widget_set_visible" [
 			widget		[handle!]
 			state 		[logic!]
@@ -1080,11 +1093,6 @@ GList!: alias struct! [
 		gtk_widget_size_allocate: "gtk_widget_size_allocate" [
 			widget		[handle!]
 			alloc		[handle!]
-		]
-		gtk_widget_compute_expand: "gtk_widget_compute_expand" [
-			widget		[handle!]
-			direction	[integer!]
-			return: 	[logic!]
 		]
 		gtk_widget_get_allocation: "gtk_widget_get_allocation" [
 			widget		[handle!]
@@ -1337,6 +1345,10 @@ GList!: alias struct! [
 			return:		[c-string!]
 		]
 		gtk_label_set_text: "gtk_label_set_text" [
+			widget		[handle!]
+			label		[c-string!]
+		]
+		gtk_label_set_markup: "gtk_label_set_markup" [
 			widget		[handle!]
 			label		[c-string!]
 		]
