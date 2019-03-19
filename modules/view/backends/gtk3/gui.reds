@@ -1091,8 +1091,7 @@ change-selection: func [
 			switch TYPE_OF(int) [
 				TYPE_OBJECT [set-selected-focus widget]
 				TYPE_NONE	[; as in windows but not sure!
-					;; DEVEL: 
-					print ["DEVEL WARNING: 'change-selection windows' since not sure this is valid"]
+					;; DEVEL: print ["DEVEL WARNING: 'change-selection windows' since not sure this is valid"]
 					gtk_widget_grab_focus widget
 				]
 				default [0]
@@ -1101,6 +1100,25 @@ change-selection: func [
 	 	true [0]										;-- default, do nothing
 	]
 ]
+
+
+set-hint-text: func [
+	widget		[handle!]
+	options		[red-block!]
+	/local
+		text	[red-string!]
+		cell	[integer!]
+		len  	[integer!]
+		str  	[c-string!]
+][
+	if TYPE_OF(options) <> TYPE_BLOCK [exit]
+	text: as red-string! block/select-word options word/load "hint" no
+	if TYPE_OF(text) = TYPE_STRING [
+		len: -1
+		str: unicode/to-utf8 text :len
+		gtk_entry_set_placeholder_text widget str
+	]
+] 
 
 set-selected-focus: func [
 	widget [handle!]
@@ -1708,7 +1726,8 @@ OS-make-view: func [
 			;This depends on version >= 3.2
 			;gtk_widget_set_focus_on_click widget yes
 			gobj_signal_connect(widget "move-focus" :field-move-focus face/ctx)
-			gtk_entry_set_width_chars widget 0
+			gtk_entry_set_width_chars widget size/x / 10
+			set-hint-text widget as red-block! values + FACE_OBJ_OPTIONS
 		]
 		sym = progress [
 			widget: gtk_progress_bar_new
@@ -1787,7 +1806,7 @@ OS-make-view: func [
 			widget: either sym = drop-list [gtk_combo_box_text_new][gtk_combo_box_text_new_with_entry]
 			init-combo-box widget data caption sym = drop-list
 			;; TODO: improve it but better than nothing from now otherwise it is uggly!
-			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (size/x - 20) / 10 ]
+			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (size/x - 20) / 10 ] ; 10 here the size of the font... TODO: to improve later!
 			gtk_combo_box_set_active widget 0
 			gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
 		]
@@ -1889,6 +1908,7 @@ OS-make-view: func [
 	unless enabled?/value [change-enabled widget no sym]
 	
 	make-styles-provider widget
+
 	if sym <> base [
 		change-font widget face font sym
 	]
