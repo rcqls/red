@@ -668,6 +668,7 @@ GList!: alias struct! [
 			return: 	[logic!]
 		]
 		g_settings_sync: "g_settings_sync" []
+		gtk_disable_setlocale: "gtk_disable_setlocale" []
 	;; ]
 	;; LIBGTK-file cdecl [
 		gtk_get_major_version: "gtk_get_major_version" [

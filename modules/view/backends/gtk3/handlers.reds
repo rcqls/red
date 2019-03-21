@@ -277,14 +277,14 @@ window-removed-event: func [
 ; 	;;DEBUG: print [ "window-resizing " event/x "x" event/y " " event/width "x" event/height lf]
 ; 	sz: (as red-pair! get-face-values widget) + FACE_OBJ_SIZE		;-- update face/size
 ; 	either any [event/width <> sz/x event/height <> sz/y] [
-; 		;if 0 = (motion/cpt % motion/sensitiv) [
-; 			motion/x_new: event/width 
-; 			motion/y_new: event/height
-; 			motion/x_root: as float! event/x
-; 			motion/y_root: as float! event/y 
+; 		;if 0 = (evt-motion/cpt % evt-motion/sensitiv) [
+; 			evt-motion/x_new: event/width 
+; 			evt-motion/y_new: event/height
+; 			evt-motion/x_root: as float! event/x
+; 			evt-motion/y_root: as float! event/y 
 ; 			make-event widget 0 EVT_SIZING
 ; 		;]
-; 		;motion/cpt: motion/cpt + 1
+; 		;evt-motion/cpt: evt-motion/cpt + 1
 ; 		yes
 ; 	][no]
 ; ]
@@ -297,12 +297,14 @@ window-size-allocate: func [
 	/local
 		sz	 [red-pair!]
 ][
+	;; DEBUG: print ["window-size-allocate"   lf]
 	sz: (as red-pair! get-face-values widget) + FACE_OBJ_SIZE		;-- update face/size
 	if any [rect/width <> sz/x rect/height <> sz/y] [
-			motion/x_new: rect/width 
-			motion/y_new: rect/height
-			motion/x_root: as float! rect/x
-			motion/y_root: as float! rect/y 
+			evt-sizing/x_new: rect/width 
+			evt-sizing/y_new: rect/height
+			;; DEBUG: print ["window-size-allocate: "  evt-sizing/x_root "x" evt-sizing/y_root  lf]
+			evt-sizing/x_root: as float! rect/x
+			evt-sizing/y_root: as float! rect/y 
 			make-event widget 0 EVT_SIZING
 	] 
 ]
@@ -655,18 +657,19 @@ drag-widget-motion-notify-event: func [
 ][
 	state: 0
 	;; DEBUG: print [ "DRAG MOTION: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	if motion/state [
-		if 0 = (motion/cpt % motion/sensitiv) [
-			x:  event/x_root - motion/x_root
-			y:  event/y_root - motion/y_root
-			motion/x_new: as-integer x + either x > 0.0 [0.5][-0.5] 
-			motion/y_new: as-integer y + either y > 0.0 [0.5][-0.5]
-			motion/x_root: event/x_root
-			motion/y_root: event/y_root
+	if evt-motion/state [
+		if 0 = (evt-motion/cpt % evt-motion/sensitiv) [
+			x:  event/x_root - evt-motion/x_root
+			y:  event/y_root - evt-motion/y_root
+			evt-motion/x_new: as-integer x + either x > 0.0 [0.5][-0.5] 
+			evt-motion/y_new: as-integer y + either y > 0.0 [0.5][-0.5]
+			;; DEBUG: print ["new " evt-motion/x_new "x" evt-motion/y_new lf]
+			evt-motion/x_root: event/x_root
+			evt-motion/y_root: event/y_root
 			flags: check-flags event/type event/state
 			state: make-event widget flags EVT_OVER
 		]
-		motion/cpt: motion/cpt + 1
+		evt-motion/cpt: evt-motion/cpt + 1
 		state: 1;;yes
 	]
 	state
@@ -683,16 +686,19 @@ drag-widget-button-press-event: func [
 		flags 	[integer!]
 ][
 	;; DEBUG: print [ "DRAG BUTTON-PRESS: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	if event/button = GDK_BUTTON_PRIMARY [
-		motion/state: yes
-		motion/cpt: 0
-		motion/x_root: event/x_root
-		motion/y_root: event/y_root
-		motion/x_new: 0
-		motion/y_new: 0
+	if any[
+		event/button = GDK_BUTTON_PRIMARY
+		event/button = GDK_BUTTON_SECONDARY
+	][
+		evt-motion/state: yes
+		evt-motion/cpt: 0
+		evt-motion/x_root: event/x_root
+		evt-motion/y_root: event/y_root
+		evt-motion/x_new: 0
+		evt-motion/y_new: 0
 	]
 	flags: check-flags event/type event/state
-	make-event widget flags EVT_LEFT_DOWN
+	make-event widget flags case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_DOWN] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_DOWN] true [EVT_LEFT_DOWN]]
 	1;;yes
 ]
 
@@ -709,22 +715,22 @@ drag-widget-button-release-event: func [
 		flags 	[integer!]
 ][
 	;; DEBUG: print [ "Drag -> BUTTON-RELEASE: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	unless event/button = GDK_BUTTON_PRIMARY [return 0]
+	unless any[event/button = GDK_BUTTON_PRIMARY event/button = GDK_BUTTON_SECONDARY event/button = GDK_BUTTON_MIDDLE] [return 0]
 	; Special treatment for check and radio buttons (TODO: button)
 	type: as red-word! get-node-facet ctx FACE_OBJ_TYPE
 	sym:	symbol/resolve type/symbol
 	
 	if all [
 		any [sym = check sym = radio]
-		motion/cpt = 0					; IMPORTANT: change state only if no dragging! 
+		evt-motion/cpt = 0					; IMPORTANT: change state only if no dragging! 
 	][
 		state: gtk_toggle_button_get_active widget
 		gtk_toggle_button_set_active widget either sym = check [not state][yes]
 	]
 
-	motion/state: no
+	evt-motion/state: no
 	flags: check-flags event/type event/state
-	make-event widget flags  EVT_LEFT_UP
+	make-event widget flags  case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_UP] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_UP] true [EVT_LEFT_UP]]
 	1;;yes
 ]
 
@@ -739,8 +745,8 @@ mouse-button-press-event: func [
 		hMenu		[handle!]
 ][
 	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	; motion/state: yes
-	; motion/cpt: 0
+	; evt-motion/state: yes
+	; evt-motion/cpt: 0
 	if gtk_widget_get_focus_on_click widget [print ["grab focus on mouse " widget lf] gtk_widget_grab_focus widget]
 	if draggable? widget [return 0] ; delegate to drag
 
@@ -758,12 +764,12 @@ mouse-button-press-event: func [
 
 	]
 
-	motion/x_root: event/x_root
-	motion/y_root: event/y_root
-	motion/x_new: as-integer event/x
-	motion/y_new: as-integer event/y
+	evt-motion/x_root: event/x_root
+	evt-motion/y_root: event/y_root
+	evt-motion/x_new: as-integer event/x
+	evt-motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
-	make-event widget flags EVT_LEFT_DOWN
+	make-event widget flags case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_DOWN] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_DOWN] true [EVT_LEFT_DOWN]]
 	1;;no
 ]
 
@@ -778,14 +784,14 @@ mouse-button-release-event: func [
 ][
 	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	if draggable? widget [return 0] ; delegate to drag
-	motion/state: yes
-	motion/cpt: 0
-	motion/x_root: event/x_root
-	motion/y_root: event/y_root
-	motion/x_new: as-integer event/x
-	motion/y_new: as-integer event/y
-	flags: check-flags event/type event/state
-	make-event widget flags EVT_LEFT_UP
+	evt-motion/state: yes
+	evt-motion/cpt: 0
+	evt-motion/x_root: event/x_root
+	evt-motion/y_root: event/y_root
+	evt-motion/x_new: as-integer event/x
+	evt-motion/y_new: as-integer event/y
+	flags: check-flags event/type event/state 
+	make-event widget flags case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_UP] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_UP] true [EVT_LEFT_UP]]
 	;;0 ;;no
 ]
 
@@ -804,10 +810,10 @@ mouse-motion-notify-event: func [
 ][
 	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	if draggable? widget [return 0] ; delegate to drag
-	motion/x_new: as-integer event/x
-	motion/y_new: as-integer event/y
-	motion/x_root: event/x_root
-	motion/y_root: event/y_root
+	evt-motion/x_new: as-integer event/x
+	evt-motion/y_new: as-integer event/y
+	evt-motion/x_root: event/x_root
+	evt-motion/y_root: event/y_root
 	wflags: get-flags (as red-block! get-face-values widget) + FACE_OBJ_FLAGS
 	if wflags and FACET_FLAGS_ALL_OVER <> 0 [
 		flags: check-flags event/type event/state

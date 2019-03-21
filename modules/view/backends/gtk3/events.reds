@@ -32,6 +32,23 @@ flags-blk/header:	TYPE_BLOCK
 flags-blk/head:		0
 flags-blk/node:		alloc-cells 4
 
+; used to save old position of pointer in widget-motion-notify-event handler
+evt-motion: context [
+	state:		no
+	x_root:		0.0
+	y_root:		0.0
+	x_new:	 	0
+	y_new:		0
+	cpt:		0
+	sensitiv:	3
+]
+
+evt-sizing: context [
+	x_root:		0.0
+	y_root:		0.0
+	x_new: 		0
+	y_new: 		0
+]
 make-at: func [
 	widget	[handle!]
 	face	[red-object!]
@@ -86,8 +103,8 @@ get-event-offset: func [
 		][
 			offset: as red-pair! stack/push*
 			offset/header: TYPE_PAIR
-			offset/x: motion/x_new
-			offset/y: motion/y_new
+			offset/x: evt-motion/x_new
+			offset/y: evt-motion/y_new
 			;; DEBUG: print ["event-offset: " offset/x "x" offset/y lf]
 			as red-value! offset
 		]
@@ -101,13 +118,13 @@ get-event-offset: func [
 
 			widget: as handle! evt/msg
 			sz: (as red-pair! get-face-values widget) + FACE_OBJ_SIZE
-			sz/x: motion/x_new
-			sz/y: motion/y_new
+			sz/x: evt-sizing/x_new
+			sz/y: evt-sizing/y_new
 			
 			; print ["OFFSET is SIZE ? " sz " vs " offset lf] ; => NO!
 			; alternative 1:
- 			; sz/x: (as integer! motion/x_root) - offset/x
-			; sz/y: (as integer! motion/y_root)  - offset/y 
+ 			; sz/x: (as integer! evt-sizing/x_root) - offset/x
+			; sz/y: (as integer! evt-sizing/y_root)  - offset/y 
 
 			; alternative 2:
 			; sz/x: gtk_widget_get_allocated_width widget
@@ -263,6 +280,8 @@ get-event-flag: func [
 	as red-value! logic/push flags and flag <> 0
 ]
 
+;; This function is only called in handlers.red
+;; No 
 make-event: func [
 	msg		[handle!]
 	flags	[integer!]
@@ -286,33 +305,47 @@ make-event: func [
 	state: EVT_DISPATCH
 
 	switch evt [
-		EVT_OVER [0
-		]
-		EVT_KEY_DOWN [0
-		]
-		EVT_KEY_UP [0
-		]
-		EVT_KEY [0
-		]
-		EVT_SELECT [0
-		]
-		EVT_CHANGE [0
-		]
-		EVT_LEFT_DOWN
-		EVT_LEFT_UP
-		EVT_RIGHT_DOWN
-		EVT_RIGHT_UP
-		EVT_MIDDLE_DOWN
-		EVT_MIDDLE_UP
-		EVT_DBL_CLICK [
-			if flags and EVT_FLAG_DBL_CLICK <> 0 [
-				;; DEBUG: print ["Double click!!!!!" lf]
-				gui-evt/type: EVT_DBL_CLICK
+		; EVT_OVER [0
+		; ]
+		; EVT_KEY_DOWN [0
+		; ]
+		; EVT_KEY_UP [0
+		; ]
+		; EVT_KEY [0
+		; ]
+		; EVT_SELECT [0
+		; ]
+		; EVT_CHANGE [0
+		; ]
+		EVT_LEFT_DOWN [
+			case [
+				flags and EVT_FLAG_DBL_CLICK <> 0 [
+					;; DEBUG: print ["Double click!!!!!" lf]
+					gui-evt/type: EVT_DBL_CLICK
+				]
+				; flags and EVT_FLAG_CMD_DOWN <> 0 [
+				; 	gui-evt/type: EVT_RIGHT_DOWN
+				; ]
+				; flags and EVT_FLAG_CTRL_DOWN <> 0 [
+				; 	gui-evt/type: EVT_MIDDLE_DOWN
+				; ]
+				true [0]
 			]
 		]
-		EVT_CLICK [0
-		]
-		EVT_MENU [0]		;-- symbol ID of the menu
+		; EVT_LEFT_UP [
+		; 	case [
+		; 		flags and EVT_FLAG_CMD_DOWN <> 0 [
+		; 			gui-evt/type: EVT_RIGHT_UP
+		; 		]
+		; 		flags and EVT_FLAG_CTRL_DOWN <> 0 [
+		; 			gui-evt/type: EVT_MIDDLE_UP
+		; 		]
+		; 		true [0]
+		; 	]
+		; ]
+		; EVT_CLICK [0
+		; ]
+		; EVT_MENU [0]		;-- symbol ID of the menu
 		default	 [0]
 	]
 
@@ -354,14 +387,16 @@ make-event: func [
 	state
 ]
 
+;; DEBUG: evt-cpt: 0
+
 do-events: func [
 	no-wait? [logic!]
 	return:  [logic!]
 	/local
 		msg? [logic!]
 		;; DEBUG
-		; event	[handle!]
-		; widget	[handle!]
+		event	[GdkEventAny!]
+		widget	[handle!]
 		; state	[GdkModifierType!]
 		; source	[handle!]
 ][
@@ -374,6 +409,7 @@ do-events: func [
 	unless no-wait? [exit-loop: exit-loop + 1]
 
 	while [exit-loop > 0][
+		;; DEBUG: evt-cpt: evt-cpt + 1
 		;; DEBUG: 
 		; print ["owner " GTKApp-Ctx "  " g_main_context_is_owner GTKApp-Ctx lf]
 		; source: g_main_current_source 
@@ -381,8 +417,8 @@ do-events: func [
 		; gtk_get_current_event_state :state
 		; print ["state: " state lf]
 		; print ["time: " gtk_get_current_event_time lf]
-		; event: gtk_get_current_event
-		; print ["event: " event lf]
+		;; DEBUG: event: as GdkEventAny! gtk_get_current_event
+		;; DEBUG: print ["do-events " evt-cpt " -> event: " event lf]
 		; widget: gtk_get_event_widget event	
 		; print ["event widget: " widget lf]
 		if g_main_context_iteration GTKApp-Ctx not no-wait? [msg?: yes]

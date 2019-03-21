@@ -48,16 +48,7 @@ tabs: context [
 	nb: 	0
 	cur: 	0
 ]
-; used to save old position of pointer in widget-motion-notify-event handler
-motion: context [
-	state:		no
-	x_root:		0.0
-	y_root:		0.0
-	x_new:	 	0
-	y_new:		0
-	cpt:		0
-	sensitiv:	3
-]
+
 ; to put in other place (usually platform.red) if useful
 _drag-on:		symbol/make "drag-on"
 
@@ -434,6 +425,7 @@ show-gtk-version: func [][
 
 init: func [][
 	show-gtk-version
+	gtk_disable_setlocale
 	GTKApp: gtk_application_new RED_GTK_APP_ID G_APPLICATION_NON_UNIQUE
 	gobj_signal_connect(GTKApp "window-removed" :window-removed-event :exit-loop)
 
@@ -482,8 +474,9 @@ get-symbol-name: function [
 		sym = drop-down ["drop-down"]
 		sym = rich-text ["rich-text"]
 		sym = done ["done"]
-		sym = stop ["stop"]
-		true ["undefinded"]
+		sym = stop ["stop"] 
+		sym = _image ["image"]
+		true ["undefined"]
 	]
 ]
 ; this adjustment is supposed to fix only horizontally consecutive widgets in the same pane  
@@ -2096,6 +2089,8 @@ OS-update-facet: func [
 		widget [handle!]
 ][
 	sym: symbol/resolve facet/symbol
+	;; DEBUG:
+	print ["update-facet " sym " " get-symbol-name sym lf]
 
 	case [
 		;sym = facets/pane [0]
