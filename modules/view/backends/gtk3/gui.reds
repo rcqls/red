@@ -31,17 +31,17 @@ exit-loop:		0
 win-cnt:		0
 AppMainMenu:	as handle! 0
 
-red-face-id:		0
-gtk-style-id:		0
-
-_widget-id:			1
-gtk-layout-id:		2
-red-timer-id:		3
-css-id:				4
-size-id:			5
-real-container-id:	6
-menu-id:			7
-drag-id:			8
+;; Identifiers for qdata
+red-face-id: 		g_quark_from_string "red-face-id"
+gtk-style-id: 		g_quark_from_string "gtk-style-id"
+_widget-id:			g_quark_from_string "_widget-id"
+gtk-layout-id:		g_quark_from_string "gtk-layout-id"
+red-timer-id:		g_quark_from_string "red-timer-id"
+css-id:				g_quark_from_string "css-id"
+size-id:			g_quark_from_string "size-id"
+real-container-id:	g_quark_from_string "real-container-id"
+menu-id:			g_quark_from_string "menu-id"
+drag-id:			g_quark_from_string "drag-id"
 
 group-radio:	as handle! 0
 tabs: context [
@@ -436,9 +436,6 @@ init: func [][
 	g_application_register GTKApp null null
 
 	;;;vector/make-at as red-value! win-array 8 TYPE_INTEGER 4
-
-	red-face-id: g_quark_from_string "red-face-id"
-	gtk-style-id: g_quark_from_string "gtk-style-id"
 
 	screen-size-x: gdk_screen_width
 	screen-size-y: gdk_screen_height
@@ -1613,9 +1610,6 @@ OS-make-view: func [
 		sym = check [
 			widget: gtk_check_button_new_with_label caption
 			set-logic-state widget as red-logic! data no
-			;@@ No click event for check
-			;gobj_signal_connect(widget "clicked" :button-clicked null)
-			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
 		]
 		sym = radio [
 			widget: either null? group-radio [
@@ -1626,12 +1620,9 @@ OS-make-view: func [
 				gtk_radio_button_new_with_label_from_widget group-radio caption
 			]
 			set-logic-state widget as red-logic! data no
-			;@@ Line below removed because it generates an error and there is no click event for radio 
-			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
 		]
 		sym = button [
 			widget: gtk_button_new_with_label caption
-			gobj_signal_connect(widget "clicked" :button-clicked null)
 			if TYPE_OF(img) = TYPE_IMAGE [
 				change-image widget img sym
 			]
@@ -1639,23 +1630,10 @@ OS-make-view: func [
 		sym = base [
 			widget: gtk_layout_new null null;gtk_drawing_area_new
 			gtk_layout_set_size widget size/x size/y
-			gobj_signal_connect(widget "draw" :base-draw face/ctx)
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
-			gtk_widget_set_can_focus widget no
-			gtk_widget_set_focus_on_click widget no
-			connect-common-events widget face actors sym 
 		]
 		sym = rich-text [
 			widget: gtk_layout_new null null;gtk_drawing_area_new
 			gtk_layout_set_size widget size/x size/y
-			gobj_signal_connect(widget "draw" :base-draw face/ctx)
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
-			gtk_widget_set_can_focus widget yes
-			gtk_widget_set_focus_on_click widget yes
-			gtk_widget_is_focus widget
-			gtk_widget_grab_focus widget
-			connect-common-events widget face actors sym 
-			;; DEBUG: print ["richtext " widget " face " face " size: " size/x "x" size/y lf]
 		]
 		sym = window [
 			;; DEBUG: print ["win " GTKApp lf]
@@ -1687,10 +1665,6 @@ OS-make-view: func [
 			g_object_set_qdata widget real-container-id container
 			;; DEBUG: print ["window is " widget " real container is " container lf]
 			gtk_window_move widget offset/x offset/y
-			gobj_signal_connect(widget "delete-event" :window-delete-event null)
-			;BUG (make `vid.red` failing):gtk_widget_add_events widget GDK_STRUCTURE_MASK
-			;gobj_signal_connect(widget "configure-event" :window-configure-event null)
-			gobj_signal_connect(widget "size-allocate" :window-size-allocate null)
 		]
 		sym = slider [
 			vertical?: size/y > size/x
@@ -1701,27 +1675,16 @@ OS-make-view: func [
 			gtk_range_set_value widget as float! value
 			gtk_scale_set_has_origin widget no
 			gtk_scale_set_draw_value widget no
-			gobj_signal_connect(widget "value-changed" :range-value-changed face/ctx)
 		]
 		sym = text [
 			widget: gtk_label_new caption
 			_widget: gtk_event_box_new null null
 			gtk_container_add _widget widget
-			gobj_signal_connect(_widget "button-press-event" :text-button-press-event widget)
 		]
 		sym = field [
 			widget: gtk_entry_new
 			buffer: gtk_entry_get_buffer widget
 			unless null? caption [gtk_entry_buffer_set_text buffer caption -1]
-			gobj_signal_connect(widget "key-release-event" :field-key-release-event face/ctx)
-			;Do not work: gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
-			gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)
-			
-			gtk_widget_set_can_focus widget yes
-			gtk_widget_is_focus widget
-			;This depends on version >= 3.2
-			;gtk_widget_set_focus_on_click widget yes
-			gobj_signal_connect(widget "move-focus" :field-move-focus face/ctx)
 			gtk_entry_set_width_chars widget size/x / 10
 			set-hint-text widget as red-block! values + FACE_OBJ_OPTIONS
 			if bits and FACET_FLAGS_PASSWORD <> 0 [gtk_entry_set_visibility widget no]
@@ -1741,13 +1704,6 @@ OS-make-view: func [
 			unless null? caption [gtk_text_buffer_set_text buffer caption -1]
 			_widget: gtk_scrolled_window_new null null
 			gtk_container_add _widget widget
-			gobj_signal_connect(buffer "changed" :area-changed widget)
-			g_object_set [widget "populate-all" yes null] 
-			gobj_signal_connect(widget "button-press-event" :area-button-press-event face/ctx)
-			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
-			gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)
-			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
-			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)		
 		]
 		sym = group-box [
 			widget: gtk_frame_new caption
@@ -1763,26 +1719,11 @@ OS-make-view: func [
 				gtk_container_add widget buffer
 			]
 			gtk_layout_set_size widget size/x size/y
-			gobj_signal_connect(widget "draw" :base-draw face/ctx)
-			gtk_widget_set_focus_on_click widget yes
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
-			;; value: gtk_widget_get_events widget
-			;; DEBUG: print ["panel had focus: " gtk_widget_get_focus_on_click widget  lf "get events: " value  " GDK_BUTTON_PRESS_MASK? " GDK_BUTTON_PRESS_MASK and value lf]
-			;if respond-down-event? actors [
-				gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
-				gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
-			;]
-			;if respond-up-event? actors [
-				gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
-			;]
-			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
-			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
 		sym = tab-panel [
 			widget: gtk_notebook_new
 			tabs/cur: 0
 			tabs/nb: block/rs-length? data
-			gobj_signal_connect(widget "switch-page" :tab-panel-switch-page face/ctx)
 		]
 		sym = text-list [
 			widget: gtk_list_box_new
@@ -1793,8 +1734,6 @@ OS-make-view: func [
 				gtk_scrolled_window_set_shadow_type _widget 3
 			]
 			gtk_container_add _widget widget
-			gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)
-			connect-common-events widget face actors sym 
 		]
 		any [
 			sym = drop-list
@@ -1805,7 +1744,6 @@ OS-make-view: func [
 			;; TODO: improve it but better than nothing from now otherwise it is uggly!
 			if sym = drop-down[gtk_entry_set_width_chars gtk_bin_get_child widget (size/x - 20) / 10 ] ; 10 here the size of the font... TODO: to improve later!
 			gtk_combo_box_set_active widget 0
-			gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
 		]
 		true [
 			;-- search in user-defined classes
@@ -1813,8 +1751,10 @@ OS-make-view: func [
 		]
 	]
 
-	parse-common-opts widget face as red-block! values + FACE_OBJ_OPTIONS sym
+	; contralized connect
+	connect-widget-events widget face actors sym _widget
 
+	parse-common-opts widget face as red-block! values + FACE_OBJ_OPTIONS sym
 	; save the previous group-radio state as a global variable
 	group-radio: either sym = radio [widget][as handle! 0] 
 
@@ -1890,8 +1830,6 @@ OS-make-view: func [
 	]
 	
 	unless any[sym = window sym = area][build-context-menu widget menu]
-
-	connect-notify-events widget face actors sym
 
 	;-- store the face value in the extra space of the window struct
 	assert TYPE_OF(face) = TYPE_OBJECT					;-- detect corruptions caused by CreateWindow unwanted events

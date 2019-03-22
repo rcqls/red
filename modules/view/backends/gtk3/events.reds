@@ -559,53 +559,161 @@ post-quit-msg: func [
 
 ;; centralize here connection handlers
 
-
 respond-event?: func [
 	actors		[red-object!]	
 	type		[c-string!]
 	return:		[logic!]
 ][
-	-1 <> object/rs-find actors as red-value! word/load type
-]
-
-respond-down-event?: func [
-	actors		[red-object!]
-	return:		[logic!]
-][
-	any [
-		respond-event?  actors "on-click"
-		respond-event?  actors "on-down"
-		respond-event?  actors "on-mid-down"
-		respond-event?  actors "on-aux-down"
-	] 
-]
-
-respond-up-event?: func [
-	actors		[red-object!]
-	return:		[logic!]
-][
-	any [
-		respond-event?  actors "on-up"
-		respond-event?  actors "on-mid-up"
-		respond-event?  actors "on-aux-up"
-	] 
-]
-
-respond-key-down-event?: func [
-	actors		[red-object!]
-	return:		[logic!]
-][
-	any [
-		respond-event?  actors "on-key-down"
-		respond-event?  actors "on-key"
+	either null? actors/ctx [
+		false
+	][
+		-1 <> object/rs-find actors as red-value! word/load type
 	]
 ]
 
-respond-key-up-event?: func [
+respond-mouse-id:	g_quark_from_string "respond-mouse-id"
+respond-key-id:		g_quark_from_string "respond-key-id"
+respond-window-id:	g_quark_from_string "respond-window-id"
+
+#enum RespondMouseType! [
+	ON_LEFT_DOWN:		1
+	ON_LEFT_UP:			2
+	ON_MIDDLE_DOWN:		4
+	ON_MIDDLE_UP:		8
+	ON_RIGHT_DOWN:		16	
+	ON_RIGHT_UP:		32
+	ON_AUX_DOWN:		64
+	ON_AUX_UP:			128
+	ON_CLICK:			256
+	ON_DBL_CLICK:		512
+	ON_WHEEL:			1024
+	ON_OVER:			2048
+]
+
+respond-mouse-add: func [
+	widget 		[handle!]
 	actors		[red-object!]
-	return:		[logic!]
+	type		[integer!]
+	/local
+		on-type	[integer!]
 ][
-	respond-event?  actors "on-key-up"
+	on-type: 0
+	if respond-event?  actors "on-down" [on-type: on-type or ON_LEFT_DOWN]  
+	if respond-event?  actors "on-up" [on-type: on-type or ON_LEFT_UP]
+	if respond-event?  actors "on-mid-down" [on-type: on-type or ON_MIDDLE_DOWN] 
+	if respond-event?  actors "on-mid-up" [on-type: on-type or ON_MIDDLE_UP]
+	if respond-event?  actors "on-alt-down" [on-type: on-type or ON_RIGHT_DOWN] 
+	if respond-event?  actors "on-alt-up" [on-type: on-type or ON_RIGHT_UP]
+	if respond-event?  actors "on-aux-down" [on-type: on-type or ON_AUX_DOWN] 
+	if respond-event?  actors "on-aux-up" [on-type: on-type or ON_AUX_UP]  
+	if respond-event?  actors "on-click" [on-type: on-type or ON_CLICK] if respond-event?  actors "on-dbl-click" [on-type: on-type or ON_DBL_CLICK]
+	if respond-event?  actors "on-wheel" [on-type: on-type or ON_WHEEL] 
+	if respond-event?  actors "on-over" [on-type: on-type or ON_OVER]
+	if all[on-type > 1 not null? widget][
+		g_object_set_qdata widget respond-mouse-id as int-ptr! on-type
+	]
+]
+
+respond-mouse?: func [
+	widget 	[handle!]
+	on-type	[integer!]
+	return: [logic!]
+][
+	(as-integer g_object_get_qdata widget respond-mouse-id) and on-type <> 0
+]
+
+#enum RespondWindowType! [
+	ON_CLOSE:			1					;-- window events
+	ON_MOVE:			2
+	ON_SIZE:			4
+	ON_MOVING:			8
+	ON_SIZING:			16
+	ON_TIME:			32
+	ON_DRAWING:			64
+	ON_SCROLL:			128
+
+	ON_SELECT:			1024
+	ON_CHANGE:			2048
+	ON_MENU:			4096
+]
+
+respond-window-add: func [
+	widget 		[handle!]
+	actors		[red-object!]
+	type		[integer!]
+	/local
+		on-type	[integer!]
+][
+	on-type: 0
+	if respond-event?  actors "on-close" [on-type: on-type or ON_CLOSE]
+	if respond-event?  actors "on-move" [on-type: on-type or ON_MOVE] if respond-event?  actors "on-moving" [on-type: on-type or ON_MOVING]
+	if respond-event?  actors "on-size" [on-type: on-type or ON_SIZE] if respond-event?  actors "on-sizing" [on-type: on-type or ON_SIZING]
+	if respond-event?  actors "on-time" [on-type: on-type or ON_TIME]  
+	if respond-event?  actors "on-drawing" [on-type: on-type or ON_DRAWING]
+	if respond-event?  actors "on-scroll" [on-type: on-type or ON_SCROLL] 
+	if respond-event?  actors "on-over" [on-type: on-type or ON_OVER]
+	if respond-event?  actors "on-select" [on-type: on-type or ON_SELECT]
+	if respond-event?  actors "on-change" [on-type: on-type or ON_CHANGE] 
+	if respond-event?  actors "on-menu" [on-type: on-type or ON_MENU]
+	if all[on-type > 1 not null? widget][
+		g_object_set_qdata widget respond-window-id as int-ptr! on-type
+	]
+]
+
+respond-window?: func [
+	widget 	[handle!]
+	on-type	[integer!]
+	return: [logic!]
+][
+	(as-integer g_object_get_qdata widget respond-window-id) and on-type  <> 0
+]
+
+#enum RespondKeyType! [
+	ON_KEY:				1
+	ON_KEY_DOWN:		2
+	ON_KEY_UP:			4
+	ON_IME:				8
+	ON_FOCUS:			16
+	ON_UNFOCUS:			32
+	ON_ENTER:			64
+	ON_ZOOM:			128
+	ON_PAN:				256
+	ON_ROTATE:			512
+	ON_TWO_TAP:			1024
+	ON_PRESS_TAP:		2048
+]
+
+respond-key-add: func [
+	widget 		[handle!]
+	actors		[red-object!]
+	type		[integer!]
+	/local
+		on-type	[integer!]
+][
+	on-type: 0
+	if respond-event?  actors "on-key" [on-type: on-type or ON_KEY]
+	if respond-event?  actors "on-key-down" [on-type: on-type or ON_KEY_DOWN]
+	if respond-event?  actors "on-key-up" [on-type: on-type or ON_KEY_UP]
+	if respond-event?  actors "on-ime" [on-type: on-type or ON_IME]
+	if respond-event?  actors "on-focus" [on-type: on-type or ON_FOCUS]  
+	if respond-event?  actors "on-unfocus" [on-type: on-type or ON_UNFOCUS]
+	if respond-event?  actors "on-enter" [on-type: on-type or ON_ENTER] 
+	if respond-event?  actors "on-zoom" [on-type: on-type or ON_ZOOM]
+	if respond-event?  actors "on-pan" [on-type: on-type or ON_PAN]
+	if respond-event?  actors "on-rotate" [on-type: on-type or ON_ROTATE] 
+	if respond-event?  actors "on-two-tap" [on-type: on-type or ON_TWO_TAP]
+	if respond-event?  actors "on-press-tap" [on-type: on-type or ON_PRESS_TAP]
+	if all[on-type > 1 not null? widget][
+		g_object_set_qdata widget respond-key-id as int-ptr! on-type
+	]
+]
+
+respond-key?: func [
+	widget 	[handle!]
+	on-type	[integer!]
+	return: [logic!]
+][
+	(as-integer g_object_get_qdata widget respond-key-id) and on-type <> 0
 ]
 
 ;; The goal is to connect only 
@@ -616,15 +724,11 @@ respond-key-up-event?: func [
 connect-common-events: function [
 	widget 		[handle!]
 	face 		[red-object!]
-	actors		[red-object!]
 	type		[integer!]
 	; /local
 	; 	_widget [handle!]
 ][
-	if all [
-		not null? widget
-		not null? actors/ctx
-	][
+	unless null? widget [
 		; _widget: either type = text [
 		; 	g_object_get_qdata widget _widget-id
 		; ][widget]
@@ -632,21 +736,18 @@ connect-common-events: function [
 		; _widget: g_object_get_qdata widget _widget-id
 		; _widget: either null? _widget [widget][_widget]
 
-		if respond-down-event? actors [
-			;; DEBUG: print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
-			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
-			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
-		]
-		if respond-up-event? actors [
-			;; DEBUG: print [ "ON-UP: " get-symbol-name type "->" widget lf]
-			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
-		]
-		if respond-key-down-event? actors [
-			;; DEBUG: print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
-			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
-		]
-		if respond-key-up-event?  actors [
-			;; DEBUG: print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
+		;; DEBUG: print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
+		if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)]
+		if respond-mouse? widget ON_OVER [gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)]
+			
+		;; DEBUG: print [ "ON-UP: " get-symbol-name type "->" widget lf]
+		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)]
+
+		;; DEBUG: print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
+		if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
+		
+		;; DEBUG: print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
+		if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
 			gtk_widget_add_events widget GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
@@ -656,24 +757,138 @@ connect-common-events: function [
 connect-notify-events: function [
 	widget 		[handle!]
 	face 		[red-object!]
-	actors		[red-object!]
-	type		[integer!]
+	sym		[integer!]
 	/local
 		_widget [handle!]
 ][
-	if all [
-		not null? widget
-		not null? actors/ctx
-	][
-		_widget: either type = text [
+	unless null? widget [
+		_widget: either sym = text [
 			g_object_get_qdata widget _widget-id
 		][widget]
-		if respond-event?  actors "on-over" [
+	
 			;; DEBUG: print [ "ON-OVER: notify " get-symbol-name type "->" widget lf]
 
+		if respond-mouse? widget EVT_OVER [
 			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK
 			gobj_signal_connect(_widget "enter-notify-event" :widget-enter-notify-event face/ctx)
 			gobj_signal_connect(_widget "leave-notify-event" :widget-leave-notify-event face/ctx)
 		]
 	]
+]
+
+connect-widget-events: function [
+	widget 		[handle!]
+	face 		[red-object!]
+	actors		[red-object!]
+	sym		[integer!]
+	_widget 	[handle!]
+	/local
+		buffer	[handle!]
+][
+	;; register red mouse, key and window on event functions
+	respond-mouse-add widget actors sym
+	respond-key-add widget actors sym
+	respond-window-add widget actors sym
+
+	case [
+		sym = check [
+			;@@ No click event for check
+			;gobj_signal_connect(widget "clicked" :button-clicked null)
+			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
+		]
+		sym = radio [
+			;@@ Line below removed because it generates an error and there is no click event for radio 
+			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
+		]
+		sym = button [
+			if respond-mouse? widget ON_CLICK [gobj_signal_connect(widget "clicked" :button-clicked null)]
+		]
+		sym = base [
+			gobj_signal_connect(widget "draw" :base-draw face/ctx)
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
+			gtk_widget_set_can_focus widget no
+			gtk_widget_set_focus_on_click widget no
+			connect-common-events widget face sym 
+		]
+		sym = rich-text [
+			gobj_signal_connect(widget "draw" :base-draw face/ctx)
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
+			gtk_widget_set_can_focus widget yes
+			gtk_widget_set_focus_on_click widget yes
+			gtk_widget_is_focus widget
+			gtk_widget_grab_focus widget
+			connect-common-events widget face sym 
+		]
+		sym = window [
+			gobj_signal_connect(widget "delete-event" :window-delete-event null)
+			;BUG (make `vid.red` failing):gtk_widget_add_events widget GDK_STRUCTURE_MASK
+			;gobj_signal_connect(widget "configure-event" :window-configure-event null)
+			gobj_signal_connect(widget "size-allocate" :window-size-allocate null)
+		]
+		sym = slider [
+			gobj_signal_connect(widget "value-changed" :range-value-changed face/ctx)
+		]
+		sym = text [
+			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(_widget "button-press-event" :simple-button-press-event widget)]
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(_widget "button-release-event" :simple-button-release-event widget)]
+		]
+		sym = field [
+			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
+				gobj_signal_connect(widget "key-release-event" :field-key-release-event face/ctx)
+			]
+			;Do not work: gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)]
+			
+			gtk_widget_set_can_focus widget yes
+			gtk_widget_is_focus widget
+			;This depends on version >= 3.2
+			;gtk_widget_set_focus_on_click widget yes
+			gobj_signal_connect(widget "move-focus" :field-move-focus face/ctx)
+		]
+		sym = progress [
+			0
+		]
+		sym = area [
+			; _widget is here buffer
+			buffer: gtk_text_view_get_buffer widget
+			gobj_signal_connect(buffer "changed" :area-changed widget)
+			g_object_set [widget "populate-all" yes null] 
+			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :area-button-press-event face/ctx)]
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)]
+			if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
+			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)]
+			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
+		]
+		sym = group-box [
+			0
+		]
+		sym = panel [
+			gobj_signal_connect(widget "draw" :base-draw face/ctx)
+			gtk_widget_set_focus_on_click widget yes
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
+			;; value: gtk_widget_get_events widget
+			;; DEBUG: print ["panel had focus: " gtk_widget_get_focus_on_click widget  lf "get events: " value  " GDK_BUTTON_PRESS_MASK? " GDK_BUTTON_PRESS_MASK and value lf]
+			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)]
+			if respond-mouse? widget ON_OVER [gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)] 
+			
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)]
+			if respond-key? widget (ON_KEY or ON_KEY_DOWN) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
+			if respond-key? widget ON_KEY_UP [gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)]
+		]
+		sym = tab-panel [
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "switch-page" :tab-panel-switch-page face/ctx)]
+		]
+		sym = text-list [
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)]
+			connect-common-events widget face sym 
+		]
+		any [
+			sym = drop-list
+			sym = drop-down
+		][
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)]
+		]
+		true [0]
+	]
+	connect-notify-events widget face sym
 ]

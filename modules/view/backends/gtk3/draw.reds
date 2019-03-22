@@ -1031,6 +1031,7 @@ OS-set-clip: func [
 	upper	[red-pair!]
 	lower	[red-pair!]
 ][
+	print ["set-clip!" lf]
 	0
 ]
 
