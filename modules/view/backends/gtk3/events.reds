@@ -563,11 +563,15 @@ respond-event?: func [
 	actors		[red-object!]	
 	type		[c-string!]
 	return:		[logic!]
+	/local
+		respond?	[logic!]
 ][
 	either null? actors/ctx [
 		false
 	][
-		-1 <> object/rs-find actors as red-value! word/load type
+		respond?: -1 <> object/rs-find actors as red-value! word/load type
+		;; DEBUG: if respond? [print ["respond-event? type " type lf]]
+		respond?
 	]
 ]
 
@@ -593,7 +597,7 @@ respond-window-id:	g_quark_from_string "respond-window-id"
 respond-mouse-add: func [
 	widget 		[handle!]
 	actors		[red-object!]
-	type		[integer!]
+	sym			[integer!]
 	/local
 		on-type	[integer!]
 ][
@@ -609,7 +613,8 @@ respond-mouse-add: func [
 	if respond-event?  actors "on-click" [on-type: on-type or ON_CLICK] if respond-event?  actors "on-dbl-click" [on-type: on-type or ON_DBL_CLICK]
 	if respond-event?  actors "on-wheel" [on-type: on-type or ON_WHEEL] 
 	if respond-event?  actors "on-over" [on-type: on-type or ON_OVER]
-	if all[on-type > 1 not null? widget][
+	if all[on-type > 0 not null? widget][
+		;; DEBUG: print ["Add mouse event " on-type lf ]
 		g_object_set_qdata widget respond-mouse-id as int-ptr! on-type
 	]
 ]
@@ -640,7 +645,7 @@ respond-mouse?: func [
 respond-window-add: func [
 	widget 		[handle!]
 	actors		[red-object!]
-	type		[integer!]
+	sym			[integer!]
 	/local
 		on-type	[integer!]
 ][
@@ -655,7 +660,8 @@ respond-window-add: func [
 	if respond-event?  actors "on-select" [on-type: on-type or ON_SELECT]
 	if respond-event?  actors "on-change" [on-type: on-type or ON_CHANGE] 
 	if respond-event?  actors "on-menu" [on-type: on-type or ON_MENU]
-	if all[on-type > 1 not null? widget][
+	if all[on-type > 0 not null? widget][
+		;; DEBUG: print ["Add window event " on-type lf ]
 		g_object_set_qdata widget respond-window-id as int-ptr! on-type
 	]
 ]
@@ -686,7 +692,7 @@ respond-window?: func [
 respond-key-add: func [
 	widget 		[handle!]
 	actors		[red-object!]
-	type		[integer!]
+	sym			[integer!]
 	/local
 		on-type	[integer!]
 ][
@@ -703,7 +709,8 @@ respond-key-add: func [
 	if respond-event?  actors "on-rotate" [on-type: on-type or ON_ROTATE] 
 	if respond-event?  actors "on-two-tap" [on-type: on-type or ON_TWO_TAP]
 	if respond-event?  actors "on-press-tap" [on-type: on-type or ON_PRESS_TAP]
-	if all[on-type > 1 not null? widget][
+	if all[on-type > 0 not null? widget][
+		;; DEBUG: print ["Add key event " on-type lf ]
 		g_object_set_qdata widget respond-key-id as int-ptr! on-type
 	]
 ]
@@ -786,6 +793,10 @@ connect-widget-events: function [
 		buffer	[handle!]
 ][
 	;; register red mouse, key and window on event functions
+	
+	;; DEBUG: print ["common-widget-events for " get-symbol-name sym " " widget lf]
+	;; DEBUG: if null? actors/ctx [print ["null? actors/ctx" lf]]
+
 	respond-mouse-add widget actors sym
 	respond-key-add widget actors sym
 	respond-window-add widget actors sym

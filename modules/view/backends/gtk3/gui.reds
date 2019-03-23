@@ -1884,7 +1884,10 @@ OS-update-view: func [
 	if all [
 		type = rich-text
 		update-rich-text state as red-block! values + FACE_OBJ_EXT3
-	][exit]
+	][
+		;; DEBUG: print ["update-view rich-text" lf] 
+		exit
+	]
 
 	s: GET_BUFFER(state)
 	int: as red-integer! s/offset
@@ -2027,8 +2030,7 @@ OS-update-facet: func [
 		widget [handle!]
 ][
 	sym: symbol/resolve facet/symbol
-	;; DEBUG:
-	print ["update-facet " sym " " get-symbol-name sym lf]
+	;; DEBUG: print ["update-facet " sym " " get-symbol-name sym lf]
 
 	case [
 		;sym = facets/pane [0]
