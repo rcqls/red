@@ -578,7 +578,7 @@ post-quit-msg: func [
 ]
 
 ;; DEBUG mode: NONE vs ALL vs ALL_ADD
-debug-connect-level: DEBUG_CONNECT_NONE ;DEBUG_CONNECT_ALL_ADD ; to set 
+debug-connect-level: DEBUG_CONNECT_ALL_ADD
 
 debug-connect?: func [level [integer!] return: [logic!]][debug-connect-level and level <> 0]
 
@@ -640,7 +640,7 @@ respond-mouse-add: func [
 	if respond-event?  actors "on-over" [on-type: on-type or ON_OVER]
 	if all[on-type > 0 not null? widget][
 		;; DEBUG: 
-		if debug-connect? DEBUG_CONNECT_RESPOND_MOUSE [print ["Add mouse event " on-type lf ]]
+		if debug-connect? DEBUG_CONNECT_RESPOND_MOUSE [print ["Add mouse event " on-type " for " get-symbol-name sym  lf ]]
 		g_object_set_qdata widget respond-mouse-id as int-ptr! on-type
 	]
 ]
@@ -688,7 +688,7 @@ respond-window-add: func [
 	if respond-event?  actors "on-menu" [on-type: on-type or ON_MENU]
 	if all[on-type > 0 not null? widget][
 		;; DEBUG: 
-		if debug-connect? DEBUG_CONNECT_RESPOND_WINDOW [print ["Add window event " on-type lf ]]
+		if debug-connect? DEBUG_CONNECT_RESPOND_WINDOW [print ["Add window event " on-type " for " get-symbol-name sym  lf ]]
 		g_object_set_qdata widget respond-window-id as int-ptr! on-type
 	]
 ]
@@ -738,7 +738,7 @@ respond-key-add: func [
 	if respond-event?  actors "on-press-tap" [on-type: on-type or ON_PRESS_TAP]
 	if all[on-type > 0 not null? widget][
 		;; DEBUG: 
-		if debug-connect? DEBUG_CONNECT_RESPOND_KEY [print ["Add key event " on-type lf ]]
+		if debug-connect? DEBUG_CONNECT_RESPOND_KEY [print ["Add key event " on-type " for " get-symbol-name sym lf ]]
 		g_object_set_qdata widget respond-key-id as int-ptr! on-type
 	]
 ]
@@ -896,6 +896,7 @@ connect-widget-events: function [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add window size-allocate " lf]]
 			gobj_signal_connect(widget "size-allocate" :window-size-allocate null)
+			connect-common-events widget face sym parent
 		]
 		sym = slider [
 			;; DEBUG: 
