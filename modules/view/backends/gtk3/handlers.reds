@@ -428,11 +428,58 @@ tab-panel-switch-page: func [
 ]
 
 ; Do not use key-press-event since character would not be printed!
+field-key-press-event: func [
+	[cdecl]
+	widget		[handle!]
+	event-key	[GdkEventKey!]
+	ctx			[node!]
+	return:		[integer!]
+	/local
+		res		[integer!]
+		key		[integer!]
+		flags	[integer!]
+		text	[c-string!]
+		face	[red-object!]
+		qdata	[handle!]
+][	 
+	if event-key/keyval > FFFFh [return EVT_DISPATCH]
+	key: translate-key event-key/keyval
+	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
+	flags: flags or check-extra-keys event-key/state
+
+	;print ["key: " key " flags: " flags " key or flags: " key or flags lf]
+
+	res: make-event widget key or flags EVT_KEY_DOWN
+	;; DEBUG: print ["field press res " res lf]
+	if res <> EVT_NO_DISPATCH [
+		;; DEBUG: print ["special-key" special-key lf]
+		either special-key <> -1 [
+			switch special-key [
+				RED_VK_SHIFT	RED_VK_CONTROL
+				RED_VK_LSHIFT	RED_VK_RSHIFT
+				RED_VK_LCONTROL	RED_VK_RCONTROL
+				RED_VK_LMENU	RED_VK_RMENU [0]				 ;-- no KEY event
+				default  [res: make-event widget key or flags EVT_KEY] ;-- force a KEY event
+			]
+		][res: make-event widget key or flags EVT_KEY]
+	]
+
+	text: gtk_entry_get_text widget
+	qdata: g_object_get_qdata widget red-face-id
+    unless null? qdata [
+        face: as red-object! qdata
+		set-text widget face/ctx text
+		make-event widget 0 EVT_CHANGE
+	]
+	EVT_DISPATCH
+]
+
 field-key-release-event: func [
 	[cdecl]
 	widget		[handle!]
 	event-key	[GdkEventKey!]
 	ctx			[node!]
+	return:		[integer!]
 	/local
 		res		[integer!]
 		key		[integer!]
@@ -445,25 +492,27 @@ field-key-release-event: func [
 	;print [ "keyval: " event-key/keyval  " -> " gdk_keyval_name event-key/keyval  "(" event-key/keyval  " -> " gdk_keyval_to_lower event-key/keyval ") et state: " event-key/state lf]
 	;print [ "keycode: " as integer! event-key/keycode1 " " as integer! event-key/keycode2 lf]
 
-	if event-key/keyval > FFFFh [exit]
-	key: translate-key event-key/keyval
-	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
-	flags: flags or check-extra-keys event-key/state
+	make-event widget 0 EVT_KEY_UP
 
-	;print ["key: " key " flags: " flags " key or flags: " key or flags lf]
+	; if event-key/keyval > FFFFh [return EVT_NO_DISPATCH]
+	; key: translate-key event-key/keyval
+	; flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
+	; flags: flags or check-extra-keys event-key/state
 
-	res: make-event widget key or flags EVT_KEY_DOWN
-	if res <> EVT_NO_DISPATCH [
-	 	make-event widget key or flags EVT_KEY
-	]
+	; ;print ["key: " key " flags: " flags " key or flags: " key or flags lf]
 
-	text: gtk_entry_get_text widget
-	qdata: g_object_get_qdata widget red-face-id
-    unless null? qdata [
-        face: as red-object! qdata
-		set-text widget face/ctx text
-		make-event widget 0 EVT_CHANGE
-	]
+	; res: make-event widget key or flags EVT_KEY_DOWN
+	; if res <> EVT_NO_DISPATCH [
+	;  	make-event widget key or flags EVT_KEY
+	; ]
+
+	; text: gtk_entry_get_text widget
+	; qdata: g_object_get_qdata widget red-face-id
+    ; unless null? qdata [
+    ;     face: as red-object! qdata
+	; 	set-text widget face/ctx text
+	; 	make-event widget 0 EVT_CHANGE
+	; ]
 ]
 
 field-move-focus: func [
@@ -480,7 +529,7 @@ field-button-release-event: func [
 	widget 	[handle!] 
 	event	[GdkEventButton!]
 	ctx 	[node!]
-	return: [logic!]
+	return: [integer!]
 	/local	
 		x			[integer!]
 		y			[integer!]
@@ -501,7 +550,7 @@ field-button-release-event: func [
 		]
 	]
 	make-event widget 0 EVT_LEFT_UP
-	no
+	EVT_NO_DISPATCH
 ]
 
 area-changed: func [
@@ -739,7 +788,28 @@ drag-widget-button-release-event: func [
 	evt-motion/state: no
 	flags: check-flags event/type event/state
 	make-event widget flags  case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_UP] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_UP] true [EVT_LEFT_UP]]
-	1;;yes
+	EVT_NO_DISPATCH
+]
+
+parent-emit-event: func [
+	[cdecl]
+	widget	[handle!]
+	event	[int-ptr!]
+][
+	;; DEBUG: print ["emit event " widget lf]
+	gtk_widget_event widget event
+]
+
+parent-delegate-to-children: func [
+	[cdecl]
+	widget 	[handle!] 
+	event	[int-ptr!]
+	ctx 	[node!]
+	return: [integer!]
+][
+	;; DEBUG: print [ "parent -> PARENT DELEGATE: " widget lf]
+	gtk_container_foreach widget as-integer :parent-emit-event event
+	EVT_DISPATCH
 ]
 
 mouse-button-press-event: func [
@@ -755,7 +825,11 @@ mouse-button-press-event: func [
 	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
 	; evt-motion/state: yes
 	; evt-motion/cpt: 0
-	if gtk_widget_get_focus_on_click widget [print ["grab focus on mouse " widget lf] gtk_widget_grab_focus widget]
+	
+	if gtk_widget_get_focus_on_click widget [
+		;; DEBUG: print ["grab focus on mouse " widget lf] 
+		gtk_widget_grab_focus widget
+	]
 	if draggable? widget [return 0] ; delegate to drag
 
 	;; DEBUG: print ["with button " event/button lf]
@@ -767,7 +841,7 @@ mouse-button-press-event: func [
 			menu-y: as-integer event/y
 			;; DEBUG: print ["menu pointer : " menu-x "x" menu-y lf]
 			gtk_menu_popup_at_pointer hMenu	 as handle! event
-			return 1
+			return EVT_NO_DISPATCH
 		]
 
 	]
@@ -778,7 +852,8 @@ mouse-button-press-event: func [
 	evt-motion/y_new: as-integer event/y
 	flags: check-flags event/type event/state
 	make-event widget flags case [event/button = GDK_BUTTON_SECONDARY [EVT_RIGHT_DOWN] event/button = GDK_BUTTON_MIDDLE [EVT_MIDDLE_DOWN] true [EVT_LEFT_DOWN]]
-	1;;no
+	;; DEBUG: print ["NO DISPATCH" lf]
+	EVT_NO_DISPATCH
 ]
 
 mouse-button-release-event: func [

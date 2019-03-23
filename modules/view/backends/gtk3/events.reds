@@ -23,9 +23,9 @@ Red/System [
 gui-evt: declare red-event!								;-- low-level event value slot
 gui-evt/header: TYPE_EVENT
 
-modal-loop-type: 0										;-- remanence of last EVT_MOVE or EVT_SIZE
-zoom-distance:	 0
-special-key: 	-1										;-- <> -1 if a non-displayable key is pressed
+modal-loop-type: 	0										;-- remanence of last EVT_MOVE or EVT_SIZE
+zoom-distance:	 	0
+special-key: 		-1										;-- <> -1 if a non-displayable key is pressed
 
 flags-blk: declare red-block!							;-- static block value for event/flags
 flags-blk/header:	TYPE_BLOCK
@@ -173,9 +173,9 @@ get-event-key: func [
 			code: evt/flags
 			special?: code and 80000000h <> 0
 			code: code and FFFFh
-			;; DEBUG: 
-			print ["key-code=" code " flags=" evt/flags " special?=" special? lf]
-			if special? [
+			;; DEBUG: print ["key-code=" code " flags=" evt/flags " special?=" special? lf]
+			either special? [
+				special-key: code
 				res: as red-value! switch code [
 					RED_VK_PRIOR	[_page-up]
 					RED_VK_NEXT		[_page-down]
@@ -209,7 +209,7 @@ get-event-key: func [
 					RED_VK_APPS		[_right-command]
 					default			[null]
 				]
-			]
+			][special-key: -1]
 			either null? res [
 				either all [special? evt/type = EVT_KEY][
 					none-value
@@ -520,7 +520,7 @@ translate-key: func [
 		all[keycode >= FFBEh keycode <= FFD5h][special?: yes keycode + RED_VK_F1 - FFBEh]		;RED_VK_F1 to RED_VK_F24
 		all[keycode >= FF51h keycode <= FF54h][special?: yes keycode + RED_VK_LEFT - FF51h]		;RED_VK_LEFT to RED_VK_DOWN
 		all[keycode >= FF55h keycode <= FF57h][special?: yes keycode + RED_VK_PRIOR - FF51h]	;RED_VK_PRIOR to RED_VK_END
-		keycode = FF0Dh	[special?: yes RED_VK_RETURN]
+		keycode = FF0Dh	[special?: no RED_VK_RETURN]
 		keycode = FF1Bh [special?: yes RED_VK_ESCAPE]
 		keycode = FF50h [special?: yes RED_VK_HOME]
 		keycode = FFE5h [special?: yes RED_VK_NUMLOCK]
@@ -530,6 +530,7 @@ translate-key: func [
 		true [RED_VK_UNKNOWN]
 	]
 	if special? [key: key or 80000000h]
+	special-key: either special? [key][-1]
 	;; DEBUG: print [" key: " key " special?=" special?  lf]
 	key
 ]
@@ -557,7 +558,30 @@ post-quit-msg: func [
 	0
 ]
 
-;; centralize here connection handlers
+;;------------- centralize here connection handlers
+;; The goal is to only connect gtl handlers only when actor is provided
+;; Rmk: Specific development for rich-text with panel parent with on-over actor for rich-text 
+;; 		The panel needs to receive the event otherwise the rich-text can't receive the event with the associated actor.
+;;		A delegation connection is provided to do so.
+
+#enum DebugConnect! [
+	DEBUG_CONNECT_NONE: 			0
+	DEBUG_CONNECT_WIDGET: 			1
+	DEBUG_CONNECT_COMMON: 			2
+	DEBUG_CONNECT_NOTIFY: 			4
+	DEBUG_CONNECT_RESPOND_KEY: 		8
+	DEBUG_CONNECT_RESPOND_MOUSE: 	16
+	DEBUG_CONNECT_RESPOND_WINDOW: 	32
+	DEBUG_CONNECT_ALL_ADD:      63
+	DEBUG_CONNECT_RESPOND_EVENT: 	65536
+	DEBUG_CONNECT_ALL:				131071
+]
+
+;; DEBUG mode: NONE vs ALL vs ALL_ADD
+debug-connect-level: DEBUG_CONNECT_NONE ;DEBUG_CONNECT_ALL_ADD ; to set 
+
+debug-connect?: func [level [integer!] return: [logic!]][debug-connect-level and level <> 0]
+
 
 respond-event?: func [
 	actors		[red-object!]	
@@ -570,7 +594,8 @@ respond-event?: func [
 		false
 	][
 		respond?: -1 <> object/rs-find actors as red-value! word/load type
-		;; DEBUG: if respond? [print ["respond-event? type " type lf]]
+		;; DEBUG: 
+		if debug-connect? DEBUG_CONNECT_RESPOND_EVENT [print ["respond-event? type " type lf]]
 		respond?
 	]
 ]
@@ -614,7 +639,8 @@ respond-mouse-add: func [
 	if respond-event?  actors "on-wheel" [on-type: on-type or ON_WHEEL] 
 	if respond-event?  actors "on-over" [on-type: on-type or ON_OVER]
 	if all[on-type > 0 not null? widget][
-		;; DEBUG: print ["Add mouse event " on-type lf ]
+		;; DEBUG: 
+		if debug-connect? DEBUG_CONNECT_RESPOND_MOUSE [print ["Add mouse event " on-type lf ]]
 		g_object_set_qdata widget respond-mouse-id as int-ptr! on-type
 	]
 ]
@@ -661,7 +687,8 @@ respond-window-add: func [
 	if respond-event?  actors "on-change" [on-type: on-type or ON_CHANGE] 
 	if respond-event?  actors "on-menu" [on-type: on-type or ON_MENU]
 	if all[on-type > 0 not null? widget][
-		;; DEBUG: print ["Add window event " on-type lf ]
+		;; DEBUG: 
+		if debug-connect? DEBUG_CONNECT_RESPOND_WINDOW [print ["Add window event " on-type lf ]]
 		g_object_set_qdata widget respond-window-id as int-ptr! on-type
 	]
 ]
@@ -710,7 +737,8 @@ respond-key-add: func [
 	if respond-event?  actors "on-two-tap" [on-type: on-type or ON_TWO_TAP]
 	if respond-event?  actors "on-press-tap" [on-type: on-type or ON_PRESS_TAP]
 	if all[on-type > 0 not null? widget][
-		;; DEBUG: print ["Add key event " on-type lf ]
+		;; DEBUG: 
+		if debug-connect? DEBUG_CONNECT_RESPOND_KEY [print ["Add key event " on-type lf ]]
 		g_object_set_qdata widget respond-key-id as int-ptr! on-type
 	]
 ]
@@ -723,38 +751,58 @@ respond-key?: func [
 	(as-integer g_object_get_qdata widget respond-key-id) and on-type <> 0
 ]
 
-;; The goal is to connect only 
-;; TODO:
-;; 		*) if useful: create a mask to know what is the connectable
-;;		*) if dynamically used in red, create an update-common-event(s) function
+connect-parent-events: func [
+	parent		[handle!]
+	evt-type	[c-string!]
+][
+	;; DEBUG: print ["connect-parent-events " parent " " evt-type lf]
+	gobj_signal_connect(parent evt-type :parent-delegate-to-children null)
+]
 
 connect-common-events: function [
 	widget 		[handle!]
 	face 		[red-object!]
-	type		[integer!]
+	sym			[integer!]
+	parent		[handle!]
 	; /local
 	; 	_widget [handle!]
 ][
 	unless null? widget [
-		; _widget: either type = text [
-		; 	g_object_get_qdata widget _widget-id
-		; ][widget]
-		; OR (NOT YET TESTED but if needed for widget with _widget)
-		; _widget: g_object_get_qdata widget _widget-id
-		; _widget: either null? _widget [widget][_widget]
 
-		;; DEBUG: print [ "ON-DOWN: " get-symbol-name type "->" widget lf]
-		if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)]
-		if respond-mouse? widget ON_OVER [gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)]
-			
-		;; DEBUG: print [ "ON-UP: " get-symbol-name type "->" widget lf]
-		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)]
-
-		;; DEBUG: print [ "ON-KEY-DOWN: " get-symbol-name type "->" widget lf]
-		if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
+		if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-DOWN: " get-symbol-name sym "->" widget lf]]
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK
+			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
+			if sym = rich-text [
+				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
+				connect-parent-events parent "button-press-event" lf
+			]
+		]
+		if respond-mouse? widget ON_OVER [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-OVER: " get-symbol-name sym "->" widget lf]]
+			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK
+			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
+		]
 		
-		;; DEBUG: print [ "ON-KEY-UP: " get-symbol-name type "->" widget lf]
+		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-UP: " get-symbol-name sym "->" widget lf]]
+			gtk_widget_add_events widget  GDK_BUTTON_RELEASE_MASK
+			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
+		]
+
+		if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-KEY: " get-symbol-name sym "->" widget lf]]
+			gtk_widget_add_events widget  GDK_KEY_PRESS_MASK or GDK_FOCUS_CHANGE_MASK
+			gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
+		]
+		
 		if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-KEY-UP: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
@@ -764,7 +812,7 @@ connect-common-events: function [
 connect-notify-events: function [
 	widget 		[handle!]
 	face 		[red-object!]
-	sym		[integer!]
+	sym			[integer!]
 	/local
 		_widget [handle!]
 ][
@@ -773,9 +821,9 @@ connect-notify-events: function [
 			g_object_get_qdata widget _widget-id
 		][widget]
 	
-			;; DEBUG: print [ "ON-OVER: notify " get-symbol-name type "->" widget lf]
-
 		if respond-mouse? widget EVT_OVER [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_NOTIFY [print [ "connect-notifiy-events ON-OVER: " get-symbol-name sym "->" widget "(" _widget ")" lf]]
 			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK
 			gobj_signal_connect(_widget "enter-notify-event" :widget-enter-notify-event face/ctx)
 			gobj_signal_connect(_widget "leave-notify-event" :widget-leave-notify-event face/ctx)
@@ -789,6 +837,7 @@ connect-widget-events: function [
 	actors		[red-object!]
 	sym		[integer!]
 	_widget 	[handle!]
+	parent		[handle!]
 	/local
 		buffer	[handle!]
 ][
@@ -805,21 +854,29 @@ connect-widget-events: function [
 		sym = check [
 			;@@ No click event for check
 			;gobj_signal_connect(widget "clicked" :button-clicked null)
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add check toggled " lf]]
 			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
 		]
 		sym = radio [
 			;@@ Line below removed because it generates an error and there is no click event for radio 
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add radio toggled " lf]]
 			gobj_signal_connect(widget "toggled" :button-toggled face/ctx)
 		]
 		sym = button [
-			if respond-mouse? widget ON_CLICK [gobj_signal_connect(widget "clicked" :button-clicked null)]
+			if respond-mouse? widget ON_CLICK [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add button clicked " lf]]
+				gobj_signal_connect(widget "clicked" :button-clicked null)
+			]
 		]
 		sym = base [
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
 			gtk_widget_set_can_focus widget no
 			gtk_widget_set_focus_on_click widget no
-			connect-common-events widget face sym 
+			connect-common-events widget face sym parent
 		]
 		sym = rich-text [
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
@@ -828,27 +885,52 @@ connect-widget-events: function [
 			gtk_widget_set_focus_on_click widget yes
 			gtk_widget_is_focus widget
 			gtk_widget_grab_focus widget
-			connect-common-events widget face sym 
+			connect-common-events widget face sym parent
 		]
 		sym = window [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add window delete-event " lf]]
 			gobj_signal_connect(widget "delete-event" :window-delete-event null)
 			;BUG (make `vid.red` failing):gtk_widget_add_events widget GDK_STRUCTURE_MASK
 			;gobj_signal_connect(widget "configure-event" :window-configure-event null)
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add window size-allocate " lf]]
 			gobj_signal_connect(widget "size-allocate" :window-size-allocate null)
 		]
 		sym = slider [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add slider value-changed " lf]]
 			gobj_signal_connect(widget "value-changed" :range-value-changed face/ctx)
 		]
 		sym = text [
-			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(_widget "button-press-event" :simple-button-press-event widget)]
-			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(_widget "button-release-event" :simple-button-release-event widget)]
+			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add text (event-box) button-press-event " lf]]
+				gobj_signal_connect(_widget "button-press-event" :simple-button-press-event widget)
+			]
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add text (event-box) button-release-event " lf]]
+				gobj_signal_connect(_widget "button-release-event" :simple-button-release-event widget)
+			]
 		]
 		sym = field [
+			if respond-key? widget (ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add field key-press-event" lf]]
+				gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
+			]
 			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add field key-release-event" lf]]
 				gobj_signal_connect(widget "key-release-event" :field-key-release-event face/ctx)
 			]
 			;Do not work: gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
-			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)]
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add fiedl button-release-event " lf]]
+				gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)
+			]
 			
 			gtk_widget_set_can_focus widget yes
 			gtk_widget_is_focus widget
@@ -862,12 +944,34 @@ connect-widget-events: function [
 		sym = area [
 			; _widget is here buffer
 			buffer: gtk_text_view_get_buffer widget
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area changed " lf]]
 			gobj_signal_connect(buffer "changed" :area-changed widget)
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area populate-all " lf]]
 			g_object_set [widget "populate-all" yes null] 
-			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :area-button-press-event face/ctx)]
-			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)]
-			if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
-			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)]
+			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area button-press-event " lf]]
+				gobj_signal_connect(widget "button-press-event" :area-button-press-event face/ctx)
+			]
+			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area button-release-event " lf]]
+				gobj_signal_connect(widget "button-release-event" :area-button-release-event face/ctx)
+			]
+			if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area key-press-event " lf]]
+				gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)
+			]
+			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area key-release-event " lf]]
+				gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
+			]
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add area populate-popup" lf]]
 			gobj_signal_connect(widget "populate-popup" :area-populate-popup face/ctx)
 		]
 		sym = group-box [
@@ -876,28 +980,42 @@ connect-widget-events: function [
 		sym = panel [
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_set_focus_on_click widget yes
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
+			;gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
 			;; value: gtk_widget_get_events widget
 			;; DEBUG: print ["panel had focus: " gtk_widget_get_focus_on_click widget  lf "get events: " value  " GDK_BUTTON_PRESS_MASK? " GDK_BUTTON_PRESS_MASK and value lf]
-			if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)]
-			if respond-mouse? widget ON_OVER [gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)] 
+			; if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+			;	gobj_signal_connect(widget "button-press-event" :panel-button-press-event face/ctx)
+			;]
+			; if respond-mouse? widget ON_OVER [gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)] 
 			
-			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)]
-			if respond-key? widget (ON_KEY or ON_KEY_DOWN) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
-			if respond-key? widget ON_KEY_UP [gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)]
+			; if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)]
+			; if respond-key? widget (ON_KEY or ON_KEY_DOWN) [gobj_signal_connect(widget "key-press-event" :key-press-event face/ctx)]
+			; if respond-key? widget ON_KEY_UP [gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)]
+			connect-common-events widget face sym parent
 		]
 		sym = tab-panel [
-			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "switch-page" :tab-panel-switch-page face/ctx)]
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [
+				;; DEBUG:
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add tab-panel switch-page " lf]]
+				gobj_signal_connect(widget "switch-page" :tab-panel-switch-page face/ctx)
+			]
 		]
 		sym = text-list [
-			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)]
-			connect-common-events widget face sym 
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [
+				;; DEBUG: 
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add text-list selected-rows-changed " lf]]
+				gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)
+			]
+			connect-common-events widget face sym parent 
 		]
 		any [
 			sym = drop-list
 			sym = drop-down
 		][
-			if respond-window? widget (ON_SELECT or ON_CHANGE) [gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)]
+			if respond-window? widget (ON_SELECT or ON_CHANGE) [
+				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add drop-(list|down) changed " lf]]
+				gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
+			]
 		]
 		true [0]
 	]

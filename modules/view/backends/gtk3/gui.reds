@@ -1752,7 +1752,7 @@ OS-make-view: func [
 	]
 
 	; contralized connect
-	connect-widget-events widget face actors sym _widget
+	connect-widget-events widget face actors sym _widget as int-ptr! parent
 
 	parse-common-opts widget face as red-block! values + FACE_OBJ_OPTIONS sym
 	; save the previous group-radio state as a global variable
