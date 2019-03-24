@@ -51,13 +51,12 @@ init-draw-ctx: func [
 	ctx/pen?:			yes
 	ctx/brush?:			no
 	ctx/pattern:		null
-	ctx/layout:			null
-	ctx/font-desc:		null
+	
+	ctx/font-desc: null ;default-font
+	ctx/layout: null ; make-pango-cairo-layout cr ctx/font-desc
 	ctx/font-opts:		null
 	ctx/font-underline?: no 
 	ctx/font-strike?: 	no
-	
-
 ]
 
 draw-begin: func [
@@ -435,35 +434,29 @@ draw-text-at: func [
 	;; print ["draw-text-at: " str " at " x "x" y   lf]
 	; either pango-font? [
 		;; print ["draw-text-at: dc/layout: " dc/layout lf]
-		unless null? dc/layout [
-			;pango-cairo-set-text dc str
-			pango-layout-context-set-text dc/layout dc str
-			;; print ["pango-cairo-set-text: " dc " " str lf]
-			set-source-color ctx color
-			;; print ["set-source-color: " ctx " " color lf]
+	if null? dc/layout [
+		dc/font-desc: pango_font_description_from_string gtk-font
+		dc/layout: make-pango-cairo-layout ctx dc/font-desc
+	]
+	;pango-cairo-set-text dc str
+	pango-layout-context-set-text dc/layout dc str
+	;; print ["pango-cairo-set-text: " dc " " str lf]
+	set-source-color ctx color
+	;; print ["set-source-color: " ctx " " color lf]
 
-			pango_cairo_update_layout ctx dc/layout
-						
-			size: 0
-			size: pango_font_description_get_size dc/font-desc
-			;; DEBUG: print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
-			cairo_move_to ctx as-float x
-			 				(as-float y) + ((as-float size) / PANGO_SCALE)
-			pl: pango_layout_get_line_readonly dc/layout 0
-			pango_cairo_show_layout_line ctx pl
-			
-			;pango_cairo_show_layout ctx dc/layout
+	pango_cairo_update_layout ctx dc/layout
+				
+	size: 0
+	size: pango_font_description_get_size dc/font-desc
+	;; DEBUG: print ["pango_font_description_get_size: dc/font-desc: " dc/font-desc " size: " size lf]
+	cairo_move_to ctx as-float x
+					(as-float y) + ((as-float size) / PANGO_SCALE)
+	pl: pango_layout_get_line_readonly dc/layout 0
+	pango_cairo_show_layout_line ctx pl
+	
+	;pango_cairo_show_layout ctx dc/layout
 
-			do-paint dc
-		]
-	; ][
-	; 	cairo_move_to ctx as-float x
-	; 					(as-float y) + cairo-font-size
-
-	; 	set-source-color ctx color 
-	; 	cairo_show_text ctx str
-	; 	do-paint dc
-	; ]
+	do-paint dc
 
 ]
 

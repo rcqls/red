@@ -1966,8 +1966,8 @@ OS-update-view: func [
 		]
 	]
 	if all [flags and FACET_FLAG_PANE <> 0 type <> tab-panel][
-		;update-z-order widget as red-block! values + FACE_OBJ_PANE type
-		0
+		update-z-order widget as red-block! values + FACE_OBJ_PANE type
+		;0
 	]
 	if flags and FACET_FLAG_RATE <> 0 [
 		change-rate widget values + FACE_OBJ_RATE
