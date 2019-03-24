@@ -750,13 +750,38 @@ respond-key?: func [
 ][
 	(as-integer g_object_get_qdata widget respond-key-id) and on-type <> 0
 ]
-
-connect-parent-events: func [
-	parent		[handle!]
+ 
+connect-container-events: func [
+	widget		[handle!]
 	evt-type	[c-string!]
+	/local
+		container		[handle!]
 ][
-	;; DEBUG: print ["connect-parent-events " parent " " evt-type lf]
-	gobj_signal_connect(parent evt-type :parent-delegate-to-children null)
+	container: container? widget
+	unless null? container [
+		;; DEBUG: 
+		if debug-connect? DEBUG_CONNECT_COMMON [print ["connect-container-events " container " " evt-type lf]]
+		case [
+			0 = g_strcmp0 evt-type "button-press-event" [
+				gtk_widget_add_events container GDK_BUTTON_PRESS_MASK
+			]
+			0 = g_strcmp0 evt-type  "motion-notify-event" [
+				gtk_widget_add_events container GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK
+			]
+			0 = g_strcmp0 evt-type  "button-press-event" [
+				gtk_widget_add_events container GDK_BUTTON_RELEASE_MASK
+			]
+			0 = g_strcmp0 evt-type  "enter-notify-event" [ ; normally unused
+				gtk_widget_add_events container GDK_ENTER_NOTIFY_MASK
+			]
+			0 = g_strcmp0 evt-type  "leave-notify-event" [ ; normally unused
+				gtk_widget_add_events container GDK_LEAVE_NOTIFY_MASK
+			]
+			true [0]
+		]
+		if null? container [print ["container null for connection with " widget " " evt-type lf]]
+		gobj_signal_connect(container evt-type :container-delegate-to-children null)
+	]
 ]
 
 connect-common-events: function [
@@ -774,16 +799,18 @@ connect-common-events: function [
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-DOWN: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
-			if sym = rich-text [
+			if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
-				connect-parent-events parent "button-press-event" lf
+				connect-container-events widget "button-press-event"
 			]
-		]
-		if respond-mouse? widget ON_OVER [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-OVER: " get-symbol-name sym "->" widget lf]]
-			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK
+			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK
 			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
+			if container-type? sym [
+				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
+				connect-container-events widget "motion-notify-event"
+			]
 		]
 		
 		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
@@ -791,6 +818,10 @@ connect-common-events: function [
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-UP: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget  GDK_BUTTON_RELEASE_MASK
 			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
+			if container-type? sym [
+				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
+				connect-container-events widget "button-release-event"
+			]
 		]
 
 		if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
@@ -816,12 +847,15 @@ connect-notify-events: function [
 	/local
 		_widget [handle!]
 ][
+	;; DEBUG:
+	if debug-connect? DEBUG_CONNECT_NOTIFY [print ["connect-notify-events " widget " " get-symbol-name sym lf]]
+
 	unless null? widget [
 		_widget: either sym = text [
 			g_object_get_qdata widget _widget-id
 		][widget]
-	
-		if respond-mouse? widget EVT_OVER [
+
+		if respond-mouse? _widget ON_OVER [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_NOTIFY [print [ "connect-notifiy-events ON-OVER: " get-symbol-name sym "->" widget "(" _widget ")" lf]]
 			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK

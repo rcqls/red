@@ -35,7 +35,7 @@ AppMainMenu:	as handle! 0
 red-face-id: 		g_quark_from_string "red-face-id"
 gtk-style-id: 		g_quark_from_string "gtk-style-id"
 _widget-id:			g_quark_from_string "_widget-id"
-gtk-layout-id:		g_quark_from_string "gtk-layout-id"
+gtk-container-id:	g_quark_from_string "gtk-container-id"
 red-timer-id:		g_quark_from_string "red-timer-id"
 css-id:				g_quark_from_string "css-id"
 size-id:			g_quark_from_string "size-id"
@@ -175,6 +175,27 @@ get-widget-data: func [
 ][
 	values: get-face-values widget
     as red-block! values + FACE_OBJ_DATA
+]
+
+set-container: func [
+	widget		[handle!]
+	container	[handle!]
+][
+	g_object_set_qdata widget gtk-container-id container
+]
+
+container?: func [
+	widget		[handle!]
+	return: 	[handle!]
+][
+	g_object_get_qdata widget gtk-container-id
+]
+
+container-type?: func [
+	type 	[integer!]
+	return: [logic!]
+][
+	any[type = rich-text type = panel type = base]
 ]
 
 set-draggable: func [
@@ -378,7 +399,7 @@ debug-show-children: func [
 		if TYPE_OF(face) <> TYPE_OBJECT [print-line "not face object"]
 		widget_: face-handle? face
 		
-		either null? widget_ [print-line "null container" container: null][container: g_object_get_qdata widget_ gtk-layout-id]
+		either null? widget_ [print-line "null container" container: null][container: container? widget_]
 		print ["container handle: " container lf]
 		
 		 sx: 0 sy: 0
@@ -519,7 +540,7 @@ adjust-sizes: func [
 		tail: as red-object! block/rs-tail pane
 		if debug [print ["Parent type: " get-symbol-name sym lf]]
 		child: face-handle? face
-		container: either null? child [null][g_object_get_qdata child gtk-layout-id]
+		container: either null? child [null][container? child]
 		dx: 0 dy: 0
 		ox: 0 oy: 0 sx: 0 sy: 0
 		cpt: 0
@@ -833,7 +854,7 @@ change-offset: func [
 	][
 		unless null? widget [
 			;OS-refresh-window as integer! main-window
-			container: either null? widget [null][g_object_get_qdata widget gtk-layout-id]
+			container: either null? widget [null][container? widget]
 			;; DEBUG: print ["change-offset by" pos lf]
 			; _widget: either type = text [
 			; 	g_object_get_qdata widget _widget-id
@@ -1751,9 +1772,6 @@ OS-make-view: func [
 		]
 	]
 
-	; contralized connect
-	connect-widget-events widget face actors sym _widget as int-ptr! parent
-
 	parse-common-opts widget face as red-block! values + FACE_OBJ_OPTIONS sym
 	; save the previous group-radio state as a global variable
 	group-radio: either sym = radio [widget][as handle! 0] 
@@ -1784,12 +1802,13 @@ OS-make-view: func [
 				gtk_notebook_append_page container widget buffer
 				tabs/cur: tabs/cur + 1
 				if tabs/cur = tabs/nb [tabs/cur: 0 tabs/nb: 0]
+				set-container widget container
 			]
 			; p-sym = panel [
 			; 	container:  as handle! parent
 			; 	;save gtk_fixed container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
-			; 	g_object_set_qdata widget gtk-layout-id container
-			; 	if sym = text [g_object_set_qdata _widget gtk-layout-id container]
+			; 	set-container widget container
+			; 	if sym = text [set_container _widget container]
 			; 	gtk_widget_set_size_request _widget size/x size/y
 			; 	gtk_layout_put container _widget offset/x offset/y
 			; ]
@@ -1814,20 +1833,23 @@ OS-make-view: func [
 						;; redirect to the layout of the parent
 						;; WARNING: (since completedly changed code)
 						print ["DEVEL WARNING: <<NORMALLY NOTHING SHOULD GO HERE>>  (ONLY FOR DEVELOPMENT SINCE CODE HAS FULLY CHANGED BUT IMPOSSIBLE TO TEST) " lf]
-						g_object_get_qdata as handle! parent gtk-layout-id
+						container? as handle! parent
 					]
 				]
 				;; DEBUG: print ["widget (" get-symbol-name sym "):" widget "[_widget: " _widget "] with parent (" get-symbol-name p-sym ") " as handle! parent " with container (" (get-symbol-name get-widget-symbol container)  ") " container lf]
 
 				;save gtk_layout container for adjustment since size/x and size/y are not the real sizes in gtk and need to be updated in a second pass
-				g_object_set_qdata widget gtk-layout-id container
-				if sym = text [g_object_set_qdata _widget gtk-layout-id container]
+				set-container widget container
+				if sym = text [set-container _widget container]
 				gtk_widget_set_size_request _widget size/x size/y
 	
 				gtk_layout_put container _widget offset/x offset/y
 			]
 		]
 	]
+
+	; Deal with actors
+	connect-widget-events widget face actors sym _widget as int-ptr! parent
 	
 	unless any[sym = window sym = area][build-context-menu widget menu]
 

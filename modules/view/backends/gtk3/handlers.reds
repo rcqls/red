@@ -791,7 +791,7 @@ drag-widget-button-release-event: func [
 	EVT_NO_DISPATCH
 ]
 
-parent-emit-event: func [
+container-emit-event: func [
 	[cdecl]
 	widget	[handle!]
 	event	[int-ptr!]
@@ -800,15 +800,15 @@ parent-emit-event: func [
 	gtk_widget_event widget event
 ]
 
-parent-delegate-to-children: func [
+container-delegate-to-children: func [
 	[cdecl]
 	widget 	[handle!] 
 	event	[int-ptr!]
 	ctx 	[node!]
 	return: [integer!]
 ][
-	;; DEBUG: print [ "parent -> PARENT DELEGATE: " widget lf]
-	gtk_container_foreach widget as-integer :parent-emit-event event
+	;; DEBUG: print [ "parent -> CONTAINER DELEGATE: " widget lf]
+	gtk_container_foreach widget as-integer :container-emit-event event
 	EVT_DISPATCH
 ]
 
@@ -892,7 +892,7 @@ mouse-motion-notify-event: func [
 		flags	[integer!]
 ][
 	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
-	if draggable? widget [return 0] ; delegate to drag
+	if draggable? widget [return EVT_DISPATCH] ; delegate to drag
 	evt-motion/x_new: as-integer event/x
 	evt-motion/y_new: as-integer event/y
 	evt-motion/x_root: event/x_root
@@ -903,7 +903,7 @@ mouse-motion-notify-event: func [
 		make-event widget flags EVT_OVER	 
 	]
 	;; DEBUG: print ["mouse-motion-notify-event:  down? " (event/state and GDK_BUTTON1_MASK <> 0) " " (flags and EVT_FLAG_DOWN <> 0) lf] 
-	0 ;;no
+	EVT_DISPATCH ;;no
 ]
 
 key-press-event: func [
