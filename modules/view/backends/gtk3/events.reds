@@ -855,7 +855,7 @@ connect-notify-events: function [
 			g_object_get_qdata widget _widget-id
 		][widget]
 
-		if respond-mouse? _widget ON_OVER [
+		if respond-mouse? widget ON_OVER [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_NOTIFY [print [ "connect-notifiy-events ON-OVER: " get-symbol-name sym "->" widget "(" _widget ")" lf]]
 			gtk_widget_add_events _widget GDK_ENTER_NOTIFY_MASK or GDK_LEAVE_NOTIFY_MASK

@@ -1518,6 +1518,7 @@ parse-common-opts: func [
 OS-redraw: func [
 	widget [integer!]
 ][
+	;; DEBUG: print ["OS-redraw" lf]
 	unless null? as handle! widget [gtk_widget_queue_draw as handle! widget]
 ]
 
@@ -1842,7 +1843,6 @@ OS-make-view: func [
 				set-container widget container
 				if sym = text [set-container _widget container]
 				gtk_widget_set_size_request _widget size/x size/y
-	
 				gtk_layout_put container _widget offset/x offset/y
 			]
 		]
@@ -1872,6 +1872,8 @@ OS-make-view: func [
 
 	if TYPE_OF(rate) <> TYPE_NONE [change-rate widget rate]
 	if sym <> base [change-color widget as red-tuple! values + FACE_OBJ_COLOR sym]
+	
+	;; USELESS: if sym <> window [gtk_widget_show widget]
 
 	stack/unwind
 	as-integer widget

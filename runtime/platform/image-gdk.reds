@@ -23,7 +23,7 @@ argb-to-rgba: func [
 		g			[integer!]
 		a			[integer!]
 ][
-	a: (color >> 24 and FFh) 
+	a: (color >>> 24 and FFh) 
 	r: (color >> 16 and FFh) 
 	g: (color >> 8 and FFh) 
 	b: (color  and FFh)
@@ -40,7 +40,7 @@ argb-to-abgr: func [
 		g			[integer!]
 		a			[integer!]
 ][
-	a: (color >> 24 and FFh) 
+	a: (color >>> 24 and FFh) 
 	r: (color >> 16 and FFh) 
 	g: (color >> 8 and FFh) 
 	b: (color  and FFh)
@@ -591,7 +591,7 @@ OS-image: context [
 		][
 			r: color/array1
 			a: either TUPLE_SIZE?(color) = 3 [255][255 - (r  and FFh)]
-			r: (r >> 24 and FFh) or ((r >> 16 and FFh) << 8) or ((r >> 8 and FFh) << 16) or (a << 24)
+			r: (r >>> 24 and FFh) or ((r >> 16 and FFh) << 8) or ((r >> 8 and FFh) << 16) or (a << 24)
 			while [y < height][
 				x: 0
 				while [x < width][
