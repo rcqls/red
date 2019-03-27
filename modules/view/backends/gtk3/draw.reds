@@ -70,6 +70,7 @@ draw-begin: func [
 	init-draw-ctx ctx cr
 
 	cairo_set_line_width cr 1.0
+	;; DEBUG: print ["draw-begin: set-source-color black" lf]
 	set-source-color cr 0
 	ctx
 ]
@@ -87,6 +88,7 @@ draw-end: func [
 
 do-paint: func [dc [draw-ctx!] /local cr [handle!]][
 	cr: dc/raw
+	;; DEBUG: print ["do-paint: " dc/brush? " " dc/pen? lf]
 	if dc/brush? [
 		cairo_save cr
 		either null? dc/pattern [
@@ -102,6 +104,7 @@ do-paint: func [dc [draw-ctx!] /local cr [handle!]][
 		cairo_restore cr
 	]
 	if dc/pen? [
+		;; DEBUG: print ["do-paint dc/pen? color " dc/pen-color lf]
 		cairo_stroke cr
 	]
 	
@@ -136,10 +139,13 @@ OS-draw-pen: func [
 	alpha? [logic!]
 ][
 	dc/pen?: not off?
-	if dc/pen-color <> color [
+	;; DEBUG: print ["OS-draw-pen: " not off? " with color " color lf ]
+	;; THIS if DOES NOT WORK: 
+	;; if dc/pen-color <> color [
 		dc/pen-color: color
+		;; DEBUG: print ["set-source-color" lf]
 		set-source-color dc/raw color
-	]
+	;;]
 ]
 
 OS-draw-fill-pen: func [

@@ -198,9 +198,11 @@ base-draw: func [
 	sym: symbol/resolve type/symbol
 	
 	if TYPE_OF(clr) = TYPE_TUPLE [
+		cairo_save cr
 		;; DEBUG: print ["base-draw color" (clr/array1 and 00FFFFFFh) lf]
 		set-source-color cr clr/array1
 		cairo_paint cr								;-- paint background
+		cairo_restore cr
 	]
 
 	if TYPE_OF(img) = TYPE_IMAGE [
