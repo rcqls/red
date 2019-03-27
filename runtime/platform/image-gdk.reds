@@ -13,6 +13,62 @@ Red/System [
 #define IMG_NODE_HAS_BUFFER		1
 #define IMG_NODE_MODIFIED		2
 
+#enum GdkColorspace! [
+	GDK_COLORSPACE_RGB
+]
+
+rgba-to-argb: func [
+	color		[integer!]
+	return: 	[integer!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	r: (color >>> 24 and FFh) 
+	g: (color >> 16 and FFh) 
+	b: (color >> 8 and FFh) 
+	a: (color  and FFh)
+	color: (a << 24) or (r << 16) or (g << 8) or b
+	color
+]
+
+bgra-to-rgba: func [
+	color		[integer!]
+	return: 	[integer!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	b: (color >>> 24 and FFh) 
+	g: (color >> 16 and FFh) 
+	r: (color >> 8 and FFh) 
+	a: (color  and FFh)
+	;color: (r << 24 and FF000000h) or (g << 16  and 00FF0000h) or ( b << 8 and FF00h) or ( a and FFh)
+	color: (r << 24) or (g << 16) or (b << 8) or a
+	color
+]
+
+bgra-to-argb: func [
+	color		[integer!]
+	return: 	[integer!]
+	/local
+		r			[integer!]
+		b			[integer!]
+		g			[integer!]
+		a			[integer!]
+][
+	b: (color >>> 24 and FFh) 
+	g: (color >> 16 and FFh) 
+	r: (color >> 8 and FFh) 
+	a: (color  and FFh)
+	;color: (r << 24 and FF000000h) or (g << 16  and 00FF0000h) or ( b << 8 and FF00h) or ( a and FFh)
+	color: (a << 24) or (r << 16) or (g << 8) or b
+	color
+]
 
 argb-to-rgba: func [
 	color		[integer!]
@@ -178,9 +234,12 @@ OS-image: context [
 		/local
 			inode	[img-node!]
 	][
+		;; DEBUG:
+		print ["lock-bitmap" lf]
 		inode: as img-node! (as series! img/node/value) + 1
 		if zero? inode/flags [
-			;; DEBUG: print ["lock-bitmap: flags" lf]
+			;; DEBUG: 
+			print ["lock-bitmap: flags" lf]
 			inode/flags: IMG_NODE_HAS_BUFFER
 			inode/buffer: OS-image/data-to-image inode/handle -1 yes yes
 		]
@@ -344,7 +403,56 @@ OS-image: context [
 		while [data-pixbuf < end-data-pixbuf][
 			pixel: data-pixbuf/value
 			;; DEBUG: print ["pixel:" pixel lf]
-			pixel: (pixel >> 8) or (255 - (pixel << 24)) ; RGBA -> ARGB
+			;pixel: (pixel >> 8) or (255 - (pixel >>> 24)) ; RGBA -> ARGB
+			pixel: rgba-to-argb pixel
+			data-pixbuf/value: pixel
+			data-pixbuf: data-pixbuf + 1
+		]
+		buf
+	]
+
+	buffer-bgra-to-argb: func [
+		buf 	[int-ptr!]
+		width	[integer!]
+		height	[integer!]
+		return: [int-ptr!]	; not necessary since buf is already a pointer
+		/local
+			data-pixbuf 	[int-ptr!]
+			end-data-pixbuf	[int-ptr!]
+			pixel			[integer!]
+			i 				[integer!]
+	][
+		data-pixbuf:  buf
+		end-data-pixbuf: data-pixbuf + (width * height)
+		;; DEBUG: print ["buffer-argb -> size: " width "x" height lf]
+		while [data-pixbuf < end-data-pixbuf][
+			pixel: data-pixbuf/value
+			;; DEBUG: print ["pixel:" pixel lf]
+			pixel: bgra-to-argb pixel
+			data-pixbuf/value: pixel
+			data-pixbuf: data-pixbuf + 1
+		]
+		buf
+	]
+
+	buffer-bgra-to-rgba: func [
+		buf 	[int-ptr!]
+		width	[integer!]
+		height	[integer!]
+		return: [int-ptr!]	; not necessary since buf is already a pointer
+		/local
+			data-pixbuf 	[int-ptr!]
+			end-data-pixbuf	[int-ptr!]
+			pixel			[integer!]
+			i 				[integer!]
+	][
+		data-pixbuf:  buf
+		end-data-pixbuf: data-pixbuf + (width * height)
+		;; DEBUG: print ["buffer-argb -> size: " width "x" height lf]
+		while [data-pixbuf < end-data-pixbuf][
+			pixel: data-pixbuf/value
+			;; DEBUG: print ["pixel:" pixel lf]
+			pixel: bgra-to-rgba pixel
 			data-pixbuf/value: pixel
 			data-pixbuf: data-pixbuf + 1
 		]
@@ -413,7 +521,7 @@ OS-image: context [
 			ctx			[integer!]
 			; bytes-row	[integer!]
 			image-data	[integer!]
-			image		[integer!]
+			pixbuf		[integer!]
 			n			[integer!]
 			info		[integer!]
 			alpha?		[logic!]
@@ -421,25 +529,25 @@ OS-image: context [
 			loader 		[handle!]
 	][
 		either image? [
-			image: as-integer data
+			pixbuf: as-integer data
 		][
 			loader: gdk_pixbuf_loader_new
 			gdk_pixbuf_loader_write loader data len null
 			gdk_pixbuf_loader_close loader null
-			image: as-integer gdk_pixbuf_loader_get_pixbuf loader
+			pixbuf: as-integer gdk_pixbuf_loader_get_pixbuf loader
 		]
 
-		unless edit? [return as int-ptr! image]
+		unless edit? [return as int-ptr! pixbuf]
 
-		alpha?: alpha-channel? image
+		alpha?: alpha-channel? pixbuf
 		; color-space:  ONLY RGB
-		width: gdk_pixbuf_get_width as handle! image
-		height: gdk_pixbuf_get_height as handle! image
+		width: gdk_pixbuf_get_width as handle! pixbuf
+		height: gdk_pixbuf_get_height as handle! pixbuf
 
 		; bytes-row: width * 4
 
 		; maybe better use other copy
-		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! image
+		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf
 		buffer-rgba-to-argb as int-ptr! buf width height
 	]
 
@@ -591,7 +699,8 @@ OS-image: context [
 		][
 			r: color/array1
 			a: either TUPLE_SIZE?(color) = 3 [255][255 - (r  and FFh)]
-			r: (r >>> 24 and FFh) or ((r >> 16 and FFh) << 8) or ((r >> 8 and FFh) << 16) or (a << 24)
+			;r: ((r >>> 24 and FFh) << 8) or ((r >> 16 and FFh) << 16) or ((r >> 8 and FFh) << 24) or a
+			r: (r >> 24 and FFh) or ((r >> 16 and FFh) << 8) or ((r >> 8 and FFh) << 16) or (a << 24)
 			while [y < height][
 				x: 0
 				while [x < width][
@@ -605,27 +714,92 @@ OS-image: context [
 		make-node null scan0 IMG_NODE_HAS_BUFFER or IMG_NODE_MODIFIED width height
 	]
 
+	; make-image: func [
+	; 	width	[integer!]
+	; 	height	[integer!]
+	; 	rgb		[byte-ptr!]
+	; 	alpha	[byte-ptr!]
+	; 	color	[red-tuple!]
+	; 	return: [node!]
+	; 	/local
+	; 		a			[integer!]
+	; 		r			[integer!]
+	; 		b			[integer!]
+	; 		g			[integer!]
+	; 		x			[integer!]
+	; 		y			[integer!]
+	; 		scan0		[int-ptr!]
+	; 		pos			[integer!]
+	; 		col			[integer!]
+	; ][
+	; 	;; DEBUG: 
+	; 	print ["make-image" lf]
+	; 	scan0: as int-ptr! allocate width * height * 4
+	; 	y: 0
+	; 	either null? color [
+	; 		;; DEBUG: 
+	; 		print ["make-image -> null? color " alpha " " rgb lf]
+	; 		while [y < height][
+	; 			x: 0
+	; 			while [x < width][
+	; 				pos: width * y + x + 1
+	; 				either null? alpha [a: 255][a: 255 - as-integer alpha/1 alpha: alpha + 1]
+	; 				either null? rgb [r: 255 g: 255 b: 255][
+	; 					r: as-integer rgb/1
+	; 					g: as-integer rgb/2
+	; 					b: as-integer rgb/3
+	; 					rgb: rgb + 3
+	; 				]
+	; 				scan0/pos: (r << 16)  or (g << 8) or b or (a << 24)
+	; 				x: x + 1
+	; 			]
+	; 			y: y + 1
+	; 		]
+	; 	][
+	; 		;; DEBUG: 
+	; 		print ["make-image -> color" lf]; rgba -> bgra
+	; 		; col: color/array1
+	; 		; a: either TUPLE_SIZE?(color) = 3 [255][255 - (col  and FFh)]
+	; 		; col: ((col >>> 24) << 8) or ((col >> 16 and FFh) << 16) or ((col >> 8 and FFh) << 24) or a 
+	; 		col: color/array1
+	; 		a: either TUPLE_SIZE?(color) = 3 [255][255 - (col >>> 24)]
+	; 		r: col >> 16 and FFh or (col and FF00h) or (col and FFh << 16) or (col << 24)
+	; 		while [y < height][
+	; 			x: 0
+	; 			while [x < width][
+	; 				pos: width * y + x + 1
+	; 				scan0/pos: col
+	; 				x: x + 1
+	; 			]
+	; 			y: y + 1
+	; 		]
+	; 	]
+	; 	make-node null scan0 IMG_NODE_HAS_BUFFER or IMG_NODE_MODIFIED width height
+	; ]
+
 	make-pixbuf: func [
 		image	[red-image!]
 		return: [int-ptr!]
 		/local
-			w	 [integer!]
-			h	 [integer!]
-			data [int-ptr!]
-			end  [int-ptr!]
-			clr  [integer!]
-			img  [int-ptr!]
-			node [img-node!]
+			w	 	[integer!]
+			h	 	[integer!]
+			data 	[int-ptr!]
+			end  	[int-ptr!]
+			clr  	[integer!]
+			pixbuf  [int-ptr!]
+			buf		[byte-ptr!]
+			node 	[img-node!]
 	][
 		node: as img-node! (as series! image/node/value) + 1
 		w: IMAGE_WIDTH(image/size)
 		h: IMAGE_HEIGHT(image/size)
-		; need to change rgba en argb
-		img: gdk_pixbuf_new 0 yes 8 w h;CGImageCreate w h 8 32 w * 4 clr 2004h data null true 0 ;-- kCGRenderingIntentDefault
-		copy-memory gdk_pixbuf_get_pixels img as byte-ptr! node/buffer w * h * 4
+		pixbuf: gdk_pixbuf_new 0 yes 8 w h;CGImageCreate w h 8 32 w * 4 clr 2004h data null true 0 ;-- kCGRenderingIntentDefault
+		copy-memory gdk_pixbuf_get_pixels pixbuf as byte-ptr! node/buffer w * h * 4
+		buf: gdk_pixbuf_get_pixels pixbuf
+		buffer-rgba-to-argb as int-ptr! buf w h
 		;; DEBUG: print ["make-pixbuf " img lf]
-		img
-	]
+		pixbuf
+	] ;bgra rgba
 
 	to-pixbuf: func [
 		img		[red-image!]
@@ -647,6 +821,7 @@ OS-image: context [
 		inode/handle
 	]
 
+	;; Better to not use!
 	to-argb-pixbuf: func [
 		image	[red-image!]
 		return: [int-ptr!]
@@ -664,7 +839,7 @@ OS-image: context [
 		stride: 0
 		bitmap: OS-image/lock-bitmap image yes
 		data: OS-image/get-data bitmap :stride
-		pixbuf: gdk_pixbuf_new 0 yes 8 w h
+		pixbuf: gdk_pixbuf_new GDK_COLORSPACE_RGB yes 8 w h
 		copy-memory gdk_pixbuf_get_pixels pixbuf as byte-ptr! data w * h * 4
 		OS-image/unlock-bitmap image bitmap
 		buf: gdk_pixbuf_get_pixels pixbuf
