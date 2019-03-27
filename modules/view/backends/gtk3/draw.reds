@@ -697,8 +697,7 @@ GDK-draw-image: func [
 		img		[handle!]
 ][
 	img: either width = 0 [image][gdk_pixbuf_scale_simple image width height 2]
-	;; DEBUG: 
-	print ["GDK-draw-image: " x "x" y "x" width "x" height lf]
+	;; DEBUG: print ["GDK-draw-image: " x "x" y "x" width "x" height lf]
 	cairo_translate cr as-float x as-float y
 	gdk_cairo_set_source_pixbuf cr img 0 0
 	cairo_paint cr
@@ -737,8 +736,7 @@ OS-draw-image: func [
 		crop_img_sx	[integer!]
 		crop_img_sy	[integer!]
 ][
-	;; DEBUG: 
-	print ["OS-draw-image" lf]
+	;; DEBUG: print ["OS-draw-image" lf]
 	img_w:	as float! IMAGE_WIDTH(image/size)
 	img_h:	as float! IMAGE_HEIGHT(image/size)
 	either null? start [x: 0 y: 0][x: start/x y: start/y]
@@ -755,8 +753,7 @@ OS-draw-image: func [
 		true [0]							;@@ TBD four control points
 	]
 	cr: dc/raw
-	;; DEBUG: 
-	print ["OS-draw-image: " x "x" y " " width "x" height "original: " IMAGE_WIDTH(image/size) "x" IMAGE_HEIGHT(image/size)  lf]
+	;; DEBUG: print ["OS-draw-image: " x "x" y " " width "x" height "original: " IMAGE_WIDTH(image/size) "x" IMAGE_HEIGHT(image/size)  lf]
 
 	img: OS-image/to-pixbuf image
 	either crop1 <> null [
