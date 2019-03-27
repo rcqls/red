@@ -265,8 +265,6 @@ OS-image: context [
 		]
 	]
 
-	
-
 	get-data: func [
 		handle		[integer!]
 		stride		[int-ptr!]

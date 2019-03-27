@@ -769,7 +769,7 @@ OS-draw-image: func [
 		;width: as-integer (w / h * (as float! height))
 		;; DEBUG: print ["cropping dest: " crop_x "x" crop_y "x" w "x" h " img size: " crop_img_sx "x" crop_img_sy lf]
 		img: gdk_pixbuf_scale_simple img crop_img_sx crop_img_sy 2	
-		format: CAIRO_FORMAT_ARGB32 ;either 3 = gdk_pixbuf_get_n_channels img [CAIRO_FORMAT_RGB24][CAIRO_FORMAT_ARGB32]
+		format: CAIRO_FORMAT_RGB24 ;either 3 = gdk_pixbuf_get_n_channels img [CAIRO_FORMAT_RGB24][CAIRO_FORMAT_ARGB32]
 		;; DEBÙG: print ["pixbuf format: " format lf]
 		crop_surf: cairo_image_surface_create format crop_img_sx crop_img_sy
 		crop_cr: cairo_create crop_surf
