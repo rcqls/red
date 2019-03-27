@@ -691,16 +691,23 @@ OS-image: context [
 						b: as-integer rgb/3
 						rgb: rgb + 3
 					]
-					scan0/pos: r  or (g << 8) or (b << 16) or (a << 24)
+					scan0/pos: (r << 16)  or (g << 8) or b or (a << 24)
 					x: x + 1
 				]
 				y: y + 1
 			]
 		][
 			r: color/array1
-			a: either TUPLE_SIZE?(color) = 3 [255][255 - (r  and FFh)]
-			;r: ((r >>> 24 and FFh) << 8) or ((r >> 16 and FFh) << 16) or ((r >> 8 and FFh) << 24) or a
-			r: (r >> 24 and FFh) or ((r >> 16 and FFh) << 8) or ((r >> 8 and FFh) << 16) or (a << 24)
+			a: either TUPLE_SIZE?(color) = 3 [255][255 - (r >> 24  and FFh)]
+
+			;;== help for little-endian
+			;; Ex -> img: make image! [1x1 1.2.3.4] ; == make image! [1x1 #{010203} #{04}]
+			;; DEBUG: print ["r -> (1):" (r and FFh)  " g -> (2): " (r >> 8 and FFh) " b -> (3): " (r >> 16 and FFh) " a -> (255-4): " a lf]
+			;; b: to-integer img/argb ;= 50463227
+			;; print ["r -> (1):" (b and FFh)  " g -> (2): " (b >> 8 and FFh) " b -> (3): " (b >> 16 and FFh) " a -> (255-4): " b >>> 24 lf]
+			;; => r -> (1):251 g -> (2): 1 b -> (3): 2 a -> (255-4): 3
+			
+			r: ((r and FFh) << 16) or ((r >> 8 and FFh) << 8) or (r >> 16 and FFh) or (a << 24)
 			while [y < height][
 				x: 0
 				while [x < width][
