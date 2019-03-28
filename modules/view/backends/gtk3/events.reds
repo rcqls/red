@@ -118,8 +118,8 @@ get-event-offset: func [
 
 			widget: as handle! evt/msg
 			sz: (as red-pair! get-face-values widget) + FACE_OBJ_SIZE
-			sz/x: evt-sizing/x_new
-			sz/y: evt-sizing/y_new
+			; sz/x: evt-sizing/x_new
+			; sz/y: evt-sizing/y_new
 			
 			; print ["OFFSET is SIZE ? " sz " vs " offset lf] ; => NO!
 			; alternative 1:

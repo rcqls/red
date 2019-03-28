@@ -848,7 +848,7 @@ change-offset: func [
 		container 	[handle!]
 		_widget		[handle!]
 ][
-	;; DEBUG: print ["change-offset type: " get-symbol-name get-widget-symbol widget lf]
+	;; DEBUG: print ["change-offset type: " get-symbol-name get-widget-symbol widget " " widget " " pos/x "x" pos/y lf]
 	either type = window [
 		0
 	][
@@ -877,7 +877,7 @@ change-size: func [
 	/local
 		_widget	[handle!]
 ][
-	;; DEBUG: print ["change-size" get-symbol-name get-widget-symbol widget size lf]
+	;; DEBUG: print ["change-size " get-symbol-name get-widget-symbol widget " " widget " " size/x "x" size/y lf]
 	
 	either type = window [
 		gtk_window_set_default_size widget size/x size/y

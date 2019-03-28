@@ -304,9 +304,11 @@ window-size-allocate: func [
 	if any [rect/width <> sz/x rect/height <> sz/y] [
 			evt-sizing/x_new: rect/width 
 			evt-sizing/y_new: rect/height
+			sz/x: evt-sizing/x_new
+			sz/y: evt-sizing/y_new
 			;; DEBUG: print ["window-size-allocate: "  evt-sizing/x_root "x" evt-sizing/y_root  lf]
 			evt-sizing/x_root: as float! rect/x
-			evt-sizing/y_root: as float! rect/y 
+			evt-sizing/y_root: as float! rect/y
 			make-event widget 0 EVT_SIZING
 	] 
 ]
