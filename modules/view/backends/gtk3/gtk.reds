@@ -256,6 +256,20 @@ GtkTextIter!: alias struct! [
   GTK_FILE_CHOOSER_ACTION_CREATE_FOLDER
 ]
 
+#enum GtkResponseType! [
+	GTK_RESPONSE_NONE 
+	GTK_RESPONSE_REJECT 
+	GTK_RESPONSE_ACCEPT 
+	GTK_RESPONSE_DELETE_EVENT 
+	GTK_RESPONSE_OK 
+	GTK_RESPONSE_CANCEL 
+	GTK_RESPONSE_CLOSE 
+	GTK_RESPONSE_YES 
+	GTK_RESPONSE_NO 
+	GTK_RESPONSE_APPLY 
+	GTK_RESPONSE_HELP
+]
+
 PangoAttribute!: alias struct! [
 	klass		[handle!]
 	start		[integer!]
@@ -883,6 +897,10 @@ GList!: alias struct! [
 		gtk_dialog_run: "gtk_dialog_run" [
 			widget 		[handle!]
 			return:		[integer!]
+		]
+		gtk_dialog_response: "gtk_dialog_response" [
+			widget 		[handle!]
+			resp  		[integer!]
 		]
 		gtk_file_chooser_get_filename: "gtk_file_chooser_get_filename" [
 			widget 		[handle!]
