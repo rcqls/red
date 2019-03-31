@@ -429,7 +429,7 @@ apply-css-styles: func [
 	css: ""
 	css: css-styles face font
 
-	;; DEBUG: print ["change-font ccs: " css lf]
+	;; DEBUG: print ["apply-css-styles ccs: " css lf]
 
 	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
 ]

@@ -124,6 +124,31 @@ GdkEventConfigure!: alias struct! [
   height		[integer!]
 ]
 
+GdkEventScroll!: alias struct! [
+  type				[integer!]
+  window			[handle!]
+  send_event	[byte!]
+  time				[integer!]
+  x						[float!]
+  y						[float!]
+  state				[integer!]
+  direction		[integer!]
+  device			[handle!]
+  x_root			[float!]
+  y_root			[float!]
+  delta_x			[float!]
+  delta_y			[float!]
+  is_stop 		[integer!]
+]
+
+#enum GdkScrollDirection! [
+	GDK_SCROLL_UP
+	GDK_SCROLL_DOWN
+	GDK_SCROLL_LEFT
+	GDK_SCROLL_RIGHT
+	GDK_SCROLL_SMOOTH
+]
+
 #enum GGApplicationFlags! [
   G_APPLICATION_FLAGS_NONE: 0
   G_APPLICATION_IS_SERVICE: 1
@@ -734,6 +759,17 @@ GList!: alias struct! [
 		]
 		gdk_event_free: " gdk_event_free" [
 			event			[handle!]
+		]
+		gdk_event_get_scroll_deltas: "gdk_event_get_scroll_deltas" [
+			event			[handle!]
+			dx				[float-ptr!]
+			dy				[float-ptr!]
+			return:		[integer!]
+		]
+
+		gdk_event_get_scroll_direction: "gdk_event_get_scroll_direction" [
+			event			[handle!]
+			direction	[int-ptr!]
 		]
 		gdk_window_get_display: "gdk_window_get_display" [
 			window			[handle!]

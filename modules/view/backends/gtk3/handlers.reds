@@ -978,3 +978,13 @@ menu-item-activate: func [
 	;; DEBUG: print ["menu-item activated: " item " with key: " key " on widget " widget  lf]
 	make-event widget key EVT_MENU
 ]
+
+widget-scroll-event: func [
+	[cdecl]
+	widget		[handle!]
+	event		[GdkEventScroll!]
+	ctx			[node!]
+	return:		[integer!]
+][
+	make-event widget check-flags event/type event/state EVT_WHEEL
+]

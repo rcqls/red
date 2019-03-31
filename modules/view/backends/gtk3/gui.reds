@@ -820,6 +820,7 @@ change-font: func [
 		; provider [handle!]
 		hFont	[handle!]
 ][
+	;; DEBUG: print ["change-font" lf]
 	if TYPE_OF(font) <> TYPE_OBJECT [return no]
 
 	; provider: get-styles-provider widget
@@ -827,8 +828,6 @@ change-font: func [
 	; ;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
 	; css: ""
 	; css: css-styles face font
-
-	; ;; DEBUG: print ["change-font ccs: " css lf]
 
 	; unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
 

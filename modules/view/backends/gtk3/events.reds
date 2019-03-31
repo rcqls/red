@@ -221,6 +221,29 @@ get-event-key: func [
 				]
 			][res]
 		]
+		EVT_SCROLL [
+			code: evt/flags
+			either code and 8 = 0 [
+				switch code and 7 [
+					2 [_track]
+					1 [_page-up]
+					3 [_page-down]
+					4 [_up]
+					5 [_down]
+					default [_end]
+				]
+			][
+				switch code and 7 [
+					2 [_track]
+					1 [_page-left]
+					3 [_page-right]
+					4 [_left]
+					5 [_right]
+					default [_end]
+				]
+			]
+		]
+		EVT_WHEEL [_wheel]
 		default [as red-value! none-value]
 	]
 ]
@@ -837,6 +860,14 @@ connect-common-events: function [
 			gtk_widget_add_events widget GDK_KEY_RELEASE_MASK
 			gobj_signal_connect(widget "key-release-event" :key-release-event face/ctx)
 		]
+
+		if respond-mouse? widget ON_WHEEL [
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON_WHEEL: " get-symbol-name sym "->" widget lf]]
+			gtk_widget_add_events widget GDK_SCROLL_MASK
+			gobj_signal_connect(widget "scroll-event" :widget-scroll-event face/ctx)
+		]
+
 	]
 ]
 
@@ -1036,21 +1067,19 @@ connect-widget-events: function [
 			]
 		]
 		sym = text-list [
-			if respond-window? widget (ON_SELECT or ON_CHANGE) [
-				;; DEBUG: 
-				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add text-list selected-rows-changed " lf]]
-				gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)
-			]
+			;;; Mandatory and can respond to  (ON_SELECT or ON_CHANGE)
+			;; DEBUG: 
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add text-list selected-rows-changed " lf]]
+			gobj_signal_connect(widget "selected-rows-changed" :text-list-selected-rows-changed face/ctx)
 			connect-common-events widget face sym parent 
 		]
 		any [
 			sym = drop-list
 			sym = drop-down
 		][
-			if respond-window? widget (ON_SELECT or ON_CHANGE) [
-				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add drop-(list|down) changed " lf]]
-				gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
-			]
+			;;; Mandatory! and can respond to (ON_SELECT or ON_CHANGE)
+			if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add drop-(list|down) changed " lf]]
+			gobj_signal_connect(widget "changed" :combo-selection-changed face/ctx)
 		]
 		true [0]
 	]
