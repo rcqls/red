@@ -1298,6 +1298,10 @@ GList!: alias struct! [
 			w					[int-ptr!]
 			h					[int-ptr!]
 		]
+		gtk_layout_get_bin_window: "gtk_layout_get_bin_window" [
+			layout		[handle!]
+			return:		[handle!]
+		]
 		gtk_bin_get_child: "gtk_bin_get_child" [
 			bin			[handle!]
 			return:		[handle!]
@@ -1652,6 +1656,14 @@ GList!: alias struct! [
 		gtk_widget_get_style_context: "gtk_widget_get_style_context" [
 			widget		[handle!]
 			return:		[handle!]
+		]
+		gtk_render_background: "gtk_render_background" [
+			style			[handle!]
+			cr				[handle!]
+			x 				[float!]
+			y 				[float!]
+			w 				[float!]
+			h 				[float!]
 		]
 		pango_layout_new: "pango_layout_new" [
 			context		[handle!]

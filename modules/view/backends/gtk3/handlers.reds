@@ -198,11 +198,14 @@ base-draw: func [
 	sym: symbol/resolve type/symbol
 	
 	if TYPE_OF(clr) = TYPE_TUPLE [
-		cairo_save cr
 		;; DEBUG: print ["base-draw color" (clr/array1 and 00FFFFFFh) lf]
-		set-source-color cr clr/array1
-		cairo_paint cr								;-- paint background
-		cairo_restore cr
+		
+		;;;  OLD and DOES NOT WORK
+		; cairo_save cr
+		; set-source-color cr clr/array1
+		; cairo_paint cr								;-- paint background
+		; cairo_restore cr
+		gtk_render_background gtk_widget_get_style_context widget cr 0.0 0.0  as float! size/x as float! size/y 
 	]
 
 	if TYPE_OF(img) = TYPE_IMAGE [

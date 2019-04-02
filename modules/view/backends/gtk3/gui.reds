@@ -757,6 +757,7 @@ change-color: func [
 		; 0
 		; ]
 		true [
+			;; DEBUG: print ["change-color" lf]
 			face: get-face-obj widget
 			font: face-font? face
 			apply-css-styles widget face font  
@@ -1843,6 +1844,8 @@ OS-make-view: func [
 				if sym = text [set-container _widget container]
 				gtk_widget_set_size_request _widget size/x size/y
 				gtk_layout_put container _widget offset/x offset/y
+				;; DEBUG:
+				print ["make-view: _widget: " offset/x "x" offset/y "x" size/x "x" size/y lf]
 			]
 		]
 	]
