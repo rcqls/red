@@ -757,7 +757,7 @@ change-color: func [
 		; 0
 		; ]
 		true [
-			;; DEBUG: print ["change-color" lf]
+			;; DEBUG: print ["change-color " widget lf]
 			face: get-face-obj widget
 			font: face-font? face
 			apply-css-styles widget face font  
@@ -1868,12 +1868,14 @@ OS-make-view: func [
 	
 	make-styles-provider widget
 
+	;; TODO: NOT SURE the if is necessary!
 	if sym <> base [
 		change-font widget face font sym
 	]
 
 	if TYPE_OF(rate) <> TYPE_NONE [change-rate widget rate]
-	if sym <> base [change-color widget as red-tuple! values + FACE_OBJ_COLOR sym]
+	
+	change-color widget as red-tuple! values + FACE_OBJ_COLOR sym
 	
 	;; USELESS: if sym <> window [gtk_widget_show widget]
 

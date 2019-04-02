@@ -401,6 +401,7 @@ css-styles: func [
 	;; Further styles from face
 	unless null? face [
 		bgcolor: as red-tuple!	(object/get-values face) + FACE_OBJ_COLOR
+		;; DEBUG: print ["typeof(bgcolor) " TYPE_OF(bgcolor) lf]
 		if TYPE_OF(bgcolor) = TYPE_TUPLE [
 			rgba: to-css-rgba bgcolor
 			css: add-to-string css "%s background: %s;" as handle! rgba
@@ -429,7 +430,7 @@ apply-css-styles: func [
 	css: ""
 	css: css-styles face font
 
-	;; DEBUG: print ["apply-css-styles ccs: " css lf]
+	;; DEBUG: print ["apply-css-styles ccs: " widget " " css lf]
 
 	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
 ]
