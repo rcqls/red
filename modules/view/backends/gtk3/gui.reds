@@ -932,6 +932,8 @@ change-text: func [
 		str    [red-string!]
 		buffer [handle!]
 ][
+	;; DEBUG: print ["change-text: " get-symbol-name type lf]
+
 	if null? widget [exit]
 	if  type = base [
 		gtk_widget_queue_draw widget

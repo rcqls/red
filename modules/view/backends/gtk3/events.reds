@@ -173,7 +173,7 @@ get-event-key: func [
 			code: evt/flags
 			special?: code and 80000000h <> 0
 			code: code and FFFFh
-			;; DEBUG: print ["key-code=" code " flags=" evt/flags " special?=" special? lf]
+			;; DEBUG: print ["key-code=" code " flags=" evt/flags " special?=" special? " shift=" (evt/flags and EVT_FLAG_SHIFT_DOWN <> 0) lf]
 			either special? [
 				special-key: code
 				res: as red-value! switch code [
@@ -210,16 +210,20 @@ get-event-key: func [
 					default			[null]
 				]
 			][special-key: -1]
-			either null? res [
-				either all [special? evt/type = EVT_KEY][
-					none-value
+			if null? res [
+				res: either all [special?  evt/type = EVT_KEY][
+					as red-value! none-value
 				][
-					char: as red-char! stack/push*
-					char/header: TYPE_CHAR
-					char/value: code
-					as red-value! char
+					either code > 0 [
+						;; DEBUG: print ["key-code2=" code " flags=" evt/flags " special-key=" special-key " special?=" special? " shift=" (evt/flags and EVT_FLAG_SHIFT_DOWN <> 0) lf]
+						char: as red-char! stack/push*
+						char/header: TYPE_CHAR
+						char/value: code
+						as red-value! char
+					][as red-value! none-value]
 				]
-			][res]
+			]
+			res
 		]
 		EVT_SCROLL [
 			code: evt/flags
@@ -533,12 +537,13 @@ translate-key: func [
 		key 		[integer!]
 		special?	[logic!]
 ][
-	;debug: print ["keycode: " keycode]
-	keycode: gdk_keyval_to_upper keycode
+	;; DEBUG: print ["keycode: " keycode lf]
+	keycode: either gdk_keyval_is_upper keycode [gdk_keyval_to_upper keycode][gdk_keyval_to_lower keycode]
 	;; DEBUG: print [" translate-key: keycode: " keycode lf]
 	special?: no
 	key: case [
 		all[keycode >= 20h keycode <= 5Ah][keycode]; RED_VK_SPACE to RED_VK_Z 
+		all[keycode >= 61h keycode <= 7Ah][keycode]; RED_VK_a to RED_VK_z
 		all[keycode >= A0h keycode <= FFh][keycode];
 		all[keycode >= FFBEh keycode <= FFD5h][special?: yes keycode + RED_VK_F1 - FFBEh]		;RED_VK_F1 to RED_VK_F24
 		all[keycode >= FF51h keycode <= FF54h][special?: yes keycode + RED_VK_LEFT - FF51h]		;RED_VK_LEFT to RED_VK_DOWN
@@ -549,12 +554,16 @@ translate-key: func [
 		keycode = FFE5h [special?: yes RED_VK_NUMLOCK]
 		keycode = FF08h [special?: yes RED_VK_BACK]
 		keycode = FF09h [special?: yes RED_VK_TAB]
+		keycode = FFE1h [special?: yes RED_VK_LSHIFT]
+		keycode = FFE2h [special?: yes RED_VK_RSHIFT]
+		keycode = FFE3h [special?: yes RED_VK_LCONTROL]
+		keycode = FFE4h [special?: yes RED_VK_RCONTROL]
 		;@@ To complete!
 		true [RED_VK_UNKNOWN]
 	]
 	if special? [key: key or 80000000h]
 	special-key: either special? [key][-1]
-	;; DEBUG: print [" key: " key " special?=" special?  lf]
+	;; DEBUG: 	print [" key: " key " special?=" special?  lf]
 	key
 ]
 
@@ -981,7 +990,7 @@ connect-widget-events: function [
 			]
 		]
 		sym = field [
-			if respond-key? widget (ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
+			if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
 				;; DEBUG: 
 				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add field key-press-event" lf]]
 				gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)

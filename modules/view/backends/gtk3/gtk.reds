@@ -558,6 +558,18 @@ GList!: alias struct! [
 			code		[integer!]
 			return:		[integer!]
 		]
+		gdk_keyval_to_lower: "gdk_keyval_to_lower" [
+			code		[integer!]
+			return:		[integer!]
+		] 
+		gdk_keyval_is_upper: "gdk_keyval_is_upper" [
+			code		[integer!]
+			return:		[logic!]
+		]
+		gdk_keyval_is_lower: "gdk_keyval_is_lower" [
+			code		[integer!]
+			return:		[logic!]
+		] 
 		gdk_atom_intern_static_string: "gdk_atom_intern_static_string" [
 			name 		[c-string!]
 			return:		[handle!]

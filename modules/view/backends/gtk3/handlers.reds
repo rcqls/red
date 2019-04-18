@@ -461,13 +461,14 @@ field-key-press-event: func [
 	res: make-event widget key or flags EVT_KEY_DOWN
 	;; DEBUG: print ["field press res " res lf]
 	if res <> EVT_NO_DISPATCH [
-		;; DEBUG: print ["special-key" special-key lf]
+		;; DEBUG: print ["special-key=" special-key " key=" key lf]
 		either special-key <> -1 [
-			switch special-key [
+			switch key and FFFFh [
 				RED_VK_SHIFT	RED_VK_CONTROL
 				RED_VK_LSHIFT	RED_VK_RSHIFT
 				RED_VK_LCONTROL	RED_VK_RCONTROL
-				RED_VK_LMENU	RED_VK_RMENU [0]				 ;-- no KEY event
+				RED_VK_LMENU	RED_VK_RMENU 
+				RED_VK_UNKNOWN [0]				 ;-- no KEY event
 				default  [res: make-event widget key or flags EVT_KEY] ;-- force a KEY event
 			]
 		][res: make-event widget key or flags EVT_KEY]
