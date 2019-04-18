@@ -183,17 +183,34 @@ OS-draw-box: func [
 	lower [red-pair!]
 	/local
 		radius	[red-integer!]
-		rad		[integer!]
+		rad		[float!]
 		x		[float!]
 		y		[float!]
 		w		[float!]
 		h		[float!]
+		degrees [float!]
 ][
 	either TYPE_OF(lower) = TYPE_INTEGER [
 		radius: as red-integer! lower
 		lower:  lower - 1
-		rad: radius/value * 2
+		rad: as-float radius/value * 2
 		;;@@ TBD round box
+		x: as-float upper/x
+		y: as-float upper/y
+		w: as-float lower/x - upper/x
+		h: as-float lower/y - upper/y
+		;cairo_rectangle dc/raw x y w h
+
+		degrees: pi / 180.0
+
+		cairo_new_sub_path dc/raw
+		cairo_arc dc/raw x + w - rad  y + rad rad -90.0 * degrees 0.0 * degrees
+		cairo_arc dc/raw x + w - rad y + h - rad rad 0.0 * degrees 90.0 * degrees
+		cairo_arc dc/raw x + rad y + h - rad rad 90.0 * degrees 180.0 * degrees
+		cairo_arc dc/raw x + rad y + rad rad 180.0 * degrees 270.0 * degrees
+		cairo_close_path dc/raw
+
+		do-paint dc
 	][
 		x: as-float upper/x
 		y: as-float upper/y
