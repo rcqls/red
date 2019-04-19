@@ -390,7 +390,7 @@ make-event: func [
 		sym: symbol/resolve res/symbol
 		;; DEBUG: print ["make-event symbol:" get-symbol-name sym lf]
 		case [
-			sym = done [state: EVT_DISPATCH]			;-- prevent other high-level events
+			sym = done [state: EVT_NO_DISPATCH]			;-- prevent other high-level events
 			sym = stop [state: EVT_NO_DISPATCH]			;-- prevent all other events
 			true 	   [0]								;-- ignore others
 		]
@@ -835,6 +835,8 @@ connect-common-events: function [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
 				connect-container-events widget "button-press-event"
 			]
+		]
+		if respond-mouse? widget (ON_OVER) [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-OVER: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK

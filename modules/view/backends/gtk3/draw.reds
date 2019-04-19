@@ -183,6 +183,7 @@ OS-draw-box: func [
 	lower [red-pair!]
 	/local
 		radius	[red-integer!]
+		; t 		[integer!]
 		rad		[float!]
 		x		[float!]
 		y		[float!]
@@ -190,35 +191,37 @@ OS-draw-box: func [
 		h		[float!]
 		degrees [float!]
 ][
-	either TYPE_OF(lower) = TYPE_INTEGER [
+	radius: null
+	if TYPE_OF(lower) = TYPE_INTEGER [
 		radius: as red-integer! lower
 		lower:  lower - 1
+	]
+
+	; if upper/x > lower/x [t: upper/x upper/x: lower/x lower/x: t]
+	; if upper/y > lower/y [t: upper/y upper/y: lower/y lower/y: t]
+
+	x: as-float upper/x
+	y: as-float upper/y
+	w: as-float lower/x - upper/x
+	h: as-float lower/y - upper/y
+
+	either radius <> null [
+		; t: as-integer either w > h [h][w]
+		; rad: as-float either radius/value * 2 > t [t / 2][radius/value]
+
 		rad: as-float radius/value * 2
-		;;@@ TBD round box
-		x: as-float upper/x
-		y: as-float upper/y
-		w: as-float lower/x - upper/x
-		h: as-float lower/y - upper/y
-		;cairo_rectangle dc/raw x y w h
-
 		degrees: pi / 180.0
-
+		;; TODO: not sure it is a the right version but it at least works!
 		cairo_new_sub_path dc/raw
 		cairo_arc dc/raw x + w - rad  y + rad rad -90.0 * degrees 0.0 * degrees
 		cairo_arc dc/raw x + w - rad y + h - rad rad 0.0 * degrees 90.0 * degrees
 		cairo_arc dc/raw x + rad y + h - rad rad 90.0 * degrees 180.0 * degrees
 		cairo_arc dc/raw x + rad y + rad rad 180.0 * degrees 270.0 * degrees
 		cairo_close_path dc/raw
-
-		do-paint dc
 	][
-		x: as-float upper/x
-		y: as-float upper/y
-		w: as-float lower/x - upper/x
-		h: as-float lower/y - upper/y
 		cairo_rectangle dc/raw x y w h
-		do-paint dc
 	]
+	do-paint dc
 ]
 
 OS-draw-triangle: func [

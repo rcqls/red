@@ -688,6 +688,7 @@ widget-enter-notify-event: func [
 		flags 		[integer!]
 ][
 	;; DEBUG: print [ "ENTER: x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+
 	flags: check-flags event/type event/state
 	make-event widget flags EVT_OVER
 	0;;no
@@ -805,9 +806,22 @@ container-emit-event: func [
 	[cdecl]
 	widget	[handle!]
 	event	[int-ptr!]
+	/local
+		rect 		[tagRECT]
+		evt			[GdkEventButton!]
+		x 			[integer!]
+		y 			[integer!]
 ][
-	;; DEBUG: print ["emit event " widget lf]
-	gtk_widget_event widget event
+	evt: as GdkEventButton! event
+	x: as-integer evt/x y: as-integer evt/y
+	rect: 	as tagRECT allocate (size? tagRECT)
+	gtk_widget_get_allocation widget as handle! rect
+	
+	if all[x >= rect/x x <= (rect/x + rect/width) y >= rect/y y <= (rect/y + rect/height)][
+		;; DEBUG: print ["emit event " widget " event " evt/x "x" evt/y lf "widget size " rect/x "x" rect/y "x" rect/width "x" rect/height lf]
+		gtk_widget_event widget event
+	]
+	free as byte-ptr! rect
 ]
 
 container-delegate-to-children: func [
@@ -902,6 +916,7 @@ mouse-motion-notify-event: func [
 		flags	[integer!]
 ][
 	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+
 	if draggable? widget [return EVT_DISPATCH] ; delegate to drag
 	evt-motion/x_new: as-integer event/x
 	evt-motion/y_new: as-integer event/y
