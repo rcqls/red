@@ -467,6 +467,11 @@ GList!: alias struct! [
   GTK_ORIENTATION_VERTICAL
 ]
 
+#enum GConnectFlags! [
+	G_CONNECT_AFTER
+	G_CONNECT_SWAPPED
+]
+
 #either OS = 'Windows [
 	;#define LIBGOBJECT-file "libgobject-2.0-0.dll"
 	;#define LIBGLIB-file	"libglib-2.0-0.dll"
@@ -609,6 +614,9 @@ GList!: alias struct! [
 		g_list_length: "g_list_length" [
 			list			[int-ptr!]
 			return:		[integer!]
+		]
+		g_list_free: "g_list_free" [
+			list			[int-ptr!]
 		]
 		g_list_nth_data: "g_list_nth_data" [
 			list		[handle!]
@@ -1238,6 +1246,10 @@ GList!: alias struct! [
 		gtk_container_remove: "gtk_container_remove" [
 			container	[handle!]
 			widget		[handle!]
+		]
+		gtk_container_get_focus_child: "gtk_container_get_focus_child" [
+			container	[handle!]
+			return:		[handle!]
 		]
 		gtk_frame_new: "gtk_frame_new" [
 			label		[c-string!]

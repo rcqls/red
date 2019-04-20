@@ -133,6 +133,7 @@ render-text: func [
 		len: -1
 		str: unicode/to-utf8 text :len
 	]
+	;; DEBUG: print ["render-text " str lf]
 	pango_layout_set_text lpc str -1
 	cairo_set_source_rgba cr 0.0 0.0 0.0 0.5
 	pango_cairo_update_layout cr lpc
@@ -817,8 +818,9 @@ container-emit-event: func [
 	rect: 	as tagRECT allocate (size? tagRECT)
 	gtk_widget_get_allocation widget as handle! rect
 	
+	;; DEBUG: if evt/type = GDK_BUTTON_PRESS [print ["emit event " widget lf]]
 	if all[x >= rect/x x <= (rect/x + rect/width) y >= rect/y y <= (rect/y + rect/height)][
-		;; DEBUG: print ["emit event " widget " event " evt/x "x" evt/y lf "widget size " rect/x "x" rect/y "x" rect/width "x" rect/height lf]
+		;; DEBUG: if evt/type = GDK_BUTTON_PRESS [print ["emit2 event " widget " event " evt/x "x" evt/y lf "widget size " rect/x "x" rect/y "x" rect/width "x" rect/height lf]]
 		gtk_widget_event widget event
 	]
 	free as byte-ptr! rect
@@ -846,7 +848,7 @@ mouse-button-press-event: func [
 		flags 		[integer!]
 		hMenu		[handle!]
 ][
-	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-PRESS: " widget " ("  ") x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root " drag? " draggable? widget lf]
 	; evt-motion/state: yes
 	; evt-motion/cpt: 0
 	
@@ -889,7 +891,7 @@ mouse-button-release-event: func [
 	/local
 		flags 		[integer!]
 ][
-	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> BUTTON-RELEASE: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root " drag? " draggable? widget lf]
 	if draggable? widget [return 0] ; delegate to drag
 	evt-motion/state: yes
 	evt-motion/cpt: 0
@@ -915,7 +917,7 @@ mouse-motion-notify-event: func [
 		wflags	[integer!]
 		flags	[integer!]
 ][
-	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root lf]
+	;; DEBUG: print [ "mouse -> MOTION: " widget " x: " event/x " y: " event/y " x_root: " event/x_root " y_root: " event/y_root " drag? " draggable? widget lf]
 
 	if draggable? widget [return EVT_DISPATCH] ; delegate to drag
 	evt-motion/x_new: as-integer event/x

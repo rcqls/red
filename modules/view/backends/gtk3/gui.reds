@@ -191,11 +191,21 @@ container?: func [
 	g_object_get_qdata widget gtk-container-id
 ]
 
-container-type?: func [
+gtk-layout?: func [
 	type 	[integer!]
 	return: [logic!]
 ][
 	any[type = rich-text type = panel type = base]
+]
+
+container-type?: func [
+	type 	[integer!]
+	return: [logic!]
+][
+	;;; See events.reds to see the comment above
+	; Option I:  any[type = rich-text type = panel type = base]
+	; Option II:
+	type = rich-text
 ]
 
 set-draggable: func [
@@ -774,40 +784,64 @@ update-z-order: func [
 	pane	[red-block!]
 	type	[integer!]
 	/local
-		face [red-object!]
-		tail [red-object!]
-		widget [handle!]
-		parr [int-ptr!]
-		arr  [integer!]
-		nb   [integer!]
-		s	 [series!]
-][
-	s: GET_BUFFER(pane)
-	face: as red-object! s/offset + pane/head
-	tail: as red-object! s/tail
-	nb: (as-integer tail - face) >> 4
+		face	[red-object!]
+		tail 	[red-object!]
+		widget 	[handle!]
+		nb   	[integer!]
+		s	 	[series!]
+		values	[red-value!]
+		offset 	[red-pair!]
+		list 	[GList!] child [GList!]
 
-	parr: as int-ptr! allocate nb * 4
-	nb: 0
-	while [face < tail][
-		if TYPE_OF(face) = TYPE_OBJECT [
-			widget: face-handle? face
-			if widget <> null [
-				nb: nb + 1
-				parr/nb: as-integer widget
-			]
+][
+	;; DEBUG: print ["update-z-order" lf]
+
+	if gtk-layout? type [ ;; this is for gtk_layout widget
+		list: as GList! gtk_container_get_children parent
+
+		child: list nb: 0
+		while [not null? child][
+		nb: nb + 1
+		g_object_ref child/data ; to avoid destruction before removing from container
+		gtk_container_remove parent child/data
+		;; DEBUG: print ["removed widget" nb ": " child/data " to " parent lf]
+		child: child/next
 		]
-		face: face + 1
+		g_list_free as int-ptr! list
+
+		s: GET_BUFFER(pane)
+		face: as red-object! s/offset + pane/head
+		tail: as red-object! s/tail
+		nb: (as-integer tail - face) >> 4
+
+		nb: 0
+		while [face < tail][
+			if TYPE_OF(face) = TYPE_OBJECT [
+				widget: face-handle? face
+				if widget <> null [
+					nb: nb + 1
+					;; DEBUG: print ["added widget" nb ": " widget " to " parent lf]
+					gtk_container_add parent widget
+					values: object/get-values face
+					offset: as red-pair! values + FACE_OBJ_OFFSET
+					gtk_layout_move parent widget offset/x  offset/y 
+					g_object_unref widget
+				]
+			]
+			face: face + 1
+		]
+		;; OS-refresh-window as-integer main-window
+		
+		;; DEBUG: 
+		; list: as GList! gtk_container_get_children parent
+		; child: list nb: 0
+		; while [not null? child][
+		;    nb: nb + 1
+		;    print [" widget" nb ": " child/data lf]
+		;    child: child/next
+		; ]
+		; g_list_free as int-ptr! list
 	]
-	; arr: objc_msgSend [
-	; 	objc_getClass "NSArray"
-	; 	sel_getUid "arrayWithObjects:count:"
-	; 	parr nb
-	; ]
-	; free as byte-ptr! parr
-	; if type = window [parent: objc_msgSend [parent sel_getUid "contentView"]]
-	; objc_msgSend [parent sel_getUid "setSubviews:" arr]
-0
 ]
 
 change-font: func [

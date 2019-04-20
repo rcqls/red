@@ -782,12 +782,14 @@ respond-key?: func [
 ][
 	(as-integer g_object_get_qdata widget respond-key-id) and on-type <> 0
 ]
- 
+
+
 connect-container-events: func [
 	widget		[handle!]
 	evt-type	[c-string!]
 	/local
 		container		[handle!]
+		id 				[integer!]
 ][
 	container: container? widget
 	unless null? container [
@@ -800,7 +802,7 @@ connect-container-events: func [
 			0 = g_strcmp0 evt-type  "motion-notify-event" [
 				gtk_widget_add_events container GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK
 			]
-			0 = g_strcmp0 evt-type  "button-press-event" [
+			0 = g_strcmp0 evt-type  "button-release-event" [
 				gtk_widget_add_events container GDK_BUTTON_RELEASE_MASK
 			]
 			0 = g_strcmp0 evt-type  "enter-notify-event" [ ; normally unused
@@ -812,9 +814,16 @@ connect-container-events: func [
 			true [0]
 		]
 		if null? container [print ["container null for connection with " widget " " evt-type lf]]
-		gobj_signal_connect(container evt-type :container-delegate-to-children null)
+		id: gobj_signal_connect(container evt-type :container-delegate-to-children null)
+		; print ["id signal connect " id lf]
 	]
 ]
+
+;; TODO: before finding better solution!!!!
+;; container-type? is now only restricted to rich-text (cf gui.red)
+;; since 
+;; 1) it is required in makedoc/easy-VID-rt.red 
+;; 2) it is too slow when used in ast.red for base widget (too much delegations).
 
 connect-common-events: function [
 	widget 		[handle!]
@@ -829,33 +838,33 @@ connect-common-events: function [
 		if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-DOWN: " get-symbol-name sym "->" widget lf]]
-			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK
-			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK 
 			if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
 				connect-container-events widget "button-press-event"
 			]
+			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
 		]
 		if respond-mouse? widget (ON_OVER) [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-OVER: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK
-			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
 			if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
 				connect-container-events widget "motion-notify-event"
 			]
+			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
 		]
 		
 		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
 			;; DEBUG: 
 			if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-UP: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget  GDK_BUTTON_RELEASE_MASK
-			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 			if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
 				connect-container-events widget "button-release-event"
 			]
+			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 		]
 
 		if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
