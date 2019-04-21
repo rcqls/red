@@ -271,7 +271,9 @@ window-removed-event: func [
 	widget	[handle!]
 	count	[int-ptr!]
 ][
-	count/value: count/value - 1
+	;; DEBUG[view/no-wait]: print ["App " app " removed window " widget "exit-loop: " exit-loop] 
+	unless view-no-wait? widget [count/value: count/value - 1]
+	;; DEBUG[view/no-wait]: print ["=> exit-loop: " count/value lf]
 ]
 
 ;; BUG: `vid.red` fails... back with window-size-allocate handler for resizing

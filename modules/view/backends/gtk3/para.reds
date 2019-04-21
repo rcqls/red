@@ -21,8 +21,7 @@ change-para: func [
 		flags [integer!]
 		cell  [integer!]
 ][
-	;; DEBUG: 
-	print ["change-para" lf]
+	;; DEBUG: print ["change-para" lf]
 	if TYPE_OF(para) <> TYPE_OBJECT [return no]
 
 	case [

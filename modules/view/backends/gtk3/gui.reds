@@ -42,6 +42,7 @@ size-id:			g_quark_from_string "size-id"
 real-container-id:	g_quark_from_string "real-container-id"
 menu-id:			g_quark_from_string "menu-id"
 drag-id:			g_quark_from_string "drag-id"
+no-wait-id:			g_quark_from_string "no-wait-id"
 
 group-radio:	as handle! 0
 tabs: context [
@@ -60,6 +61,7 @@ default-font:	as handle! 0
 ; Do not KNOW about this one 
 ;;;
 main-window:	as handle! 0
+last-window:	as handle! 0
 
 ; Temporary, will be removed...
 last-widget:	as handle! 0
@@ -220,6 +222,22 @@ draggable?: func [
 	return: 	[logic!]
 ][
 	1 = as integer! g_object_get_qdata item drag-id
+]
+
+set-view-no-wait: func [
+	window	[handle!]
+	key		[logic!]
+][
+	; usually a view/no-wait call at most twice do-events and at least one do-events with no-wait? = true 
+	;; DEBUG[view/no-wait]: print ["view-no-wait? window " window " => "  key lf]
+	g_object_set_qdata window no-wait-id as int-ptr! either key [1][0]
+]
+
+view-no-wait?: func [
+	window		[handle!]
+	return: 	[logic!]
+][
+	1 = as integer! g_object_get_qdata window no-wait-id
 ]
 
 get-child-from-xy: func [
@@ -941,8 +959,12 @@ change-visible: func [
 			; ]
 			0
 		]
-		true [gtk_widget_set_visible widget show?]
+		true [
+			;; DEBUG: print ["change-visible " widget " (type " get-symbol-name type "): " show? lf]
+			gtk_widget_set_visible widget show?
+		]
 	]
+	gtk_widget_queue_draw widget
 ]
 
 change-enabled: func [
@@ -1693,21 +1715,19 @@ OS-make-view: func [
 			gtk_layout_set_size widget size/x size/y
 		]
 		sym = window [
-			;; DEBUG: 
-			print ["win App " GTKApp lf]
-			;widget: gtk_application_window_new GTKApp
+			;; DEBUG: print ["win App " GTKApp lf]
 			win-cnt: win-cnt + 1
 			widget: gtk_window_new 0
-			;; DEBUG: 
-			print ["win number " win-cnt " at " widget lf]
+			last-window: widget
+			;; DEBUG: print ["win number " win-cnt " at " widget lf]
 			if win-cnt = 1 [
-				print ["Creation of Main window" lf]
+				;; DEBUG: print ["Creation of Main window" lf]
 				main-window: widget
 			]
 			gtk_application_add_window GTKApp widget
 			
 			if bits and FACET_FLAGS_MODAL <> 0 [
-				print ["Creation of Modal window" lf]
+				;; DEBUG: print ["Creation of Modal window" lf]
 				gtk_window_set_modal widget yes
 			]
 			gtk_window_set_resizable widget (bits and FACET_FLAGS_RESIZE <> 0)
@@ -1888,8 +1908,7 @@ OS-make-view: func [
 				if sym = text [set-container _widget container]
 				gtk_widget_set_size_request _widget size/x size/y
 				gtk_layout_put container _widget offset/x offset/y
-				;; DEBUG:
-				print ["make-view: _widget: " offset/x "x" offset/y "x" size/x "x" size/y lf]
+				;; DEBUG: print ["make-view: _widget: " offset/x "x" offset/y "x" size/x "x" size/y lf]
 			]
 		]
 	]
@@ -1907,8 +1926,8 @@ OS-make-view: func [
 	change-selection widget as red-integer! values + FACE_OBJ_SELECTED sym
 	change-para widget face as red-object! values + FACE_OBJ_PARA font sym
 
-	unless show?/value [change-visible widget no sym]
-	unless enabled?/value [change-enabled widget no sym]
+ 	change-visible widget show?/value sym
+	change-enabled widget enabled?/value sym
 	
 	make-styles-provider widget
 
@@ -2090,17 +2109,14 @@ OS-destroy-view: func [
 	values: object/get-values face
 	flags: get-flags as red-block! values + FACE_OBJ_FLAGS
 	either handle <> main-window [
-		;; DEBUG: 
-		if flags and FACET_FLAGS_MODAL <> 0 [print ["modal "]] print ["window: " handle " (main-window: " main-window ") closing... win-cnt: " win-cnt " exit-loop: " exit-loop lf ]
-		;gtk_window_close handle
-		if exit-loop > win-cnt [; test if no-wait used???
-			exit-loop: exit-loop - 1
-		]
+		;; DEBUG: if flags and FACET_FLAGS_MODAL <> 0 [print ["modal "]] print ["window: " handle " (main-window: " main-window ") closing... win-cnt: " win-cnt " exit-loop: " exit-loop lf ]
+		
+		;gtk_window_close handle ;; NOT ENOUGH SINCE THIS IS EQUIVALENT TO CLICKING CLOSE BUTTON
 		gtk_widget_destroy handle
 		win-cnt: win-cnt - 1
 	][
 
-		print ["closing main window win-cnt: " win-cnt " exit-loop: " exit-loop lf]
+	;; DEBUG: print ["closing main window win-cnt: " win-cnt " exit-loop: " exit-loop lf]
 
 	obj: as red-object! values + FACE_OBJ_FONT
 	if TYPE_OF(obj) = TYPE_OBJECT [unlink-sub-obj face obj FONT_OBJ_PARENT]

@@ -1251,6 +1251,9 @@ GList!: alias struct! [
 			container	[handle!]
 			return:		[handle!]
 		]
+		gtk_container_child_set: "gtk_container_child_set" [
+			[variadic]
+		]
 		gtk_frame_new: "gtk_frame_new" [
 			label		[c-string!]
 			return: 	[handle!]

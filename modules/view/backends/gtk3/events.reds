@@ -430,14 +430,16 @@ do-events: func [
 	msg?: no
 	;; DEBUG: state: 0
 
+	set-view-no-wait last-window no-wait?
+
 	;@@ Improve it!!!
 	;@@ as we cannot access gapplication->priv->use_count
 	;@@ we use a global value to simulate it
 
 	;; Initially normally uncommented: the exit-loop is also decremented in destroy for supposed no-wait view!
-	;unless no-wait? [
+	unless no-wait? [
 		exit-loop: exit-loop + 1
-	;]
+	]
 
 	while [exit-loop > 0][
 		;; DEBUG: evt-cpt: evt-cpt + 1
@@ -614,7 +616,8 @@ post-quit-msg: func [
 ]
 
 ;; DEBUG mode: NONE vs ALL vs ALL_ADD
-debug-connect-level: DEBUG_CONNECT_ALL_ADD
+debug-connect-level: DEBUG_CONNECT_NONE
+;debug-connect-level: DEBUG_CONNECT_ALL_ADD
 
 debug-connect?: func [level [integer!] return: [logic!]][debug-connect-level and level <> 0]
 
