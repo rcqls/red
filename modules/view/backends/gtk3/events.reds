@@ -433,7 +433,11 @@ do-events: func [
 	;@@ Improve it!!!
 	;@@ as we cannot access gapplication->priv->use_count
 	;@@ we use a global value to simulate it
-	unless no-wait? [exit-loop: exit-loop + 1]
+
+	;; Initially normally uncommented: the exit-loop is also decremented in destroy for supposed no-wait view!
+	;unless no-wait? [
+		exit-loop: exit-loop + 1
+	;]
 
 	while [exit-loop > 0][
 		;; DEBUG: evt-cpt: evt-cpt + 1

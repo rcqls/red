@@ -1654,7 +1654,6 @@ OS-make-view: func [
 	; 	flags: flags or WS_HSCROLL or WS_VSCROLL
 	; ]
 
-
 	caption: either TYPE_OF(str) = TYPE_STRING [
 		len: -1
 		unicode/to-utf8 str :len
@@ -1694,15 +1693,24 @@ OS-make-view: func [
 			gtk_layout_set_size widget size/x size/y
 		]
 		sym = window [
-			;; DEBUG: print ["win " GTKApp lf]
+			;; DEBUG: 
+			print ["win App " GTKApp lf]
 			;widget: gtk_application_window_new GTKApp
 			win-cnt: win-cnt + 1
 			widget: gtk_window_new 0
-			;; DEBUG: print ["win1 " widget lf]
+			;; DEBUG: 
+			print ["win number " win-cnt " at " widget lf]
+			if win-cnt = 1 [
+				print ["Creation of Main window" lf]
+				main-window: widget
+			]
 			gtk_application_add_window GTKApp widget
-			;; DEBUG: print ["win2 " lf]
-			;; DEBUG (temporary code): 
-			main-window: widget
+			
+			if bits and FACET_FLAGS_MODAL <> 0 [
+				print ["Creation of Modal window" lf]
+				gtk_window_set_modal widget yes
+			]
+			gtk_window_set_resizable widget (bits and FACET_FLAGS_RESIZE <> 0)
 			unless null? caption [gtk_window_set_title widget caption]
 			gtk_window_set_default_size widget size/x size/y
 			winbox: gtk_box_new GTK_ORIENTATION_VERTICAL  0
@@ -2044,6 +2052,30 @@ OS-update-view: func [
 	int/value: 0										;-- reset flags
 ]
 
+unlink-sub-obj: func [
+	face  [red-object!]
+	obj   [red-object!]
+	field [integer!]
+	/local
+		values [red-value!]
+		parent [red-block!]
+		res	   [red-value!]
+][
+	values: object/get-values obj
+	parent: as red-block! values + field
+	
+	if TYPE_OF(parent) = TYPE_BLOCK [
+		res: block/find parent as red-value! face null no no yes no null null no no no no
+		if TYPE_OF(res) <> TYPE_NONE [_series/remove as red-series! res null]
+		if all [
+			field = FONT_OBJ_PARENT
+			block/rs-tail? parent
+		][
+			free-font obj
+		]
+	]
+]
+
 OS-destroy-view: func [
 	face   [red-object!]
 	empty? [logic!]
@@ -2057,15 +2089,24 @@ OS-destroy-view: func [
 	handle: face-handle? face
 	values: object/get-values face
 	flags: get-flags as red-block! values + FACE_OBJ_FLAGS
-	if flags and FACET_FLAGS_MODAL <> 0 [
-		0
-	]
+	either handle <> main-window [
+		;; DEBUG: 
+		if flags and FACET_FLAGS_MODAL <> 0 [print ["modal "]] print ["window: " handle " (main-window: " main-window ") closing... win-cnt: " win-cnt " exit-loop: " exit-loop lf ]
+		;gtk_window_close handle
+		if exit-loop > win-cnt [; test if no-wait used???
+			exit-loop: exit-loop - 1
+		]
+		gtk_widget_destroy handle
+		win-cnt: win-cnt - 1
+	][
+
+		print ["closing main window win-cnt: " win-cnt " exit-loop: " exit-loop lf]
 
 	obj: as red-object! values + FACE_OBJ_FONT
-	;if TYPE_OF(obj) = TYPE_OBJECT [unlink-sub-obj face obj FONT_OBJ_PARENT]
+	if TYPE_OF(obj) = TYPE_OBJECT [unlink-sub-obj face obj FONT_OBJ_PARENT]
 	
 	obj: as red-object! values + FACE_OBJ_PARA
-	;if TYPE_OF(obj) = TYPE_OBJECT [unlink-sub-obj face obj PARA_OBJ_PARENT]
+	if TYPE_OF(obj) = TYPE_OBJECT [unlink-sub-obj face obj PARA_OBJ_PARENT]
 	
 	;;g_main_context_release GTKApp-Ctx
 	;; DEBUG: 
@@ -2076,7 +2117,7 @@ OS-destroy-view: func [
 	;; DEBUG: print ["BYE! win: " win-cnt " (" handle ")" lf]
 
 	free-handles as-integer handle no
-
+	]
 ]
 
 OS-update-facet: func [
