@@ -1158,6 +1158,9 @@ GList!: alias struct! [
 		gtk_widget_show: "gtk_widget_show" [
 			widget		[handle!]
 		]
+		gtk_widget_realize: "gtk_widget_realize" [
+			widget		[handle!]
+		]
 		gtk_widget_activate: "gtk_widget_activate" [
 			widget		[handle!]
 			return: 	[logic!]
@@ -1182,6 +1185,14 @@ GList!: alias struct! [
 		gtk_widget_set_visible: "gtk_widget_set_visible" [
 			widget		[handle!]
 			state 		[logic!]
+		]
+		gtk_widget_get_visible: "gtk_widget_get_visible" [
+			widget		[handle!]
+			return: 		[logic!]
+		]
+		gtk_widget_is_visible: "gtk_widget_is_visible" [
+			widget		[handle!]
+			return: 		[logic!]
 		]
 		gtk_widget_set_sensitive: "gtk_widget_set_sensitive" [
 			widget		[handle!]

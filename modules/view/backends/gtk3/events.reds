@@ -436,6 +436,10 @@ do-events: func [
 	;@@ as we cannot access gapplication->priv->use_count
 	;@@ we use a global value to simulate it
 
+	;; DEBUG: print ["do-events no-wait? " no-wait? lf]
+	;; Special initialisation of hidden widgets (cf gui.reds)
+	hide-invisible
+	
 	;; Initially normally uncommented: the exit-loop is also decremented in destroy for supposed no-wait view!
 	unless no-wait? [
 		exit-loop: exit-loop + 1

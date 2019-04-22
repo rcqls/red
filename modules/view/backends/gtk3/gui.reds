@@ -921,6 +921,34 @@ change-size: func [
 
 ]
 
+;; Special treatment for hidden (or invisible) widgets
+;; that are hidden at the beginning of do-events as a first initialization
+
+list-invisible: as handle! 0
+
+add-invisible: func [
+	widget 	[handle!]
+][
+	;; DEBUG: print ["add invisible " widget lf]
+	list-invisible: g_list_prepend list-invisible widget 
+]
+
+hide-invisible: func [
+	/local
+	child 	[GList!]
+][ 
+	if 0 = g_list_length list-invisible [exit]
+	;; DEBUG: print ["hide-invisible " g_list_length list-invisible lf]
+	child: as GList! list-invisible
+	while [not null? child][
+		;; DEBUG: print ["hide-invisible: " child/data lf]
+		gtk_widget_set_visible child/data no
+		child: child/next
+	]
+	g_list_free list-invisible
+	list-invisible: as handle! 0
+]
+
 change-visible: func [
 	widget  [handle!]
 	show? [logic!]
@@ -1569,11 +1597,10 @@ OS-show-window: func [
 		face 	[red-object!]
 	; 	auto-adjust?	[red-logic!]
 ][
-	;; DEBUG: print ["OS-show-window" lf]
+	;; DEBUG: print ["OS-show-window" as handle! widget "(" get-symbol-name get-widget-symbol as handle! widget ")" lf]
 	if null? as handle! widget [exit]
 	gtk_widget_show_all as handle! widget
 	gtk_widget_grab_focus as handle! widget
-
 	; @@ TEMPORARY: TO BE REMOVED BUT USEFUL NOW FOR COMPARING THE EFFECT OF ADJUST-SIZES IN RED TEST WITHOUT RECOMPILING CONSOLE
 	;auto-adjust?: as red-logic! #get system/view/gtk-auto-adjust?
 	;if all [TYPE_OF(auto-adjust?) = TYPE_LOGIC auto-adjust?/value] [
@@ -1894,7 +1921,7 @@ OS-make-view: func [
 	connect-widget-events widget face actors sym _widget as int-ptr! parent
 	
 	unless any[sym = window sym = area][build-context-menu widget menu]
-
+	 
 	;-- store the face value in the extra space of the window struct
 	assert TYPE_OF(face) = TYPE_OBJECT					;-- detect corruptions caused by CreateWindow unwanted events
 	store-face-to-obj widget face
@@ -1903,7 +1930,7 @@ OS-make-view: func [
 	change-selection widget as red-integer! values + FACE_OBJ_SELECTED sym
 	change-para widget face as red-object! values + FACE_OBJ_PARA font sym
 
- 	change-visible widget show?/value sym
+	unless show?/value [add-invisible widget]
 	change-enabled widget enabled?/value sym
 	
 	make-styles-provider widget
