@@ -295,6 +295,56 @@ GtkTextIter!: alias struct! [
 	GTK_RESPONSE_HELP
 ]
 
+#enum GtkJustification! [
+	GTK_JUSTIFY_LEFT
+	GTK_JUSTIFY_RIGHT
+	GTK_JUSTIFY_CENTER
+	GTK_JUSTIFY_FILL
+]
+
+#enum GtkWrapMode! [
+	GTK_WRAP_NONE
+	GTK_WRAP_CHAR
+	GTK_WRAP_WORD
+	GTK_WRAP_WORD_CHAR
+]
+
+#enum GtkAlign! [
+	GTK_ALIGN_FILL
+	GTK_ALIGN_START
+	GTK_ALIGN_END
+	GTK_ALIGN_CENTER
+	GTK_ALIGN_BASELINE
+]
+
+#enum GtkInputPurpose! [
+	GTK_INPUT_PURPOSE_FREE_FORM
+	GTK_INPUT_PURPOSE_ALPHA
+	GTK_INPUT_PURPOSE_DIGITS
+	GTK_INPUT_PURPOSE_NUMBER
+	GTK_INPUT_PURPOSE_PHONE
+	GTK_INPUT_PURPOSE_URL
+	GTK_INPUT_PURPOSE_EMAIL
+	GTK_INPUT_PURPOSE_NAME
+	GTK_INPUT_PURPOSE_PASSWORD
+	GTK_INPUT_PURPOSE_PIN
+]
+
+#enum GtkInputHints! [
+	GTK_INPUT_HINT_NONE
+	GTK_INPUT_HINT_SPELLCHECK
+	GTK_INPUT_HINT_NO_SPELLCHECK
+	GTK_INPUT_HINT_WORD_COMPLETION
+	GTK_INPUT_HINT_LOWERCASE
+	GTK_INPUT_HINT_UPPERCASE_CHARS
+	GTK_INPUT_HINT_UPPERCASE_WORDS
+	GTK_INPUT_HINT_UPPERCASE_SENTENCES
+	GTK_INPUT_HINT_INHIBIT_OSK
+	GTK_INPUT_HINT_VERTICAL_WRITING
+	GTK_INPUT_HINT_EMOJI
+	GTK_INPUT_HINT_NO_EMOJI
+]
+
 PangoAttribute!: alias struct! [
 	klass		[handle!]
 	start		[integer!]
@@ -1438,6 +1488,14 @@ GList!: alias struct! [
 			widget		[handle!]
 			label		[c-string!]
 		]
+		gtk_label_set_justify: "gtk_label_set_justify" [
+			widget		[handle!]
+			justify		[integer!]
+		]
+		gtk_label_set_line_wrap: "gtk_label_set_line_wrap" [
+			widget		[handle!]
+			wrap			[logic!]
+		]
 		gtk_event_box_new: "gtk_event_box_new" [
 			return: 	[handle!]
 		]
@@ -1453,6 +1511,10 @@ GList!: alias struct! [
 			nchars		[integer!]
 		]
 		gtk_entry_get_buffer: "gtk_entry_get_buffer" [
+			entry		[handle!]
+			return:		[handle!]
+		]
+		gtk_entry_get_layout: "gtk_entry_get_layout" [
 			entry		[handle!]
 			return:		[handle!]
 		]
@@ -1537,6 +1599,14 @@ GList!: alias struct! [
 		gtk_text_view_get_buffer: "gtk_text_view_get_buffer" [
 			view		[handle!]
 			return:		[handle!]
+		]
+		gtk_text_view_set_justification: "gtk_text_view_set_justification" [
+			view			[handle!]
+			justify		[integer!]
+		]
+		gtk_text_view_set_wrap_mode: "gtk_text_view_set_wrap_mode" [
+			view			[handle!]
+			mode			[integer!]
 		]
 		gtk_text_buffer_set_text: "gtk_text_buffer_set_text" [
 			buffer		[handle!]

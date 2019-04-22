@@ -459,7 +459,7 @@ field-key-press-event: func [
 	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
 	flags: flags or check-extra-keys event-key/state
 
-	;print ["key: " key " flags: " flags " key or flags: " key or flags lf]
+	;; DEBUG: print ["key: " key " flags: " flags " key or flags: " key or flags lf]
 
 	res: make-event widget key or flags EVT_KEY_DOWN
 	;; DEBUG: print ["field press res " res lf]
@@ -477,13 +477,6 @@ field-key-press-event: func [
 		][res: make-event widget key or flags EVT_KEY]
 	]
 
-	text: gtk_entry_get_text widget
-	qdata: g_object_get_qdata widget red-face-id
-    unless null? qdata [
-        face: as red-object! qdata
-		set-text widget face/ctx text
-		make-event widget 0 EVT_CHANGE
-	]
 	EVT_DISPATCH
 ]
 
@@ -501,31 +494,19 @@ field-key-release-event: func [
 		face	[red-object!]
 		qdata	[handle!]
 ][
-	;print "key-release: "
-	;print [ "keyval: " event-key/keyval  " -> " gdk_keyval_name event-key/keyval  "(" event-key/keyval  " -> " gdk_keyval_to_lower event-key/keyval ") et state: " event-key/state lf]
-	;print [ "keycode: " as integer! event-key/keycode1 " " as integer! event-key/keycode2 lf]
+	;; DEBUG: print "key-release: "
+	;; DEBUG: print [ "keyval: " event-key/keyval  " -> " gdk_keyval_name event-key/keyval  "(" event-key/keyval  " -> " gdk_keyval_to_lower event-key/keyval ") et state: " event-key/state lf]
+	;; DEBUG: print [ "keycode: " as integer! event-key/keycode1 " " as integer! event-key/keycode2 lf]
 
+	text: gtk_entry_get_text widget
+	qdata: g_object_get_qdata widget red-face-id
+	;; DEBUG: print ["qdata: " qdata "text: " text lf]
+    unless null? qdata [
+        face: as red-object! qdata
+		set-text widget face/ctx text
+		make-event widget 0 EVT_CHANGE
+	]
 	make-event widget 0 EVT_KEY_UP
-
-	; if event-key/keyval > FFFFh [return EVT_NO_DISPATCH]
-	; key: translate-key event-key/keyval
-	; flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
-	; flags: flags or check-extra-keys event-key/state
-
-	; ;print ["key: " key " flags: " flags " key or flags: " key or flags lf]
-
-	; res: make-event widget key or flags EVT_KEY_DOWN
-	; if res <> EVT_NO_DISPATCH [
-	;  	make-event widget key or flags EVT_KEY
-	; ]
-
-	; text: gtk_entry_get_text widget
-	; qdata: g_object_get_qdata widget red-face-id
-    ; unless null? qdata [
-    ;     face: as red-object! qdata
-	; 	set-text widget face/ctx text
-	; 	make-event widget 0 EVT_CHANGE
-	; ]
 ]
 
 field-move-focus: func [

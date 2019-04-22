@@ -1008,22 +1008,22 @@ connect-widget-events: function [
 			]
 		]
 		sym = field [
-			if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
+			;;if respond-key? widget (ON_KEY or ON_KEY_DOWN or ON_FOCUS or ON_ENTER) [
 				;; DEBUG: 
 				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add field key-press-event" lf]]
 				gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
-			]
-			if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
+			;;]
+			;;if respond-key? widget (ON_KEY_UP or ON_UNFOCUS) [
 				;; DEBUG: 
 				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add field key-release-event" lf]]
 				gobj_signal_connect(widget "key-release-event" :field-key-release-event face/ctx)
-			]
+			;;]
 			;Do not work: gobj_signal_connect(widget "key-press-event" :field-key-press-event face/ctx)
-			if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
+			;;if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
 				;; DEBUG: 
 				if debug-connect? DEBUG_CONNECT_WIDGET [print ["Add fiedl button-release-event " lf]]
 				gobj_signal_connect(widget "button-release-event" :field-button-release-event face/ctx)
-			]
+			;;]
 			
 			gtk_widget_set_can_focus widget yes
 			gtk_widget_is_focus widget

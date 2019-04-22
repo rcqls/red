@@ -11,36 +11,55 @@ Red/System [
 ]
 
 change-para: func [
-	hWnd	[handle!]
+	widget	[handle!]
 	face	[red-object!]
 	para	[red-object!]
 	font	[red-object!]
 	type	[integer!]
 	return: [logic!]
 	/local
-		flags [integer!]
-		cell  [integer!]
+		flags	[integer!]
+		where	[integer!]
+		lay		[handle!]
 ][
-	;; DEBUG: print ["change-para" lf]
+	
 	if TYPE_OF(para) <> TYPE_OBJECT [return no]
-
+	flags: get-para-flags type para
+	;; DEBUG: 
+	if flags <> 0 [print ["change-para " widget " " get-symbol-name type " flags: " flags lf]]
 	case [
 		any [type = base type = panel][
 			;;objc_msgSend [hWnd sel_getUid "setNeedsDisplay:" yes]
 		]
 		any [
-			type = button
-			type = check
-			type = radio
-			type = field
+			; type = button
+			; type = check
+			; type = radio
+			; type = field
 			type = text
 		][
-			either TYPE_OF(font) = TYPE_OBJECT [
-				change-font hWnd face font type
-			][
-				flags: get-para-flags type para
-				;;objc_msgSend [hWnd sel_getUid "setAlignment:" flags and 3]
+			if TYPE_OF(font) = TYPE_OBJECT [
+				change-font widget face font type
 			]
+			gtk_widget_set_halign widget (flags and FFFFh) + 1
+			gtk_label_set_justify widget (flags and FFFFh)
+			gtk_label_set_line_wrap widget (flags and FFFF0000h <> 0)
+		]
+		type = area [
+			if TYPE_OF(font) = TYPE_OBJECT [
+				change-font widget face font type
+			]
+			gtk_text_view_set_justification widget (flags and FFFFh)
+			gtk_text_view_set_wrap_mode widget either (flags and FFFF0000h <> 0) [GTK_WRAP_WORD][GTK_WRAP_NONE]
+		]
+		type = field [
+			lay: gtk_entry_get_layout widget
+			pango_layout_set_alignment lay case [
+				(flags and 0001h <> 0) [PANGO_ALIGN_RIGHT]
+				(flags and 0002h <> 0) [PANGO_ALIGN_CENTER]
+				true [PANGO_ALIGN_LEFT]
+			]
+			pango_layout_set_wrap lay PANGO_WRAP_WORD
 		]
 		true [0]
 	]
@@ -133,7 +152,7 @@ get-para-flags: func [
 	
 	wrap?:	any [
 		TYPE_OF(bool) = TYPE_NONE
-		all [TYPE_OF(bool) = TYPE_LOGIC not bool/value]
+		all [TYPE_OF(bool) = TYPE_LOGIC bool/value]
 	]
 	
 	left:	 0
@@ -180,12 +199,13 @@ get-para-flags: func [
 			type = text
 		][
 			left:	0000h								;-- ES_LEFT / SS_LEFT
-			center: 0001h								;-- ES_CENTER / SS_CENTER
-			right:  0002h								;-- ES_RIGHT / SS_RIGHT
+			right:  0001h								;-- ES_RIGHT / SS_RIGHT
+			center: 0002h								;-- ES_CENTER / SS_CENTER
+			
 			default: left
 			
-			if all [not wrap? type = text][
-				flags: 00004000h						;-- SS_ENDELLIPSIS
+			if all [wrap? type = text][
+				flags: 00010000h						;-- SS_ENDELLIPSIS
 			]
 		]
 		true [0]

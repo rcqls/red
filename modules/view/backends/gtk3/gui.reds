@@ -744,7 +744,6 @@ change-color: func [
 	type	[integer!]
 	/local
 		clr  [integer!]
-		set? [logic!]
 		t	 [integer!]
 		face [red-object!]
 		font [red-object!]
@@ -755,7 +754,6 @@ change-color: func [
 	; 	objc_msgSend [widget sel_getUid "setDrawsBackground:" no]
 	; 	exit
 	; ]
-	; set?: yes
 	case [
 		type = area [
 			face: get-face-obj widget
@@ -766,24 +764,6 @@ change-color: func [
 			; set-caret-color widget clr
 			; if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "textBackgroundColor"]]
 		]
-		; type = text [
-	; 		if t = TYPE_NONE [
-	; 			clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "controlColor"]
-	; 			set?: no
-	; 		]
-	; 		objc_msgSend [widget sel_getUid "setDrawsBackground:" set?]
-		; ]
-	; 	any [type = check type = radio][
-	; 		widget: objc_msgSend [widget sel_getUid "cell"]
-	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "controlColor"]]
-	; 	]
-	; 	type = field [
-	; 		if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "textBackgroundColor"]]
-	; 	]
-		; type = window [
-		; 	;if t = TYPE_NONE [clr: objc_msgSend [objc_getClass "NSColor" sel_getUid "windowBackgroundColor"]]
-		; 0
-		; ]
 		true [
 			;; DEBUG: print ["change-color " widget lf]
 			face: get-face-obj widget
@@ -791,10 +771,6 @@ change-color: func [
 			apply-css-styles widget face font  
 		]
 	]
-	; if set? [
-	; 	if t = TYPE_TUPLE [clr: to-NSColor color]
-	; 	objc_msgSend [widget sel_getUid "setBackgroundColor:" clr]
-	; ]
 ]
 
 update-z-order: func [
@@ -1764,6 +1740,7 @@ OS-make-view: func [
 		]
 		sym = text [
 			widget: gtk_label_new caption
+			;; gtk_label_set_width_chars widget ???
 			_widget: gtk_event_box_new null null
 			gtk_container_add _widget widget
 		]
