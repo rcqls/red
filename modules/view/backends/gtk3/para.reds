@@ -29,7 +29,7 @@ change-para: func [
 	if flags <> 0 [print ["change-para " widget " " get-symbol-name type " flags: " flags lf]]
 	case [
 		any [type = base type = panel][
-			;;objc_msgSend [hWnd sel_getUid "setNeedsDisplay:" yes]
+			 ;; nothing to do since done in render-text called by base-draw handler
 		]
 		any [
 			; type = button
@@ -139,7 +139,8 @@ get-para-flags: func [
 		top	    [integer!]
 		middle  [integer!]
 		bottom  [integer!]
-		default [integer!]
+		h-def 	[integer!]
+		v-def 	[integer!]
 		h-sym	[integer!]
 		v-sym	[integer!]
 ][
@@ -155,13 +156,9 @@ get-para-flags: func [
 		all [TYPE_OF(bool) = TYPE_LOGIC bool/value]
 	]
 	
-	left:	 0
-	center:  0
-	right:	 0
-	top:	 0
-	middle:	 0
-	bottom:	 0
-	default: 0
+	left:	 0 center:  0 right:	 0 h-def: 	 0 
+	top:	 0 middle:	0 bottom:	 0 v-def: 	 0
+	
 	flags:	 0
 	
 	case [
@@ -175,9 +172,9 @@ get-para-flags: func [
 			top:	0000h								;-- DT_TOP
 			middle: 0004h								;-- DT_VCENTER
 			bottom: 0008h								;-- DT_BOTTOM
-			default: center
+			h-def: center v-def: top
 			
-			unless wrap? [flags: 00000020h]				;-- DT_SINGLELINE
+			unless wrap? [flags: 0010h]					;-- DT_SINGLELINE
 		]
 		any [
 			type = button
@@ -191,7 +188,7 @@ get-para-flags: func [
 			middle: 00000C00h							;-- BS_VCENTER
 			bottom: 00000800h							;-- BS_BOTTOM
 			
-			default: either type = button [center][left]
+			h-def: either type = button [center][left]
 		]
 		any [
 			type = field
@@ -202,7 +199,7 @@ get-para-flags: func [
 			right:  0001h								;-- ES_RIGHT / SS_RIGHT
 			center: 0002h								;-- ES_CENTER / SS_CENTER
 			
-			default: left
+			h-def: left
 			
 			if all [wrap? type = text][
 				flags: 00010000h						;-- SS_ENDELLIPSIS
@@ -214,13 +211,13 @@ get-para-flags: func [
 		h-sym = _para/left	 [flags: flags or left]
 		h-sym = _para/center [flags: flags or center]
 		h-sym = _para/right	 [flags: flags or right]
-		true				 [flags: flags or default]
+		true				 [flags: flags or h-def]
 	]
 	case [
 		v-sym = _para/top	 [flags: flags or top]
 		v-sym = _para/middle [flags: flags or middle]
 		v-sym = _para/bottom [flags: flags or bottom]
-		true				 [0]
+		true				 [flags: flags or v-def]
 	]
 	flags
 ]

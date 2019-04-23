@@ -93,6 +93,7 @@ button-toggled: func [
 
 render-text: func [
 	cr		[handle!]
+	size 	[red-pair!]
 	values	[red-value!]
 	/local
 		text	[red-string!]
@@ -107,6 +108,11 @@ render-text: func [
 		temp	[float!]
 		;te		[cairo_text_extents_t!]
 		;fe		[cairo_font_extents_t!]
+		lx 		[integer!]
+		ly 		[integer!]
+		rect	[tagRECT value]
+		lrect	[tagRECT value]
+		pline	[handle!]
 		pc	 	[handle!]
 		lpc		[handle!]
 		fd 		[handle!]
@@ -119,8 +125,10 @@ render-text: func [
 	flags: either TYPE_OF(para) = TYPE_OBJECT [		;@@ TBD set alignment attribute
 		get-para-flags base para
 	][
-		2 or 4										;-- center
+		0001h										;-- center or middle
 	]
+
+	cairo_save cr
 
 	; The pango_cairo way
 	pc: pango_cairo_create_context cr
@@ -133,11 +141,36 @@ render-text: func [
 		len: -1
 		str: unicode/to-utf8 text :len
 	]
-	;; DEBUG: print ["render-text " str lf]
+	;; DEBUG: print ["render-text " str " size: " size/x "x" size/y " flags: " flags lf]
+
 	pango_layout_set_text lpc str -1
 	cairo_set_source_rgba cr 0.0 0.0 0.0 0.5
 	pango_cairo_update_layout cr lpc
+
+	pline: pango_layout_get_line lpc 0
+	pango_layout_line_get_pixel_extents pline rect lrect
+	ly: (pango_layout_get_line_count lpc) * lrect/height 
+	lx: lrect/width
+
+	case [
+		flags and 0001h <> 0 [x: (as-float (size/x - lx)) / 2.0]	; center
+		flags and 0002h <> 0 [x: as-float (size/x - lx)] 			; right
+		true [x: 0.0]			 									; left 
+	]
+	case [
+		flags and 0004h <> 0 [y: (as-float (size/y - ly)) / 2.0]	; middle
+		flags and 0008h <> 0 [y: as-float (size/y - ly)] 			; bottom
+		true [y: 0.0] 												; top
+	]
+	
+	;; DEBUG: print [lx "x" ly " and (" x "," y ")" lf]
+
+	cairo_move_to cr x y 
+		
 	pango_cairo_show_layout cr lpc
+
+	cairo_stroke cr
+	cairo_restore cr
 
 ; @@ The cairo way (alternative) does not work for me after too many attempt
 ; 	if TYPE_OF(text) = TYPE_STRING [
@@ -219,7 +252,7 @@ base-draw: func [
 	]
 
 	case [
-		sym = base [render-text cr vals]
+		sym = base [render-text cr size vals]
 		sym = rich-text [
 			;; DEBUG: print ["base-draw (rich-text)" widget " face " get-face-obj widget lf]
 			pos/x: 0 pos/y: 0
