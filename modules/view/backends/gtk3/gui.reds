@@ -237,7 +237,7 @@ view-no-wait?: func [
 	window		[handle!]
 	return: 	[logic!]
 ][
-	1 = as integer! g_object_get_qdata window no-wait-id
+	all[1 = as integer! g_object_get_qdata window no-wait-id window <> main-window]
 ]
 
 get-child-from-xy: func [

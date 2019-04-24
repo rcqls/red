@@ -781,8 +781,7 @@ OS-draw-image: func [
 	img: OS-image/to-pixbuf image
 
 	either crop1 <> null [
-		;; DEBUG:
-		print ["crop1: " crop1/x "x" crop1/y lf]
+		;; DEBUG: print ["crop1: " crop1/x "x" crop1/y lf]
 		crop_x: as float! crop1/x
 		crop_y: as float! crop1/y
 		crop2: crop1 + 1

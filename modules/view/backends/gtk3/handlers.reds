@@ -306,7 +306,7 @@ window-removed-event: func [
 	widget	[handle!]
 	count	[int-ptr!]
 ][
-	;; DEBUG[view/no-wait]: print ["App " app " removed window " widget "exit-loop: " exit-loop] 
+	;; DEBUG[view/no-wait]: print ["App " app " removed window " widget "exit-loop: " exit-loop " win-cnt: " win-cnt " main-window? " main-window = widget] 
 	unless view-no-wait? widget [count/value: count/value - 1]
 	;; DEBUG[view/no-wait]: print ["=> exit-loop: " count/value lf]
 ]
