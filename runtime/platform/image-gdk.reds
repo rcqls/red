@@ -240,6 +240,7 @@ OS-image: context [
 			;; DEBUG: print ["lock-bitmap: flags" lf]
 			inode/flags: IMG_NODE_HAS_BUFFER
 			inode/buffer: OS-image/data-to-image inode/handle -1 yes yes
+			;; DEBUG: print ["inode/buuufer " inode/buffer " handle " inode/handle lf]
 		]
 		if write? [inode/flags: inode/flags or IMG_NODE_MODIFIED]
 		;; post-transf POST-TRANSF-NONE ; no post-transf to apply before 
@@ -255,6 +256,7 @@ OS-image: context [
 			node	[img-node!]
 	][
 		unless post-transf? = POST-TRANSF-NONE [
+			;; DEBUG: print ["unlock-bitmap" lf]
 			w: IMAGE_WIDTH(image/size)
 			h: IMAGE_HEIGHT(image/size)
 			node: as img-node! bitmap
@@ -270,12 +272,12 @@ OS-image: context [
 		stride		[int-ptr!]
 		return:		[int-ptr!]
 		/local
-			node			[img-node!]
+			inode			[img-node!]
 	][
 		;; DEBUG: print ["OS-image/get-data" lf]
-		node: as img-node! handle
-		stride/value: IMAGE_WIDTH(node/size) * 4
-		node/buffer
+		inode: as img-node! handle
+		stride/value: IMAGE_WIDTH(inode/size) * 4
+		inode/buffer
 	]
 
 	get-pixel: func [
@@ -518,6 +520,7 @@ OS-image: context [
 			buf			[byte-ptr!]
 			loader 		[handle!]
 	][
+		;; DEBUG: print ["data-to-image image?: " image? lf]
 		either image? [
 			pixbuf: as-integer data
 		][
@@ -533,12 +536,12 @@ OS-image: context [
 		; color-space:  ONLY RGB
 		width: gdk_pixbuf_get_width as handle! pixbuf
 		height: gdk_pixbuf_get_height as handle! pixbuf
-
 		; bytes-row: width * 4
 
 		; maybe better use other copy
 		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf
 		buffer-rgba-to-argb as int-ptr! buf width height
+		as int-ptr! buf
 	]
 
 	load-binary: func [
@@ -684,10 +687,11 @@ OS-image: context [
 		;; DEBUG: print ["OS-image/to-pixbuf" lf]
 		inode: as img-node! (as series! img/node/value) + 1
 		if inode/flags and IMG_NODE_MODIFIED <> 0 [
+			;; DEBUG: print ["IMG_NODE_MODIFIED " lf]
 			pixbuf: make-pixbuf img
 			unless null? inode/handle [g_object_unref inode/handle]
 			inode/handle: pixbuf
-			inode/flags: IMG_NODE_HAS_BUFFER
+			inode/flags: IMG_NODE_MODIFIED
 		]
 		inode/handle
 	]
@@ -729,8 +733,7 @@ OS-image: context [
 			dst			[integer!]
 			img			[int-ptr!]
 	][
-		;; DEBUG: 
-		print ["encode" lf]
+		;; DEBUG: print ["encode" lf]
 		switch format [
 			IMAGE_BMP  [probe "type: kUTTypeBMP"]
 			IMAGE_PNG  [probe "type: kUTTypePNG"]
@@ -767,28 +770,62 @@ OS-image: context [
 		part?	[logic!]
 		return: [red-image!]
 		/local
+			inode	[img-node!]
 			x		[integer!]
 			y		[integer!]
 			w		[integer!]
 			h		[integer!]
 			offset	[integer!]
-			handle	[integer!]
+			handle	[handle!]
 			width	[integer!]
 			height	[integer!]
 			bmp		[integer!]
 			format	[integer!]
 	][
-		width: IMAGE_WIDTH(src/size)
-		height: IMAGE_WIDTH(src/size)
+		;; DEBUG: print ["image/clone" src lf]
+		inode: as img-node! (as series! src/node/value) + 1
+		handle: inode/handle
+		width: IMAGE_WIDTH(inode/size)
+		height: IMAGE_WIDTH(inode/size)
 		offset: src/head
 		x: offset % width
 		y: offset / width
-		handle: as-integer src/node
-		bmp: 0
+		
+		dst/node: make-node handle null 0 width height
+		inode: as img-node! (as series! dst/node/value) + 1
 
-		dst/header: TYPE_IMAGE
+		either all [zero? offset not part?][
+			inode/handle: gdk_pixbuf_copy handle
+			dst/size: src/size
+		][
+			;; TODO
+			; either all [part? TYPE_OF(size) = TYPE_PAIR][
+			; 	w: width - x
+			; 	h: height - y
+			; 	if size/x < w [w: size/x]
+			; 	if size/y < h [h: size/y]
+			; 	inode/handle: CGImageCreateWithImageInRect
+			; 		handle as float32! x as float32! y as float32! w as float32! h
+			; ][
+			; 	either part < width [h: 1 w: part][
+			; 		h: part / width
+			; 		w: width
+			; 	]
+			; 	if zero? part [w: 1 h: 1]
+			; 	either zero? part [w: 0 h: 0][
+			; 		inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
+			; 		src-buf: as byte-ptr! data-to-image handle yes yes
+			; 		dst-buf: allocate w * h * 4
+			; 		copy-memory dst-buf src-buf w * h * 4 offset * 4
+			; 		inode/handle: null
+			; 		inode/buffer: as int-ptr! dst-buf
+			; 	]
+			; ]
+			; inode/size: h << 16 or w
+			; dst/size: inode/size
+			0
+		]
 		dst/head: 0
-		dst/node: as node! bmp
 		dst
 	]
 

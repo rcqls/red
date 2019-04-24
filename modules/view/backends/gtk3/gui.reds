@@ -964,11 +964,12 @@ change-visible: func [
 			0
 		]
 		true [
-			;; DEBUG: print ["change-visible " widget " (type " get-symbol-name type "): " show? lf]
+			;; DEBUG: 
+			print ["change-visible " widget " (type " get-symbol-name type "): " show? lf]
 			gtk_widget_set_visible widget show?
 		]
 	]
-	gtk_widget_queue_draw widget
+;	gtk_widget_queue_draw widget
 ]
 
 change-enabled: func [

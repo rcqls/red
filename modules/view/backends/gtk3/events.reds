@@ -970,8 +970,8 @@ connect-widget-events: function [
 		sym = base [
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK
-			gtk_widget_set_can_focus widget no
-			gtk_widget_set_focus_on_click widget no
+			gtk_widget_set_can_focus widget yes
+			gtk_widget_set_focus_on_click widget yes
 			connect-common-events widget face sym parent
 		]
 		sym = rich-text [
@@ -1076,8 +1076,9 @@ connect-widget-events: function [
 		]
 		sym = panel [
 			gobj_signal_connect(widget "draw" :base-draw face/ctx)
+			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
+			gtk_widget_set_can_focus widget yes
 			gtk_widget_set_focus_on_click widget yes
-			;gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK or GDK_BUTTON1_MOTION_MASK or GDK_BUTTON_RELEASE_MASK or GDK_KEY_PRESS_MASK or GDK_KEY_RELEASE_MASK or GDK_FOCUS_CHANGE_MASK
 			;; value: gtk_widget_get_events widget
 			;; DEBUG: print ["panel had focus: " gtk_widget_get_focus_on_click widget  lf "get events: " value  " GDK_BUTTON_PRESS_MASK? " GDK_BUTTON_PRESS_MASK and value lf]
 			; if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [

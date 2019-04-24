@@ -716,6 +716,7 @@ GDK-draw-image: func [
 	/local
 		img		[handle!]
 ][
+	;; DEBUG: print ["GDK-draw-image " width " handle " image lf]
 	img: either width = 0 [image][gdk_pixbuf_scale_simple image width height 2]
 	;; DEBUG: print ["GDK-draw-image: " x "x" y "x" width "x" height lf]
 	cairo_translate cr as-float x as-float y
@@ -737,6 +738,8 @@ OS-draw-image: func [
 	/local
 		cr			[handle!]	
 		img			[int-ptr!]
+		bitmap 		[integer!]
+		stride 		[integer!]
 		x			[integer!]
 		y			[integer!]
 		width		[integer!]
@@ -773,10 +776,13 @@ OS-draw-image: func [
 		true [0]							;@@ TBD four control points
 	]
 	cr: dc/raw
-	;; DEBUG: print ["OS-draw-image: " x "x" y " " width "x" height "original: " IMAGE_WIDTH(image/size) "x" IMAGE_HEIGHT(image/size)  lf]
+	;; DEBUG: print ["OS-draw-image: " x "x" y " " width "x" height lf "image: " image lf "original: " IMAGE_WIDTH(image/size) "x" IMAGE_HEIGHT(image/size)  lf]
 
 	img: OS-image/to-pixbuf image
+
 	either crop1 <> null [
+		;; DEBUG:
+		print ["crop1: " crop1/x "x" crop1/y lf]
 		crop_x: as float! crop1/x
 		crop_y: as float! crop1/y
 		crop2: crop1 + 1

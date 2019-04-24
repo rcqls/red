@@ -1734,6 +1734,16 @@ GList!: alias struct! [
 			length		[integer!]
 			error		[handle!]
 		]
+		gtk_css_provider_load_from_file: "gtk_css_provider_load_from_file" [
+			provider	[handle!]
+			url		[c-string!]
+			error		[handle!]
+		]
+		gtk_css_provider_load_from_path: "gtk_css_provider_load_from_path" [
+			provider	[handle!]
+			path		[c-string!]
+			error		[handle!]
+		]
 		gtk_style_context_add_provider: "gtk_style_context_add_provider" [
 			context		[handle!]
 			provider	[handle!]

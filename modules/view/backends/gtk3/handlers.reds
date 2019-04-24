@@ -42,7 +42,9 @@ set-text: func [
 		face [red-object!]
 		out	 [c-string!]
 ][
+	;; DEBUG: print ["set-text: " text lf]
 	size: length? text
+	;; DEBUG: print ["length?: " size lf]
 	if size >= 0 [
 		str: as red-string! get-node-facet ctx FACE_OBJ_TEXT
 		if TYPE_OF(str) <> TYPE_STRING [
@@ -52,8 +54,8 @@ set-text: func [
 			string/rs-reset str
 			exit
 		]
+		;; TODO: bug with unicode characters just below
 		unicode/load-utf8-buffer text size GET_BUFFER(str) null no
-		
 		face: push-face obj
 		if TYPE_OF(face) = TYPE_OBJECT [
 			ownership/bind as red-value! str face _text
@@ -487,6 +489,7 @@ field-key-press-event: func [
 		face	[red-object!]
 		qdata	[handle!]
 ][	 
+	;; DEBUG: print ["key-press-event: " event-key/keyval lf]
 	if event-key/keyval > FFFFh [return EVT_DISPATCH]
 	key: translate-key event-key/keyval
 	flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
@@ -509,7 +512,7 @@ field-key-press-event: func [
 			]
 		][res: make-event widget key or flags EVT_KEY]
 	]
-
+	;; DEBUG: print ["key-press end" lf]
 	EVT_DISPATCH
 ]
 
