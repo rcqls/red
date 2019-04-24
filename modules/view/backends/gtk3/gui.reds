@@ -748,6 +748,7 @@ change-color: func [
 		face [red-object!]
 		font [red-object!]
 ][
+	;; DEBUG: print ["change-color "  widget " " get-symbol-name type lf]
 	t: TYPE_OF(color)
 	if all [t <> TYPE_NONE t <> TYPE_TUPLE][exit]
 	; if transparent-color? color [
@@ -2033,10 +2034,10 @@ OS-update-view: func [
 		; 0
 	]
 	if flags and FACET_FLAG_COLOR <> 0 [
+		;; DEBUG: print ["FACET_FLAG_COLOR " get-symbol-name type lf]
 		if type = base [
-	;		update-base widget null null values
-			;gtk_widget_queue_draw widget
-			0
+			;; DEBUG: print ["FACET_FLAG_COLOR " widget  lf]
+			change-color widget as red-tuple! values + FACE_OBJ_COLOR type
 		]
 	]
 	if all [flags and FACET_FLAG_PANE <> 0 type <> tab-panel][

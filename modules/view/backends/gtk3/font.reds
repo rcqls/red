@@ -399,9 +399,10 @@ css-styles: func [
 	]
 
 	;; Further styles from face
+	;; DEBUG: print ["css face color " face lf]
 	unless null? face [
 		bgcolor: as red-tuple!	(object/get-values face) + FACE_OBJ_COLOR
-		;; DEBUG: print ["typeof(bgcolor) " TYPE_OF(bgcolor) lf]
+		;; DEBUG: print ["typeof(bgcolor) " TYPE_OF(bgcolor) " " TYPE_TUPLE lf]
 		if TYPE_OF(bgcolor) = TYPE_TUPLE [
 			rgba: to-css-rgba bgcolor
 			css: add-to-string css "%s background: %s;" as handle! rgba
