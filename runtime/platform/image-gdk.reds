@@ -164,11 +164,19 @@ OS-image: context [
 				pixbuf 		[handle!]
 				return: 	[byte-ptr!]
 			]
+			gdk_pixbuf_read_pixels: "gdk_pixbuf_read_pixels" [
+				pixbuf 		[handle!]
+				return: 	[byte-ptr!]
+			]
 			gdk_pixbuf_get_rowstride: "gdk_pixbuf_get_rowstride"  [
 				pixbuf 		[handle!]
 				return: 	[integer!]
 			]
 			gdk_pixbuf_get_n_channels: "gdk_pixbuf_get_n_channels" [
+				pixbuf 		[handle!]
+				return: 	[integer!]
+			]
+			gdk_pixbuf_get_bits_per_sample: "gdk_pixbuf_get_bits_per_sample" [
 				pixbuf 		[handle!]
 				return: 	[integer!]
 			]
@@ -234,8 +242,9 @@ OS-image: context [
 		/local
 			inode	[img-node!]
 	][
-		;; DEBUG: print ["lock-bitmap" lf]
+		;; DEBUG: print ["lock-bitmap " img lf]
 		inode: as img-node! (as series! img/node/value) + 1
+		;; DEBUG: print ["flags: " inode/flags lf]
 		if zero? inode/flags [
 			;; DEBUG: print ["lock-bitmap: flags" lf]
 			inode/flags: IMG_NODE_HAS_BUFFER
@@ -510,17 +519,18 @@ OS-image: context [
 			; color-space [integer!] ; Only  RGB 
 			width		[integer!]
 			height		[integer!]
-			ctx			[integer!]
-			; bytes-row	[integer!]
-			image-data	[integer!]
+			i			[integer!]
+			bytes-row	[integer!]
+			; image-data	[integer!]
 			pixbuf		[integer!]
 			n			[integer!]
-			info		[integer!]
+			channels	[integer!]
 			alpha?		[logic!]
 			buf			[byte-ptr!]
+			buf-src		[byte-ptr!]
 			loader 		[handle!]
 	][
-		;; DEBUG: print ["data-to-image image?: " image? lf]
+		;; DEBUG: print ["data-to-image data: " data " len: " len  " image?: " image? " edit?: " edit? lf]
 		either image? [
 			pixbuf: as-integer data
 		][
@@ -533,14 +543,28 @@ OS-image: context [
 		unless edit? [return as int-ptr! pixbuf]
 
 		alpha?: alpha-channel? pixbuf
+		;; DEBUG: print ["alpha?: " alpha? lf]
 		; color-space:  ONLY RGB
 		width: gdk_pixbuf_get_width as handle! pixbuf
 		height: gdk_pixbuf_get_height as handle! pixbuf
-		; bytes-row: width * 4
+		channels: gdk_pixbuf_get_n_channels as handle! pixbuf
+		;; DEBUG: print ["size: " width "x" height " row-stride: " gdk_pixbuf_get_rowstride as handle! pixbuf " n_channels: " gdk_pixbuf_get_n_channels as handle! pixbuf " bits-per-sample: " gdk_pixbuf_get_bits_per_sample as handle! pixbuf " byte-length: " gdk_pixbuf_get_byte_length as handle! pixbuf lf]
 
 		; maybe better use other copy
-		buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf
-		buffer-rgba-to-argb as int-ptr! buf width height
+		either channels = 4 [
+			buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf
+		][
+			;; Needs to convert in n_channels = 4
+			n: height * width * 4 
+			buf: allocate n * 4 
+			buf-src: gdk_pixbuf_read_pixels  as handle! pixbuf
+			i: 1
+			while [i <= n][
+				either i % 4 = 0 [buf/i: as byte! 255][buf/i: buf-src/value buf-src: buf-src + 1]
+				i: i + 1 
+			]
+		]
+		buffer-argb-to-abgr as int-ptr! buf width height
 		as int-ptr! buf
 	]
 
@@ -580,8 +604,8 @@ OS-image: context [
 		path: file/to-OS-path src ; DOES NOT WORK as in macOS: simple-io/to-NSURL src yes
 		;; DEBUG: print [ "load-image: " path lf]
 		pixbuf: gdk_pixbuf_new_from_file path null
-		;; print ["handle: " pixbuf ", wxh: " gdk_pixbuf_get_width h "x" gdk_pixbuf_get_height h]
 		w: gdk_pixbuf_get_width pixbuf h: gdk_pixbuf_get_height pixbuf
+		;; DEBUG: print ["pixbuf: " pixbuf ", wxh: " w "x" h lf]
 		;buf: gdk_pixbuf_get_pixels pixbuf
 		;buffer-argb-to-abgr as int-ptr! buf w h
 		make-node pixbuf null 0 w h
