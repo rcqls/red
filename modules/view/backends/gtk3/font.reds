@@ -329,6 +329,7 @@ get-styles-provider: func [
 css-styles: func [
 	face	[red-object!]
 	font	[red-object!]
+	type	[integer!]
 	return: [c-string!]
 	/local
 		values   [red-value!]
@@ -412,6 +413,13 @@ css-styles: func [
 
 	css: add-to-string css "%s}" null
 
+	case [
+		type = button [
+			css: g_strdup_printf ["%s button {padding: 0px 0px 0px 0px;margin: 0px 0px 0px 0px;font-variant: small-caps;}" css]
+		]
+		true [0]
+	]
+
 	;; DEBUG: print ["css-styles -> css: " css lf]
 	
 	css
@@ -421,6 +429,7 @@ apply-css-styles: func [
 	widget	[handle!]
 	face	[red-object!]
 	font	[red-object!]
+	type	[integer!]
 	/local
 		provider	[handle!]
 		css			[c-string!]
@@ -429,7 +438,7 @@ apply-css-styles: func [
 
 	;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
 	css: ""
-	css: css-styles face font
+	css: css-styles face font type
 
 	;; DEBUG: print ["apply-css-styles ccs: " widget " " css lf]
 

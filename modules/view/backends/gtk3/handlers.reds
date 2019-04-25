@@ -127,7 +127,7 @@ render-text: func [
 	flags: either TYPE_OF(para) = TYPE_OBJECT [		;@@ TBD set alignment attribute
 		get-para-flags base para
 	][
-		0001h										;-- center or middle
+		0005h										;-- center or middle
 	]
 
 	cairo_save cr

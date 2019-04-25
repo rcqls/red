@@ -759,7 +759,7 @@ change-color: func [
 		type = area [
 			face: get-face-obj widget
 			font: face-font? face
-			apply-css-styles widget face font 
+			apply-css-styles widget face font type
 			; widget: objc_msgSend [widget sel_getUid "documentView"]
 			; clr: either t = TYPE_NONE [00FFFFFFh][color/array1]
 			; set-caret-color widget clr
@@ -769,7 +769,7 @@ change-color: func [
 			;; DEBUG: print ["change-color " widget lf]
 			face: get-face-obj widget
 			font: face-font? face
-			apply-css-styles widget face font  
+			apply-css-styles widget face font type
 		]
 	]
 ]
@@ -857,11 +857,11 @@ change-font: func [
 
 	; ;; update the style (including font color) gtk_css_provider is much more easier to apply than older interface to manage all the styles
 	; css: ""
-	; css: css-styles face font
+	; css: css-styles face font type
 
 	; unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
 
-	apply-css-styles widget face font
+	apply-css-styles widget face font type
 
 	;; Update the pango_font_description hFont (directly used by get-text-size)
 	make-font face font
