@@ -522,6 +522,12 @@ GList!: alias struct! [
 	G_CONNECT_SWAPPED
 ]
 
+#define GTK_STYLE_PROVIDER_PRIORITY_FALLBACK		1
+#define GTK_STYLE_PROVIDER_PRIORITY_THEME				200
+#define GTK_STYLE_PROVIDER_PRIORITY_SETTINGS		400
+#define GTK_STYLE_PROVIDER_PRIORITY_APPLICATION	600
+#define GTK_STYLE_PROVIDER_PRIORITY_USER				800
+
 #either OS = 'Windows [
 	;#define LIBGOBJECT-file "libgobject-2.0-0.dll"
 	;#define LIBGLIB-file	"libglib-2.0-0.dll"
@@ -629,6 +635,13 @@ GList!: alias struct! [
 			name 		[c-string!]
 			return:		[handle!]
 		]
+		gdk_display_get_default: "gdk_display_get_default" [
+			return: 	[handle!]
+		]
+		gdk_display_get_default_screen: "gdk_display_get_default_screen" [
+			display 	[handle!]
+			return: 	[handle!]
+		]
 	;; ]
 	;; LIBGLIB-file cdecl [
 		g_quark_from_string: "g_quark_from_string" [
@@ -730,8 +743,23 @@ GList!: alias struct! [
 			str2		[c-string!]
 			return: [integer!]
 		]
+		g_strsplit: "g_strsplit" [
+			str 		[c-string!]
+      delim		[c-string!]
+      tokens	[integer!]
+			return:	[handle!]
+		]
+		g_strsplit_set: "g_strsplit_set" [
+			str 		[c-string!]
+      delim		[c-string!]
+      tokens	[integer!]
+			return:	[handle!]
+		]
 		g_free: "g_free" [
 			ptr		[handle!]
+		]
+		g_strfreev: "g_strfreev" [
+			str_array	[handle!]
 		]
 		g_string_new: "g_string_new" [
 			return:		[GString!]

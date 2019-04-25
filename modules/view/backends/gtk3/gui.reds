@@ -494,6 +494,7 @@ init: func [][
 	settings: gtk_settings_get_default
 	g_object_set [settings "gtk-font-name" gtk-font  null ]
 
+	red-gtk-styles
 	;;;collector/register as int-ptr! :on-gc-mark
 ]
 

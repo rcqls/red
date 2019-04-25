@@ -10,10 +10,6 @@ Red/System [
 	}
 ]
 
-;; First style development provided by Thiago Dourado de Andrade
-#define GTK_STYLE_PROVIDER_PRIORITY_APPLICATION 600
-
-
 
 add-to-string: func [
 	string  [c-string!]
@@ -314,7 +310,7 @@ make-styles-provider: func [
 	provider:	gtk_css_provider_new
 	style:		gtk_widget_get_style_context widget
 
-	gtk_style_context_add_provider style provider GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+	gtk_style_context_add_provider style provider GTK_STYLE_PROVIDER_PRIORITY_USER
 
 	g_object_set_qdata widget gtk-style-id provider
 ]
@@ -443,6 +439,46 @@ apply-css-styles: func [
 	;; DEBUG: print ["apply-css-styles ccs: " widget " " css lf]
 
 	unless null? provider [gtk_css_provider_load_from_data provider css -1 null]
+]
+
+
+css-provider: func [
+	path 		[c-string!]
+	priority 	[integer!]
+	/local
+		provider [handle!]
+		display	 [handle!]
+		screen 	 [handle!]
+][
+	provider: gtk_css_provider_new
+	gtk_css_provider_load_from_path provider path null
+	display: gdk_display_get_default
+	screen: gdk_display_get_default_screen display  
+	gtk_style_context_add_provider_for_screen screen provider priority
+	g_object_unref provider
+]
+
+red-gtk-styles: func [
+	/local 
+	env strarr str
+	found 	[logic!]
+][
+	env: system/env-vars 
+	;strarr: g_strsplit "GTK_STYLES" "=" 2
+	;g_strfreev strarr
+	found: no
+	until [ 
+		strarr: g_strsplit env/item "=" 2
+		str: as c-string! (strarr/1)
+		if 0 = g_strcmp0 str "RED_GTK_STYLES" [
+			str: as c-string! (strarr/2)
+			css-provider str GTK_STYLE_PROVIDER_PRIORITY_APPLICATION
+			found: yes
+		]
+		env: env + 1
+		g_strfreev strarr
+		any[found env/item = null]
+	]	
 ]
 
 ; move this to draw-ctx!? (used in draw-text-at)
