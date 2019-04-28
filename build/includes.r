@@ -223,6 +223,7 @@ write %build/bin/sources.r set-cache [
 					%handlers.reds
 					%menu.reds
 					%para.reds
+					%rules.red
 					%text-box.reds
 				]
 				%test/ [
