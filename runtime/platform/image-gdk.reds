@@ -129,6 +129,14 @@ OS-image: context [
 				height 		[integer!]
 				return: 	[handle!]
 			]
+			gdk_pixbuf_new_subpixbuf: "gdk_pixbuf_new_subpixbuf" [
+				pixbuf 		[handle!]
+				x 				[integer!]
+				y 				[integer!]
+				width 		[integer!]
+				height 		[integer!]
+				return:		[handle!]
+			]
 			gdk_pixbuf_new_from_bytes: "gdk_pixbuf_new_from_bytes" [
 				data 		[handle!]
 				colorsp 	[integer!]
@@ -298,7 +306,12 @@ OS-image: context [
 			buf		[int-ptr!]
 	][
 		node: as img-node! (as series! bitmap/value) + 1
+		if zero? node/flags [
+			node/flags: IMG_NODE_HAS_BUFFER
+			node/buffer: data-to-image node/handle -1 yes yes
+		]
 		buf: node/buffer + index
+		;; DEBUG: print ["get pixel " node/buffer " at " index " is " buf/value lf]
 		buf/value
 	]
 
@@ -312,6 +325,10 @@ OS-image: context [
 			buf		[int-ptr!]
 	][
 		node: as img-node! (as series! bitmap/value) + 1
+		if zero? node/flags [
+			node/flags: IMG_NODE_HAS_BUFFER
+			node/buffer: data-to-image node/handle -1 yes yes
+		]
 		node/flags: node/flags or IMG_NODE_MODIFIED
 		buf: node/buffer + index
 		buf/value: color
@@ -549,9 +566,9 @@ OS-image: context [
 		height: gdk_pixbuf_get_height as handle! pixbuf
 		channels: gdk_pixbuf_get_n_channels as handle! pixbuf
 		;; DEBUG: print ["size: " width "x" height " row-stride: " gdk_pixbuf_get_rowstride as handle! pixbuf " n_channels: " gdk_pixbuf_get_n_channels as handle! pixbuf " bits-per-sample: " gdk_pixbuf_get_bits_per_sample as handle! pixbuf " byte-length: " gdk_pixbuf_get_byte_length as handle! pixbuf lf]
-
+		if width  * channels <> gdk_pixbuf_get_rowstride as handle! pixbuf  [print ["ERROR rowstride: " gdk_pixbuf_get_rowstride as handle! pixbuf " <> width * channels: " (width  * channels) lf]]
 		; maybe better use other copy
-		either channels = 4 [
+		either channels = 4 [ 
 			buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf
 		][
 			;; Needs to convert in n_channels = 4
@@ -801,20 +818,26 @@ OS-image: context [
 			h		[integer!]
 			offset	[integer!]
 			handle	[handle!]
+			handle2	[handle!]
 			width	[integer!]
 			height	[integer!]
 			bmp		[integer!]
 			format	[integer!]
+			src-buf	[byte-ptr!]
+			dst-buf	[byte-ptr!]
+			buf		[int-ptr!]
 	][
-		;; DEBUG: print ["image/clone" src lf]
+		;; DEBUG: print ["image/clone " src " part? " part? lf]
 		inode: as img-node! (as series! src/node/value) + 1
 		handle: inode/handle
 		width: IMAGE_WIDTH(inode/size)
-		height: IMAGE_WIDTH(inode/size)
+		height: IMAGE_HEIGHT(inode/size)
 		offset: src/head
 		x: offset % width
 		y: offset / width
-		
+
+		;; DEBUG: print ["handle: " handle " offset: " x "x" y " size " width "x" height lf]
+
 		dst/node: make-node handle null 0 width height
 		inode: as img-node! (as series! dst/node/value) + 1
 
@@ -822,35 +845,93 @@ OS-image: context [
 			inode/handle: gdk_pixbuf_copy handle
 			dst/size: src/size
 		][
-			;; TODO
-			; either all [part? TYPE_OF(size) = TYPE_PAIR][
-			; 	w: width - x
-			; 	h: height - y
-			; 	if size/x < w [w: size/x]
-			; 	if size/y < h [h: size/y]
-			; 	inode/handle: CGImageCreateWithImageInRect
-			; 		handle as float32! x as float32! y as float32! w as float32! h
-			; ][
-			; 	either part < width [h: 1 w: part][
-			; 		h: part / width
-			; 		w: width
-			; 	]
-			; 	if zero? part [w: 1 h: 1]
-			; 	either zero? part [w: 0 h: 0][
-			; 		inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
-			; 		src-buf: as byte-ptr! data-to-image handle yes yes
-			; 		dst-buf: allocate w * h * 4
-			; 		copy-memory dst-buf src-buf w * h * 4 offset * 4
-			; 		inode/handle: null
-			; 		inode/buffer: as int-ptr! dst-buf
-			; 	]
-			; ]
-			; inode/size: h << 16 or w
-			; dst/size: inode/size
-			0
+			either all [part? TYPE_OF(size) = TYPE_PAIR][
+				w: width - x
+				h: height - y
+				if size/x < w [w: size/x]
+				if size/y < h [h: size/y]
+				handle2: gdk_pixbuf_copy gdk_pixbuf_new_subpixbuf handle x y w h 
+			
+				; print ["subpixbuf " inode/handle lf]
+				; print ["dst inode/handle: " gdk_pixbuf_get_width inode/handle "x" gdk_pixbuf_get_height inode/handle lf]
+				buf: as int-ptr! allocate w * h * 4
+				pixbuf-to-data handle2 buf w h
+				g_object_unref handle2
+				inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
+				inode/buffer: buf
+			][
+				; print ["part: " part " size " w "x" h lf]
+				either part < width [h: 1 w: part][
+					h: part / width
+					w: width
+				]
+				if zero? part [w: 1 h: 1]
+				either zero? part [w: 0 h: 0][
+					inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
+					src-buf: as byte-ptr! data-to-image handle -1 yes yes
+					dst-buf: allocate w * h * 4
+					copy-memory dst-buf src-buf w * h * 4 offset * 4
+					inode/handle: null
+					inode/buffer: as int-ptr! dst-buf
+				]
+			]
+			inode/size: h << 16 or w
+			dst/size: inode/size
+			; print ["dst/size " w "x" h lf]
 		]
 		dst/head: 0
+		dst/header: TYPE_IMAGE
+		; print ["dst " dst lf]
 		dst
 	]
 
+	;; pixbuf utils (since rowstride is not necessary width * channels for a pixbuf)
+	pixbuf-read-pixel: func [
+		pixbuf 		[handle!]
+		x 			[integer!]; 1-based
+		y 			[integer!]; 1-based
+		return: 	[int-ptr!]
+	][
+		as int-ptr! (gdk_pixbuf_get_pixels pixbuf) + ((y - 1) * (gdk_pixbuf_get_rowstride pixbuf) + (x - 1) * (gdk_pixbuf_get_n_channels pixbuf))
+	]
+
+	pixbuf-to-data: func [
+		src-pixbuf 	[handle!]
+		dst-data	[int-ptr!]
+		width		[integer!]
+		height		[integer!]
+		/local
+			x 			[integer!]
+			y 			[integer!]
+			pixels		[byte-ptr!]
+			pixel		[byte-ptr!]
+			stride		[integer!]
+			channels	[integer!]
+			src-buf		[int-ptr!]
+			dst-buf		[int-ptr!]
+
+	][
+		pixels: gdk_pixbuf_get_pixels src-pixbuf  
+		stride: (gdk_pixbuf_get_rowstride src-pixbuf)
+		channels: gdk_pixbuf_get_n_channels src-pixbuf
+		if channels <> 4 [print ["ERROR: number of channels is 3 and not 4 ..." lf]]
+		dst-buf: dst-data
+		y: 0
+		while [y < height][
+			x: 0
+			pixel: pixels + (y * stride)
+			while [x < width][
+				;; DEBUG: print ["pixbuf-to-data: " x "x" y " size: " width "x" height lf]
+				;; BE CAREFUL with rowstride for pixbuf
+				src-buf: as int-ptr! pixel
+				dst-buf/value: argb-to-abgr src-buf/value
+				dst-buf: dst-buf + 1
+				pixel: pixel + channels
+				x: x + 1
+			]
+			y: y + 1
+		]
+	]
 ]
+
+

@@ -2389,6 +2389,14 @@ GList!: alias struct! [
 			height 		[integer!]
 			return: 	[handle!]
 		]
+		gdk_pixbuf_new_subpixbuf: "gdk_pixbuf_new_subpixbuf" [
+			pixbuf 		[handle!]
+			x 				[integer!]
+			y 				[integer!]
+			width 		[integer!]
+			height 		[integer!]
+			return:		[handle!]
+		]
 		gdk_pixbuf_copy: "gdk_pixbuf_copy" [
 			pixbuf 		[handle!]
 			return: 	[handle!]
