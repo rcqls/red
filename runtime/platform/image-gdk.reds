@@ -830,6 +830,7 @@ OS-image: context [
 		;; DEBUG: print ["image/clone " src " part? " part? lf]
 		inode: as img-node! (as series! src/node/value) + 1
 		handle: inode/handle
+		src-buf: as byte-ptr! inode/buffer
 		width: IMAGE_WIDTH(inode/size)
 		height: IMAGE_HEIGHT(inode/size)
 		offset: src/head
@@ -842,25 +843,34 @@ OS-image: context [
 		inode: as img-node! (as series! dst/node/value) + 1
 
 		either all [zero? offset not part?][
-			inode/handle: gdk_pixbuf_copy handle
-			dst/size: src/size
+			either null? handle [
+				unless null? src-buf [ 
+					;; INFO: src-inode/handle null but not src-inode/buffer
+					dst-buf: allocate width * height * 4
+					copy-memory dst-buf src-buf width * height * 4 0
+					inode/buffer: as int-ptr! dst-buf
+					inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
+				]
+			][
+				;; INFO: src-inode/handle not null?
+				inode/handle: gdk_pixbuf_copy handle
+				dst/size: src/size
+			]
 		][
 			either all [part? TYPE_OF(size) = TYPE_PAIR][
 				w: width - x
 				h: height - y
 				if size/x < w [w: size/x]
 				if size/y < h [h: size/y]
-				handle2: gdk_pixbuf_copy gdk_pixbuf_new_subpixbuf handle x y w h 
-			
-				; print ["subpixbuf " inode/handle lf]
-				; print ["dst inode/handle: " gdk_pixbuf_get_width inode/handle "x" gdk_pixbuf_get_height inode/handle lf]
+				handle2: gdk_pixbuf_copy gdk_pixbuf_new_subpixbuf handle x y w h
 				buf: as int-ptr! allocate w * h * 4
 				pixbuf-to-data handle2 buf w h
 				g_object_unref handle2
 				inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
 				inode/buffer: buf
 			][
-				; print ["part: " part " size " w "x" h lf]
+				;; TODO: This part is considered not enough stable!!!!
+				;; DEBUG: print ["part: " part " size " w "x" h lf]
 				either part < width [h: 1 w: part][
 					h: part / width
 					w: width
@@ -877,11 +887,11 @@ OS-image: context [
 			]
 			inode/size: h << 16 or w
 			dst/size: inode/size
-			; print ["dst/size " w "x" h lf]
+			;; DEBUG: print ["dst/size " w "x" h lf]
 		]
 		dst/head: 0
 		dst/header: TYPE_IMAGE
-		; print ["dst " dst lf]
+		;; DEBUG: print ["dst " dst lf]
 		dst
 	]
 
