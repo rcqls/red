@@ -566,7 +566,7 @@ OS-image: context [
 		height: gdk_pixbuf_get_height as handle! pixbuf
 		channels: gdk_pixbuf_get_n_channels as handle! pixbuf
 		;; DEBUG: print ["size: " width "x" height " row-stride: " gdk_pixbuf_get_rowstride as handle! pixbuf " n_channels: " gdk_pixbuf_get_n_channels as handle! pixbuf " bits-per-sample: " gdk_pixbuf_get_bits_per_sample as handle! pixbuf " byte-length: " gdk_pixbuf_get_byte_length as handle! pixbuf lf]
-		if width  * channels <> gdk_pixbuf_get_rowstride as handle! pixbuf  [print ["ERROR rowstride: " gdk_pixbuf_get_rowstride as handle! pixbuf " <> width * channels: " (width  * channels) lf]]
+		if width  * channels <> gdk_pixbuf_get_rowstride as handle! pixbuf  [print ["WARNING rowstride: " gdk_pixbuf_get_rowstride as handle! pixbuf " <> width (" width ") * channels (" channels "): " (width  * channels) lf]]
 		; maybe better use other copy
 		either channels = 4 [ 
 			buf: gdk_pixbuf_get_pixels gdk_pixbuf_copy as handle! pixbuf

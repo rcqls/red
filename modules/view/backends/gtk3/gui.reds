@@ -523,6 +523,17 @@ get-symbol-name: function [
 		sym = done ["done"]
 		sym = stop ["stop"] 
 		sym = _image ["image"]
+
+		sym = facets/pane ["facets/pane"]
+					 
+		sym = words/_remove/symbol	["words/remove"]
+		sym = words/_take/symbol	["words/take"]
+		sym = words/_clear/symbol	["words/clear"]
+		sym = words/_insert/symbol	["words/insert"]
+		sym = words/_poke/symbol	["words/poke"]
+		sym = words/_moved/symbol	["words/moved"]
+		sym = words/_changed/symbol	["words/changed"]
+		
 		true ["undefined"]
 	]
 ]
@@ -703,9 +714,10 @@ change-rate: func [
 				ts: 1000 / int/value
 			]
 			TYPE_TIME [
-				tm: as red-time! rate
+				tm: as red-time! rate 
 				if tm/time <= 0.0 [fire [TO_ERROR(script invalid-facet-type) rate]]
 				ts: as-integer tm/time * 1000.0
+				if ts = 0 [ts: 1]
 			]
 			TYPE_NONE [
 				;; DEBUG: print ["change-rate: removed timer for widget " widget lf]
@@ -725,6 +737,7 @@ change-image: func [
 	/local
 		img	 [handle!]
 ][
+	;; DEBUG: print ["change-image " widget " type: " get-symbol-name type lf]
 	case [
 		; type = camera [
 		; 	snap-camera widget
@@ -736,6 +749,8 @@ change-image: func [
 				gtk_button_set_image widget img
 			]
 		]
+		true [0]
+
 	]
 ]
 
@@ -1604,12 +1619,6 @@ OS-show-window: func [
 	if null? as handle! widget [exit]
 	gtk_widget_show_all as handle! widget
 	gtk_widget_grab_focus as handle! widget
-	; @@ TEMPORARY: TO BE REMOVED BUT USEFUL NOW FOR COMPARING THE EFFECT OF ADJUST-SIZES IN RED TEST WITHOUT RECOMPILING CONSOLE
-	;auto-adjust?: as red-logic! #get system/view/gtk-auto-adjust?
-	;if all [TYPE_OF(auto-adjust?) = TYPE_LOGIC auto-adjust?/value] [
-	;	adjust-sizes as handle! widget
-	;	gtk_widget_queue_draw as handle! widget
-	;]
 	face: (as red-object! get-face-values as handle! widget) + FACE_OBJ_SELECTED
 	if TYPE_OF(face) = TYPE_OBJECT [gtk_widget_grab_focus face-handle? face]
 ]
@@ -1713,8 +1722,9 @@ OS-make-view: func [
 			]
 		]
 		sym = base [
-			widget: gtk_layout_new null null;gtk_drawing_area_new
+			widget: gtk_layout_new null null;
 			gtk_layout_set_size widget size/x size/y
+			;; widget: gtk_drawing_area_new
 		]
 		sym = rich-text [
 			widget: gtk_layout_new null null;gtk_drawing_area_new
@@ -2066,9 +2076,9 @@ OS-update-view: func [
 	;		SetMenu widget build-menu menu CreateMenu
 	;	]
 	;]
-	;if flags and FACET_FLAG_IMAGE <> 0 [
-	;	change-image widget values type
-	;]
+	if flags and FACET_FLAG_IMAGE <> 0 [
+		change-image widget as red-image! values + FACE_OBJ_IMAGE type
+	]
 
 	;; update-view at least ask for this
 	;if main-window = widget [
@@ -2155,13 +2165,18 @@ OS-update-facet: func [
 		word [red-word!]
 		sym	 [integer!]
 		type [integer!]
+		pane [red-block!]
 		widget [handle!]
 ][
 	sym: symbol/resolve facet/symbol
-	;; DEBUG: print ["update-facet " sym " " get-symbol-name sym lf]
+	;; DEBUG: print ["update-facet " get-symbol-name sym lf]
 
 	case [
-		;sym = facets/pane [0]
+		; sym = facets/pane [
+		; 	sym: action/symbol 
+		; 	;; DEBUG: print ["update pane action " get-symbol-name sym lf]
+		; 	pane: as red-block! value
+		; ]
 		sym = facets/data [
 			word: as red-word! get-node-facet face/ctx FACE_OBJ_TYPE
 			type: symbol/resolve word/symbol

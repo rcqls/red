@@ -1186,6 +1186,9 @@ GList!: alias struct! [
 		gtk_widget_show: "gtk_widget_show" [
 			widget		[handle!]
 		]
+		gtk_widget_show_now: "gtk_widget_show_now" [
+			widget		[handle!]
+		]
 		gtk_widget_realize: "gtk_widget_realize" [
 			widget		[handle!]
 		]
