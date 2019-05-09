@@ -597,6 +597,11 @@ GList!: alias struct! [
 			data		[int-ptr!]
 			return: 	[integer!]
 		]
+		g_idle_add: "g_idle_add" [
+			handler		[integer!]
+			data		[int-ptr!]
+			return: 	[integer!]
+		]
 	;; ]
 	;; LIBGDK-file cdecl [
 		gdk_screen_width: "gdk_screen_width" [
@@ -1458,6 +1463,10 @@ GList!: alias struct! [
 			label		[c-string!]
 			return:		[handle!]
 		]
+		gtk_button_get_label: "gtk_button_get_label" [
+			button		[handle!]
+			return:		[c-string!]
+		]
 		gtk_button_set_label: "gtk_button_set_label" [
 			button		[handle!]
 			label		[c-string!]
@@ -1506,6 +1515,9 @@ GList!: alias struct! [
 		gtk_drawing_area_new: "gtk_drawing_area_new" [
 			return:		[handle!]
 		]
+		gtk_image_new: "gtk_image_new" [
+			return: 	[handle!]
+		]
 		gtk_image_new_from_pixbuf: "gtk_image_new_from_pixbuf" [
 			pixbuf 		[handle!]
 			return: 	[handle!]
@@ -1513,6 +1525,10 @@ GList!: alias struct! [
 		gtk_image_new_from_file: "gtk_image_new_from_file" [
 			filename 	[c-string!]
 			return: 	[handle!]
+		]
+		gtk_image_set_from_pixbuf: "gtk_image_set_from_pixbuf" [
+			widget 		[handle!]
+			pixbuf 		[handle!]
 		]
 		gtk_label_new: "gtk_label_new" [
 			label		[c-string!]

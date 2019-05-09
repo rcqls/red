@@ -728,7 +728,7 @@ OS-image: context [
 		;; DEBUG: print ["OS-image/to-pixbuf" lf]
 		inode: as img-node! (as series! img/node/value) + 1
 		if inode/flags and IMG_NODE_MODIFIED <> 0 [
-			;; DEBUG: print ["IMG_NODE_MODIFIED " lf]
+			;; DEBUG: print ["IMG_NODE_MODIFIED " img lf]
 			pixbuf: make-pixbuf img
 			unless null? inode/handle [g_object_unref inode/handle]
 			inode/handle: pixbuf
@@ -837,7 +837,7 @@ OS-image: context [
 		x: offset % width
 		y: offset / width
 
-		;; DEBUG: print ["handle: " handle " offset: " x "x" y " size " width "x" height lf]
+		;; DEBUG: print ["handle: " handle " src-buf: " src-buf " offset: " x "x" y " size " width "x" height lf]
 
 		dst/node: make-node handle null 0 width height
 		inode: as img-node! (as series! dst/node/value) + 1
@@ -848,8 +848,11 @@ OS-image: context [
 					;; INFO: src-inode/handle null but not src-inode/buffer
 					dst-buf: allocate width * height * 4
 					copy-memory dst-buf src-buf width * height * 4 0
+					;; DEBUG: print ["src-buf " dst-buf " " width "x" height  lf]
 					inode/buffer: as int-ptr! dst-buf
 					inode/flags: IMG_NODE_MODIFIED or IMG_NODE_HAS_BUFFER
+					inode/size: height << 16 or width
+					dst/size: inode/size
 				]
 			][
 				;; INFO: src-inode/handle not null?

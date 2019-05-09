@@ -64,9 +64,10 @@ draw-begin: func [
 	cr			[handle!]
 	img			[red-image!]
 	on-graphic?	[logic!]
-	paint?		[logic!]
+	pattern?	[logic!]
 	return:		[draw-ctx!]
 ][
+	;; DEBUG: print ["draw-begin : " on-graphic? " " pattern?  lf]
 	init-draw-ctx ctx cr
 
 	cairo_set_line_width cr 1.0
@@ -80,7 +81,7 @@ draw-end: func [
 	hWnd		[handle!]
 	on-graphic? [logic!]
 	cache?		[logic!]
-	paint?		[logic!]
+	pattern?	[logic!]
 ][
 	cairo_identity_matrix dc/raw
 	free-pango-cairo-font dc

@@ -2265,13 +2265,15 @@ OS-do-draw: func [
 	stride: 0
 	bitmap: OS-image/lock-bitmap image yes
 	data: OS-image/get-data bitmap :stride
+	;; DEBUG: print ["OS-do-draw data " data " size: " w "x" h " stride: " stride lf]
 	;stride: cairo_format_stride_for_width CAIRO_FORMAT_ARGB32 w
 	surf: cairo_image_surface_create_for_data as byte-ptr! data CAIRO_FORMAT_ARGB32 w h stride
 	cr: cairo_create surf
-	do-draw cr null cmds no yes yes yes
+	;; OLD: do-draw cr null cmds no yes yes yes
+	do-draw cr null cmds yes no no no
 	cairo_destroy cr
 	cairo_surface_destroy surf
-	OS-image/post-transf OS-image/POST-ARGB-TO-ABGR
+	;; USELESS NOW???: OS-image/post-transf OS-image/POST-ARGB-TO-ABGR
 	OS-image/unlock-bitmap image bitmap
 ]
 
