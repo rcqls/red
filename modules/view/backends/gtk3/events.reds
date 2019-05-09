@@ -82,7 +82,9 @@ get-event-window: func [
 		handle [handle!]
 		face   [red-object!]
 ][
-	none-value
+	;; DEBUG: print ["get-event-windows: " evt/type " " evt/msg lf]
+	handle: gtk_widget_get_toplevel as handle! evt/msg
+	as red-value! get-face-obj handle
 ]
 
 get-event-offset: func [
