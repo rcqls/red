@@ -477,24 +477,19 @@ init: func [][
 	gtk_disable_setlocale
 	GTKApp: gtk_application_new RED_GTK_APP_ID G_APPLICATION_NON_UNIQUE
 	gobj_signal_connect(GTKApp "window-removed" :window-removed-event :exit-loop)
-
 	GTKApp-Ctx: g_main_context_default
 	unless g_main_context_acquire GTKApp-Ctx [
 		probe "ERROR: GTK: Cannot acquire main context" halt
 	]
 	g_application_register GTKApp null null
-
 	;;;vector/make-at as red-value! win-array 8 TYPE_INTEGER 4
 
 	screen-size-x: gdk_screen_width
 	screen-size-y: gdk_screen_height
-
 	default-font: pango_font_description_from_string gtk-font
-
 	settings: gtk_settings_get_default
 	g_object_set [settings "gtk-font-name" gtk-font  null ]
-
-	red-gtk-styles
+	#if type = 'exe [red-gtk-styles]
 	;;;collector/register as int-ptr! :on-gc-mark
 ]
 

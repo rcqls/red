@@ -15,6 +15,9 @@ Red/System [
 #define gobj_signal_connect(instance signal handler data) [
 	g_signal_connect_data instance signal as-integer handler data null 0
 ]
+#define gobj_signal_connect_after(instance signal handler data) [
+	g_signal_connect_data instance signal as-integer handler data null 1
+]
 
 #define G_ASCII_DTOSTR_BUF_SIZE	39
 
@@ -505,6 +508,11 @@ GList!: alias struct! [
   prev 		[GList!]
 ]
 
+GPtrArray!: alias struct! [
+  pdata			[int-ptr!]
+  len				[integer!]
+]
+
 #enum GtkPackDirection! [
 	GTK_PACK_DIRECTION_LTR
 	GTK_PACK_DIRECTION_RTL
@@ -547,6 +555,10 @@ GList!: alias struct! [
 #import [
 	LIBGTK-file cdecl [
 	;; LIBGOBJECT-file cdecl [
+		g_object_new: "g_object_new" [
+			[variadic]
+			return:		[handle!]
+		]
 		g_object_set_qdata: "g_object_set_qdata" [
 			object		[int-ptr!]
 			quark		[integer!]
@@ -562,6 +574,9 @@ GList!: alias struct! [
 		]
 		g_object_get: "g_object_get" [
 			[variadic]
+		]
+		g_clear_object: "g_clear_object" [
+			obj-ptr 		[integer!]
 		]
 		g_signal_connect_data: "g_signal_connect_data" [
 			instance	[int-ptr!]
