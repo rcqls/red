@@ -96,6 +96,13 @@ Linux [									; Linux default target
 	type:		'exe
 	dynamic-linker: "/lib/ld-linux.so.2"
 ]
+Linux-NoCam [									; Linux default target
+	OS:			'Linux
+	format: 	'ELF
+	type:		'exe
+	dynamic-linker: "/lib/ld-linux.so.2"
+	legacy:		[no-camera]
+]
 Linux-Musl [									; Linux default target
 	OS:			'Linux
 	format: 	'ELF

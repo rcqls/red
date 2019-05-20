@@ -21,6 +21,7 @@ Red/System [
 #include %menu.reds
 #include %handlers.reds
 #include %comdlgs.reds
+#include %gstreamer.reds
 
 GTKApp:			as handle! 0
 GTKApp-Ctx: 	0
@@ -474,6 +475,8 @@ show-gtk-version: func [][
 
 init: func [][
 	show-gtk-version
+	;; Since experimental RED_GTK_CAMERA needs to be YES in bash profile!!!!
+	init-gst
 	gtk_disable_setlocale
 	GTKApp: gtk_application_new RED_GTK_APP_ID G_APPLICATION_NON_UNIQUE
 	gobj_signal_connect(GTKApp "window-removed" :window-removed-event :exit-loop)
@@ -1155,14 +1158,14 @@ change-selection: func [
 				free as byte-ptr! ins free as byte-ptr! bound 
 			]
 		]
-	; 	type = camera [
-	; 		either TYPE_OF(int) = TYPE_NONE [
-	; 			toggle-preview widget false
-	; 		][
-	; 			select-camera widget idx
-	; 			toggle-preview widget true
-	; 		]
-	; 	]
+		type = camera [
+			either TYPE_OF(int) = TYPE_NONE [
+				toggle-preview widget false
+			][
+				select-camera widget idx
+				toggle-preview widget true
+			]
+		]
 		type = text-list [
 			item: gtk_list_box_get_row_at_index widget idx
 			gtk_list_box_select_row widget item
@@ -1696,6 +1699,9 @@ OS-make-view: func [
 	;;DEBUG: print ["OS-make-view " get-symbol-name sym lf]
 
 	case [
+		sym = camera [
+			widget: make-camera data
+		]
 		sym = check [
 			widget: gtk_check_button_new_with_label caption
 			set-logic-state widget as red-logic! data no

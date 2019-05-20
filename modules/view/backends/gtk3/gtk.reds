@@ -619,6 +619,10 @@ GPtrArray!: alias struct! [
 		]
 	;; ]
 	;; LIBGDK-file cdecl [
+		gdk_x11_window_get_xid: "gdk_x11_window_get_xid" [
+			widget 			[handle!]
+			return:			[integer!]
+		]
 		gdk_screen_width: "gdk_screen_width" [
 			return:		[integer!]
 		]
@@ -1349,6 +1353,14 @@ GPtrArray!: alias struct! [
 			widget	[handle!]
 			state	[integer!]
 			color	[handle!] 
+		]
+		gtk_widget_get_window: "gtk_widget_get_window" [
+			widget	[handle!]
+			return: [int-ptr!]
+		]
+		gtk_widget_set_double_buffered: "gtk_widget_set_double_buffered" [
+			widget	[handle!]
+			mode 		[logic!]
 		]
 		gtk_container_add: "gtk_container_add" [
 			container	[handle!]
