@@ -419,6 +419,7 @@ simple-button-press-event: func [
 	_widget	[handle!]
 	evt 	[handle!]
 	widget	[handle!]
+	return: [integer!]
 ][
 	make-event widget 0 EVT_LEFT_DOWN
 ]
@@ -989,7 +990,7 @@ key-press-event: func [
 ][
 
 	;; DEBUG: print ["key-press-event: " event-key/keyval " " widget lf]
-	state: 0
+	state: EVT_NO_DISPATCH
 	either event-key/keyval > FFFFh [state: 1][
 		key: translate-key event-key/keyval
 		flags: 0 ;either char-key? as-byte key [0][80000000h]	;-- special key or not
@@ -1001,6 +1002,7 @@ key-press-event: func [
 			state: make-event widget key or flags EVT_KEY
 		]
 	]
+	;; DEBUG: print ["DISPATCH: " either state = EVT_NO_DISPATCH ["No"]["Yes"]  lf]
 	state
 ]
 

@@ -152,6 +152,13 @@ GdkEventScroll!: alias struct! [
 	GDK_SCROLL_SMOOTH
 ]
 
+#enum GtkPolicyType! [
+	GTK_POLICY_ALWAYS
+	GTK_POLICY_AUTOMATIC
+	GTK_POLICY_NEVER
+	GTK_POLICY_EXTERNAL
+]
+
 #enum GGApplicationFlags! [
   G_APPLICATION_FLAGS_NONE: 0
   G_APPLICATION_IS_SERVICE: 1
@@ -1579,6 +1586,27 @@ GPtrArray!: alias struct! [
 			row			[handle!]
 			return:		[integer!]
 		]
+		gtk_viewport_new: "gtk_viewport_new" [
+			hadj		[handle!]
+			vadj		[handle!]
+			return:		[handle!]
+		]
+		gtk_scrollable_get_hadjustment: "gtk_scrollable_get_hadjustment" [
+			scroll 		[handle!]
+			return: 	[handle!]
+		]
+		gtk_scrollable_set_hadjustment: "gtk_scrollable_set_hadjustment" [
+			scroll 		[handle!]
+			adj	 		[handle!]
+		]
+		gtk_scrollable_get_vadjustment: "gtk_scrollable_get_vadjustment" [
+			scroll 		[handle!]
+			return: 	[handle!]
+		]
+		gtk_scrollable_set_vadjustment: "gtk_scrollable_set_vadjustment" [
+			scroll 		[handle!]
+			adj	 		[handle!]
+		]
 		gtk_scrolled_window_new: "gtk_scrolled_window_new" [
 			hadj		[handle!]
 			vadj		[handle!]
@@ -1587,6 +1615,94 @@ GPtrArray!: alias struct! [
 		gtk_scrolled_window_set_shadow_type: "gtk_scrolled_window_set_shadow_type" [
 			hwnd		[handle!]
 			type		[integer!]
+		]
+		gtk_scrolled_window_get_policy: "gtk_scrolled_window_get_policy" [
+			hwnd		[handle!]
+			hscroll		[int-ptr!]
+			vscroll		[int-ptr!]
+		]
+		gtk_scrolled_window_set_policy: "gtk_scrolled_window_set_policy" [
+			hwnd		[handle!]
+			hscroll		[integer!]
+			vscroll		[integer!]
+		]
+		gtk_scrolled_window_get_vscrollbar: "gtk_scrolled_window_get_vscrollbar" [
+			hwnd		[handle!]
+			return: 	[handle!]
+		]
+		gtk_scrolled_window_get_hscrollbar: "gtk_scrolled_window_get_hscrollbar" [
+			hwnd		[handle!]
+			return: 	[handle!]
+		]
+		gtk_scrolled_window_get_hadjustment: "gtk_scrolled_window_get_hadjustment" [
+			hwnd		[handle!]
+			return: 	[handle!]
+		]
+		gtk_scrolled_window_get_vadjustment: "gtk_scrolled_window_get_vadjustment" [
+			hwnd		[handle!]
+			return: 	[handle!]
+		]
+		gtk_adjustment_configure: "gtk_adjustment_configure" [
+			adj			[handle!]
+			val			[float!]
+			lower		[float!]
+			upper		[float!]
+			step_incr	[float!]
+			page_incr	[float!]
+			page_size	[float!]
+		]
+		gtk_adjustment_clamp_page: "gtk_adjustment_clamp_page" [
+			adj			[handle!]
+			lower		[float!]
+			upper		[float!]
+		]
+		gtk_adjustment_get_value: "gtk_adjustment_get_value" [
+			adj 		[handle!]
+			return: 	[float!]
+		]
+		gtk_adjustment_set_value: "gtk_adjustment_set_value" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_set_lower: "gtk_adjustment_set_lower" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_get_lower: "gtk_adjustment_get_lower" [
+			adj 		[handle!]
+			return:		 [float!]
+		]
+		gtk_adjustment_set_page_increment: "gtk_adjustment_set_page_increment" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_get_page_increment: "gtk_adjustment_get_page_increment" [
+			adj 		[handle!]
+			return:		[float!]
+		]
+		gtk_adjustment_set_page_size: "gtk_adjustment_set_page_size" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_get_page_size: "gtk_adjustment_get_page_size" [
+			adj 		[handle!]
+			return:		[float!]
+		]
+		gtk_adjustment_set_step_increment: "gtk_adjustment_set_step_increment" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_get_step_increment: "gtk_adjustment_get_step_increment" [
+			adj 		[handle!]
+			return:		[float!]
+		]
+		gtk_adjustment_set_upper: "gtk_adjustment_set_upper" [
+			adj 		[handle!]
+			val		 	[float!]
+		]
+		gtk_adjustment_get_upper: "gtk_adjustment_get_upper" [
+			adj 		[handle!]
+			return:		[float!]
 		]
 		gtk_button_new_with_label: "gtk_button_new_with_label" [
 			label		[c-string!]
@@ -1758,6 +1874,10 @@ GPtrArray!: alias struct! [
 			value		[float!]
 		]
 		gtk_range_get_value: "gtk_range_get_value" [
+			range		[handle!]
+			return:		[float!]
+		]
+		gtk_range_get_fill_level: "gtk_range_get_fill_level" [
 			range		[handle!]
 			return:		[float!]
 		]

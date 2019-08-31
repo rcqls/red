@@ -208,7 +208,7 @@ get-event-key: func [
 					RED_VK_LMENU	[_left-alt]
 					RED_VK_RMENU	[_right-alt]
 					RED_VK_LWIN		[_left-command]
-					RED_VK_APPS		[_right-command]
+					RED_VK_RWIN		[_right-command]
 					default			[null]
 				]
 			][special-key: -1]
@@ -462,6 +462,7 @@ check-extra-keys: func [
 	/local
 		key		[integer!]
 ][
+	;; DEBUG: print ["check-extra-keys: " state lf]
 	key: 0
 	if state and GDK_SHIFT_MASK <> 0 [key: EVT_FLAG_SHIFT_DOWN]
 	if state and GDK_CONTROL_MASK <> 0 [key: key or EVT_FLAG_CTRL_DOWN]
@@ -551,6 +552,8 @@ translate-key: func [
 		keycode = FFE2h [special?: yes RED_VK_RSHIFT]
 		keycode = FFE3h [special?: yes RED_VK_LCONTROL]
 		keycode = FFE4h [special?: yes RED_VK_RCONTROL]
+		keycode = FFE7h [special?: yes RED_VK_LWIN]
+		keycode = FFE8h [special?: yes RED_VK_RWIN]
 		keycode = FFFFh [special?: yes RED_VK_DELETE]
 		;@@ To complete!
 		true [RED_VK_UNKNOWN]
@@ -809,32 +812,34 @@ connect-common-events: function [
 ][
 	unless null? widget [
 
-		if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+		;; CANCEL: if respond-mouse? widget (ON_LEFT_DOWN or ON_RIGHT_DOWN or ON_MIDDLE_DOWN or ON_AUX_DOWN) [
+		;; and replaced by (because `click` allows to take the grab focus)
+		if sym <> text-list [
 			;; DEBUG: if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-DOWN: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_BUTTON_PRESS_MASK 
-			if container-type? sym [
+			;; CANCEL: if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
-				connect-container-events widget "button-press-event"
-			]
+				;; CANCEL: connect-container-events widget "button-press-event"
+			;; CANCEL: ]
 			gobj_signal_connect(widget "button-press-event" :mouse-button-press-event face/ctx)
 		]
 		if respond-mouse? widget (ON_OVER) [
 			;; DEBUG: if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-OVER: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_BUTTON1_MOTION_MASK or GDK_POINTER_MOTION_MASK
-			if container-type? sym [
+			;; CANCEL: if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
-				connect-container-events widget "motion-notify-event"
-			]
+				;; CANCEL: connect-container-events widget "motion-notify-event"
+			;; CANCEL: ]
 			gobj_signal_connect(widget "motion-notify-event" :mouse-motion-notify-event face/ctx)
 		]
 		
 		if respond-mouse? widget (ON_LEFT_UP or ON_RIGHT_UP or ON_MIDDLE_UP or ON_AUX_UP) [
 			;; DEBUG: if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON-UP: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget  GDK_BUTTON_RELEASE_MASK
-			if container-type? sym [
+			;; CANCEL: if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
-				connect-container-events widget "button-release-event"
-			]
+				;; CANCEL: connect-container-events widget "button-release-event"
+			;; CANCEL: ]
 			gobj_signal_connect(widget "button-release-event" :mouse-button-release-event face/ctx)
 		]
 
@@ -853,10 +858,10 @@ connect-common-events: function [
 		if respond-mouse? widget ON_WHEEL [
 			;; DEBUG: if debug-connect? DEBUG_CONNECT_COMMON [print [ "connect-common-events ON_WHEEL: " get-symbol-name sym "->" widget lf]]
 			gtk_widget_add_events widget GDK_SCROLL_MASK
-			if container-type? sym [
+			;; CANCEL: if container-type? sym [
 				;; Bubbling does not work for rich-text so delegation to the parent with EVT_DISPATCH
-				connect-container-events widget "scroll-event"
-			]
+				;; CANCEL: connect-container-events widget "scroll-event"
+			;; CANCEL: ]
 			gobj_signal_connect(widget "scroll-event" :widget-scroll-event face/ctx)
 		]
 

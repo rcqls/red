@@ -45,6 +45,7 @@ real-container-id:	g_quark_from_string "real-container-id"
 menu-id:			g_quark_from_string "menu-id"
 drag-id:			g_quark_from_string "drag-id"
 cursor-id:			g_quark_from_string "cursor-id"
+scroller-id:		g_quark_from_string "scroller-id"
 no-wait-id:			g_quark_from_string "no-wait-id"
 red-event-id: 		g_quark_from_string "red-event-id"
 
@@ -226,10 +227,22 @@ set-cursor: func [
 cursor?: func [
 	widget		[handle!]
 	return: 	[handle!]
-	/local
-		window 	[handle!]
 ][
 	g_object_get_qdata widget cursor-id
+]
+
+set-scroller: func [
+	widget	[handle!]
+	scroller	[handle!]
+][
+	g_object_set_qdata widget scroller-id scroller
+]
+
+scroller?: func [
+	widget		[handle!]
+	return: 	[handle!]
+][
+	g_object_get_qdata widget scroller-id
 ]
 
 ;; Used to delegate event (see handlers.red) for widget that have container for scrollbar (like rich-text)
@@ -1529,6 +1542,16 @@ init-text-list: func [
 	]
 ]
 
+init-scrollable: func [
+	widget 	[handle!]
+	bits 	[integer!]
+	return:	[handle!]
+][
+	either bits and FACET_FLAGS_SCROLLABLE <> 0[
+
+	][as handle! 0]
+]
+
 update-scroller: func [
 	scroller [red-object!]
 	flag	 [integer!]
@@ -1538,46 +1561,125 @@ update-scroller: func [
 		int			[red-integer!]
 		values		[red-value!]
 		widget		[handle!]
-		nTrackPos	[integer!]
-		nPos		[integer!]
-		nPage		[integer!]
-		nMax		[integer!]
-		nMin		[integer!]
-		fMask		[integer!]
-		cbSize		[integer!]
+		scrollWin 	[handle!]
+		adj 		[handle!]
+		scrollbar	[handle!]
+		n 			[float!]
+		nPos		[float!]
+		nPage		[float!]
+		nMax		[float!]
+		nMin		[float!]
+		hscroll?	[integer!]
+		vscroll?	[integer!]
+		width 		[float!]
+		height		[float!]
+		scale		[float!]
 ][
-	;values: object/get-values scroller
-	;parent: as red-object! values + SCROLLER_OBJ_PARENT
-	;vertical?: as red-logic! values + SCROLLER_OBJ_VERTICAL?
-	;int: as red-integer! block/rs-head as red-block! (object/get-values parent) + FACE_OBJ_STATE
-	;widget: as handle! int/value
+	values: object/get-values scroller
+	parent: as red-object! values + SCROLLER_OBJ_PARENT
+	vertical?: as red-logic! values + SCROLLER_OBJ_VERTICAL?
+	int: as red-integer! block/rs-head as red-block! (object/get-values parent) + FACE_OBJ_STATE
+	widget: as handle! int/value
+	scrollWin: scroller? widget
+	;width: as-float gtk_widget_get_allocated_width scrollWin
+	height: as-float gtk_widget_get_allocated_height scrollWin
 
-	;int: as red-integer! values + flag
+	int: as red-integer! values + flag
 
-	;if flag = SCROLLER_OBJ_VISIBLE? [
-	;	ShowScrollBar widget as-integer vertical?/value as logic! int/value
-	;	exit
-	;]
+	;; DEBUG: 
+	print ["update-scroller: " widget " scrollWin: " scrollWin " flag: " flag " int: " int/value " vertical?: " vertical?/value lf]
 
-	;fMask: switch flag [
-	;	SCROLLER_OBJ_POS [nPos: int/value SIF_POS]
-	;	SCROLLER_OBJ_PAGE
-	;	SCROLLER_OBJ_MAX [
-	;		int: as red-integer! values + SCROLLER_OBJ_PAGE
-	;		nPage: int/value
-	;		int: as red-integer! values + SCROLLER_OBJ_MAX
-	;		nMin: 1
-	;		nMax: int/value
-	;	 	SIF_RANGE or SIF_PAGE
-	;	]
-	;	default [0]
-	;]
+	if flag = SCROLLER_OBJ_VISIBLE? [
+		hscroll?: 0 vscroll?: 0
+		gtk_scrolled_window_get_policy scrollWin :hscroll? :vscroll?
+		either vertical?/value [vscroll?: either as logic! int/value [GTK_POLICY_ALWAYS][GTK_POLICY_AUTOMATIC]][hscroll?: either as logic! int/value [GTK_POLICY_ALWAYS][GTK_POLICY_AUTOMATIC]]
+		;;DEBUG: 
+		print ["visible?: " as logic! int/value  " -> policy: " hscroll? " " vscroll? lf]
+		gtk_scrolled_window_set_policy scrollWin hscroll? GTK_POLICY_ALWAYS ;vscroll?
+		exit
+	]
 
-	;if fMask <> 0 [
-	;	fMask: fMask or SIF_DISABLENOSCROLL
-	;	cbSize: size? tagSCROLLINFO
-	;	SetScrollInfo widget as-integer vertical?/value as tagSCROLLINFO :cbSize yes
-	;]
+	
+	
+	; range: nMax - mMin - nPage + 2
+	; frac: either range <= 0 [as float! 1.0][
+	; 	(as float! nPos - nMin) / as float! range
+	; ]
+	
+
+	; sel: nMax - nMin
+	; knob: either range <= 0 [as float32! 1.0][
+	; 	(as float32! nPpage) / as float32! sel
+	; ]
+
+	; old-frac: objc_msgSend_fpret [bar sel_getUid "doubleValue"]
+	; old-knob: objc_msgSend_f32 [bar sel_getUid "knobProportion"]
+
+	; pf32: as pointer! [float32!] :sel
+	; pf32/value: knob
+	; objc_msgSend [bar sel_getUid "setDoubleValue:" frac]
+	; objc_msgSend [bar sel_getUid "setKnobProportion:" pf32/value]
+	; objc_msgSend [bar sel_getUid "setEnabled:" true]
+	; if any [
+	; 	knob <> old-knob
+	; 	frac <> old-frac
+	; ][
+	; 	objc_msgSend [container sel_getUid "flashScrollers"]
+	; ]
+
+
+	adj: either vertical?/value [gtk_scrollable_get_vadjustment widget][gtk_scrollable_get_hadjustment widget]
+	;; DEBUG: 
+	; print ["adj: " adj " int: " int/value " float: " as-float int/value
+	; 	" pos?: " SCROLLER_OBJ_POS = flag
+	; 	" page?: " SCROLLER_OBJ_PAGE = flag
+	; 	" min?: " SCROLLER_OBJ_MIN = flag
+	; 	" max?: " SCROLLER_OBJ_MAX = flag
+	; lf]
+	; gtk_adjustment_set_page_increment adj 1.0
+	; gtk_adjustment_set_step_increment adj 1.0
+	; gtk_adjustment_set_value adj nPos
+	; gtk_adjustment_set_page_size adj nPage
+	; gtk_adjustment_set_lower adj nMin
+	; gtk_adjustment_set_upper adj nMax
+
+	int: as red-integer! values + SCROLLER_OBJ_POS
+	nPos: as-float (int/value)
+	int: as red-integer! values + SCROLLER_OBJ_PAGE
+	nPage: as-float (int/value)
+	;scale: 1.0; height / nPage 
+	int: as red-integer! values + SCROLLER_OBJ_MIN
+	nMin: as-float (int/value)
+	int: as red-integer! values + SCROLLER_OBJ_MAX
+	nMax: as-float (int/value)
+	print ["nPage: " nPage " nMin: " nMin " nMax: " nMax lf]
+	either flag = SCROLLER_OBJ_POS [
+		;gtk_adjustment_set_upper adj nMax / nPage * height
+		gtk_adjustment_set_value adj nPos
+	][
+		; n: nMax - nPage
+		; ;;;print ["nPos: " nPos " n: " n " nMin: " nMin]
+		; if nPos > n [nPos: n]
+		; if nPos < nMin [nPos: nMin]
+	;;print [" nPos2: " nPos lf]
+		gtk_adjustment_configure adj nPos nMin nMax nPage * 0.2 nPage * 0.8 nPage
+	]
+	;gtk_adjustment_clamp_page adj nPos  nPos + nPage
+	;scrollbar: gtk_scrolled_window_get_vscrollbar scrollWin
+	;; DEBUG: 
+	print ["scroll: " 
+	" pos: " gtk_adjustment_get_value adj " nPos: " nPos ;" gtk_range: " gtk_range_get_value scrollbar
+	" min: " gtk_adjustment_get_lower adj
+	" max: " gtk_adjustment_get_upper adj
+	" step incr: " gtk_adjustment_get_step_increment adj
+	" page incr: " gtk_adjustment_get_page_increment adj
+	" page size: " gtk_adjustment_get_page_size adj
+	" height: " height
+	lf ]
+	;either vertical?/value [gtk_scrollable_set_vadjustment widget adj][gtk_scrollable_set_hadjustment widget adj]
+	;gtk_widget_queue_draw scrollWin
+	;; Really matters
+	;gtk_widget_show_all scrollWin
 ]
 
 
@@ -1717,9 +1819,10 @@ OS-show-window: func [
 		;; DEBUG: print ["OS-show-window " hWnd "(" get-symbol-name type ") win: " gtk_widget_get_window hWnd lf]
 		;; Deal with visible? facets
 		init-all-children hWnd
-		gtk_widget_grab_focus hWnd
-		face: (as red-object! get-face-values hWnd) + FACE_OBJ_SELECTED
-		if TYPE_OF(face) = TYPE_OBJECT [gtk_widget_grab_focus face-handle? face]
+		;; CANCEL: is it useful? 
+		; gtk_widget_grab_focus hWnd
+		; face: (as red-object! get-face-values hWnd) + FACE_OBJ_SELECTED
+		; if TYPE_OF(face) = TYPE_OBJECT [gtk_widget_grab_focus face-handle? face]
 	]
 ]
 
@@ -1826,13 +1929,23 @@ OS-make-view: func [
 			gtk_layout_set_size widget size/x size/y
 			;; widget: gtk_drawing_area_new
 		]
+		sym = panel [
+			widget: gtk_layout_new null null
+			unless null? caption [
+				buffer: gtk_label_new caption
+				gtk_container_add widget buffer
+			]
+			gtk_layout_set_size widget size/x size/y
+		]
 		sym = rich-text [
-			widget: gtk_layout_new null null;gtk_drawing_area_new
+			widget: gtk_layout_new null null ;gtk_drawing_area_new
 			gtk_layout_set_size widget size/x size/y
 			_widget: gtk_scrolled_window_new null null
 			set-real-widget _widget widget
+			set-scroller widget _widget
 			;; DEBUG: print ["rich-text _widget: " _widget lf]
 			gtk_container_add _widget widget
+			gtk_widget_show _widget
 		]
 		sym = window [
 			;; DEBUG: print ["win App " GTKApp lf]
@@ -1924,14 +2037,6 @@ OS-make-view: func [
 			container: gtk_layout_new null null 
 			gtk_container_add widget container
 		]
-		sym = panel [
-			widget: gtk_layout_new null null
-			unless null? caption [
-				buffer: gtk_label_new caption
-				gtk_container_add widget buffer
-			]
-			gtk_layout_set_size widget size/x size/y
-		]
 		sym = tab-panel [
 			widget: gtk_notebook_new
 			tabs/cur: 0
@@ -1967,7 +2072,8 @@ OS-make-view: func [
 	; save the previous group-radio state as a global variable
 	group-radio: either sym = radio [widget][as handle! 0] 
 
-	;;DEBUG: print [ "New widget " get-symbol-name sym "->" widget lf]
+	;;DEBUG: 
+	print [ "New widget " get-symbol-name sym "->" widget lf]
 	
 	if all [
 		sym <> window
